@@ -1,6 +1,6 @@
-#ifndef NDNFD_UTIL_POLLMGR_H_
-#define NDNFD_UTIL_POLLMGR_H_
-#include "util/defs.h"
+#ifndef NDNFD_CORE_POLLMGR_H_
+#define NDNFD_CORE_POLLMGR_H_
+#include "core/defs.h"
 #include <poll.h>
 namespace ndnfd {
 
@@ -22,4 +22,4 @@ class PollMgr : Object {
 };
 
 };//namespace ndnfd
-#endif//NDNFD_UTIL_POLLMGR_H
+#endif//NDNFD_CORE_POLLMGR_H

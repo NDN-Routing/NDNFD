@@ -1,4 +1,4 @@
-#include "util/buffer.cc"
+#include "util/buffer.h"
 namespace ndnfd {
 
 Buffer* Buffer::Clone() {

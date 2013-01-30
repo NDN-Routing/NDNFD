@@ -1,5 +1,5 @@
-#ifndef NDNFD_UTIL_DEFS_H_
-#define NDNFD_UTIL_DEFS_H_
+#ifndef NDNFD_CORE_DEFS_H_
+#define NDNFD_CORE_DEFS_H_
 
 #include <assert.h>
 #include <cstddef>
@@ -12,7 +12,6 @@
 #include <unordered_map>
 #include <atomic>
 #include <functional>
-
 #include <boost/intrusive_ptr.hpp>
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
@@ -21,9 +20,11 @@
 
 namespace ndnfd {
 
+//smart pointer
 template<typename T>
 using Ptr = boost::intrusive_ptr<T>;
 
+//object base with smart pointer support
 class Object {
   public:
     Object(void) { this->refcount_ = 0; }
@@ -44,39 +45,5 @@ void intrusive_ptr_release(Object* p) {
   p->Unref();
 }
 
-class Global;
-
-class Element : Object {
-  public:
-    template<typename TMessage>
-    class PushPort {
-      public:
-        typedef std::function<void(TMessage)> Callback;
-        void operator=(Callback value) { this->cb_ = value; }
-        void operator()(Ptr<TMessage> message) { if (this->cb_ != NULL) this->cb_(message); }
-      private:
-        Callback cb_;
-        DISALLOW_COPY_AND_ASSIGN(PushPort);
-    };
-
-  protected:
-    Global* global();
-    
-    template<typename T, typename... TArgs>
-    Ptr<T> Create(TArgs... args);
-
-  private:
-    Global* global_;
-    DISALLOW_COPY_AND_ASSIGN(Element);
-};
-
-
-template<typename T, typename... TArgs>
-Ptr<T> Element::Create(TArgs... args) {
-  T* obj = new T(args...);
-  if (obj != NULL) obj->global_ = this->global_;
-  return obj;
-}
-
 };//namespace ndnfd
-#endif//NDNFD_UTIL_DEFS_H
+#endif//NDNFD_CORE_DEFS_H
