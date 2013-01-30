@@ -1,6 +1,6 @@
 #ifndef NDNFD_CORE_POLLMGR_H_
 #define NDNFD_CORE_POLLMGR_H_
-#include "core/defs.h"
+#include "util/defs.h"
 #include <poll.h>
 namespace ndnfd {
 

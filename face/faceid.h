@@ -1,6 +1,5 @@
 #ifndef NDNFD_FACE_FACEID_H_
 #define NDNFD_FACE_FACEID_H_
-#include "util/defs.h"
 #include <sys/types.h>
 namespace ndnfd {
 

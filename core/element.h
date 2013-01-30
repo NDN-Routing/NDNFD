@@ -11,7 +11,7 @@ class Element : Object {
       public:
         typedef std::function<void(TMessage)> Callback;
         void operator=(Callback value) { this->cb_ = value; }
-        PushPort& operator<<(Ptr<TMessage> message) { if (this->cb_ != NULL) this->cb_(message); return *this; }
+        PushPort& operator<<(TMessage message) { if (this->cb_ != NULL) this->cb_(message); return *this; }
       private:
         Callback cb_;
         DISALLOW_COPY_AND_ASSIGN(PushPort);

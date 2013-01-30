@@ -1,6 +1,6 @@
 #ifndef NDNFD_FACE_FACE_H_
 #define NDNFD_FACE_FACE_H_
-#include "util/defs.h"
+#include "face/channel.h"
 #include "message/message.h"
 namespace ndnfd {
 
@@ -22,14 +22,14 @@ enum FaceStatus {
 
 class FaceMaster;
 
-class Face : public Object {
+class Face : public Element {
   public:
-    typedef boost::function1<void,Ptr<Message>> ReceiveCb;
-    
+    Face(void);
     FaceId id(void) const { return this->id_; }
     FaceKind kind(void) const { return this->kind_; }
     FaceStatus status(void) const { return this->status_; }
     Ptr<FaceMaster> master(void) const { return this->master_; }
+    Ptr<Channel> channel(void) const { return this->channel_; }
     
     //whether this face may be used to send messages
     virtual bool CanSend(void) const { return true; }
@@ -38,27 +38,21 @@ class Face : public Object {
     
     //whether this face may receive messages
     virtual bool CanReceive(void) const { return true; }
-    //register a callback for received messages
-    void set_receive_cb(ReceiveCb value) { this->receive_cb_ = value; }
-
-    virtual void Receive(Ptr<FaceMaster> message) { this->call_receive_cb(message); }
+    PushFace<Ptr<Message>> Receive;
   
   protected:
     void set_id(FaceId value) { this->id_ = value; }
     void set_kind(FaceKind value) { this->kind_ = value; }
     void set_status(FaceStatus value) { this->status_ = value; }
     void set_master(Ptr<FaceMaster> value) { this->master_ = value; }
-
-    void call_receive_cb(Ptr<Message> message) { if (this->receive_cb() != NULL) this->receive_cb()(message); }
+    void set_channel(Ptr<Channel> value) { this->channel_ = value; }
 
   private:
     FaceId id_;
     FaceKind kind_;
     FaceStatus status_;
-    boost::Ptr<FaceMaster> master_;
-    ReceiveCb receive_cb_;
-
-    ReceiveCb receive_cb(void) const { return this->receive_cb_; }
+    Ptr<FaceMaster> master_;
+    Ptr<Channel> channel_;
     
     DISALLOW_COPY_AND_ASSIGN(Face);
 };

@@ -1,6 +1,6 @@
 #ifndef NDNFD_CORE_GLOBAL_H_
 #define NDNFD_CORE_GLOBAL_H_
-#include "core/defs.h"
+#include "util/defs.h"
 extern "C" {
   struct ccnd_handle;
 }

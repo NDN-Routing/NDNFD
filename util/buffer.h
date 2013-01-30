@@ -6,7 +6,7 @@ extern "C" {
 }
 namespace ndnfd {
 
-class Buffer {
+class Buffer : public Object {
   public:
     Buffer() { this->c_ = ::ccn_charbuf_create(); }
     Buffer(size_t n) { this->c_ = ::ccn_charbuf_create_n(n); }
