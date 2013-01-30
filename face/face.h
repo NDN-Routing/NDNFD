@@ -4,12 +4,12 @@
 #include "message/message.h"
 namespace ccnd2 {
 
-enum FaceType {
-  kFTNone = 0,
-  kFTInternal = 1,
-  kFTApp = 2,
-  kFTMulticast = 3,
-  kFTUnicast = 4
+enum FaceKind {
+  kFKNone = 0,
+  kFKInternal = 1,
+  kFKApp = 2,
+  kFKMulticast = 3,
+  kFKUnicast = 4
 };
 
 enum FaceStatus {
@@ -27,7 +27,7 @@ class Face : public Object {
     typedef boost::function1<void,Ptr<Message>> ReceiveCb;
     
     FaceId id(void) const { return this->id_; }
-    FaceType type(void) const { return this->type_; }
+    FaceKind kind(void) const { return this->kind_; }
     FaceStatus status(void) const { return this->status_; }
     Ptr<FaceMaster> master(void) const { return this->master_; }
     
@@ -45,7 +45,7 @@ class Face : public Object {
   
   protected:
     void set_id(FaceId value) { this->id_ = value; }
-    void set_type(FaceType value) { this->type_ = value; }
+    void set_kind(FaceKind value) { this->kind_ = value; }
     void set_status(FaceStatus value) { this->status_ = value; }
     void set_master(Ptr<FaceMaster> value) { this->master_ = value; }
 
@@ -53,7 +53,7 @@ class Face : public Object {
 
   private:
     FaceId id_;
-    FaceType type_;
+    FaceKind kind_;
     FaceStatus status_;
     boost::Ptr<FaceMaster> master_;
     ReceiveCb receive_cb_;
