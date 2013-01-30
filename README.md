@@ -1,2 +1,2 @@
-# ccnd2, the better ccnd for Named Data Networking
+# NDNFD, Named Data Network Forwarding Daemon
 
