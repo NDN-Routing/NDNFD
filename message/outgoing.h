@@ -1,6 +1,5 @@
 #ifndef NDNFD_MESSAGE_OUTGOING_H_
 #define NDNFD_MESSAGE_OUTGOING_H_
-#include "util/defs.h"
 #include "message/message.h"
 namespace ndnfd {
 
@@ -26,11 +25,11 @@ class Outgoing {
     void Sent(bool success);
 
   private:
-    TMessage 
+    TMessage message_;
     FaceId outgoing_face_;
     
     DISALLOW_COPY_AND_ASSIGN(Outgoing);
 };
 
 };//namespace ndnfd
-#endif//NDNFD_MESSAGE_MESSAGE_H_
+#endif//NDNFD_MESSAGE_OUTGOING_H_

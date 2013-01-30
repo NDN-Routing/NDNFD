@@ -1,9 +1,9 @@
-#ifndef NDNFD_MESSAGE_MESSAGE_H_
-#define NDNFD_MESSAGE_MESSAGE_H_
+#ifndef NDNFD_MESSAGE_NAME_H_
+#define NDNFD_MESSAGE_NAME_H_
 #include "util/defs.h"
-#include <vector>
 namespace ndnfd {
 
+//an immutable Name
 class Name {
   public:
     Name(const std::vector<std::string>& components) { this->components_ = components; }
@@ -28,4 +28,4 @@ class Name {
 };
 
 };//namespace ndnfd
-#endif//NDNFD_MESSAGE_MESSAGE_H_
+#endif//NDNFD_MESSAGE_NAME_H_

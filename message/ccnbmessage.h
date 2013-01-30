@@ -1,6 +1,6 @@
 #ifndef NDNFD_MESSAGE_CCNBMESSAGE_H_
 #define NDNFD_MESSAGE_CCNBMESSAGE_H_
-#include "util/defs.h"
+#include "core/defs.h"
 extern "C" {
 #include <ccn/ccn.h>
 }

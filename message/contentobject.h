@@ -1,6 +1,5 @@
 #ifndef NDNFD_MESSAGE_CONTENTOBJECT_H_
 #define NDNFD_MESSAGE_CONTENTOBJECT_H_
-#include "util/defs.h"
 #include "message/ccnbmessage.h"
 #include "message/name.h"
 namespace ndnfd {

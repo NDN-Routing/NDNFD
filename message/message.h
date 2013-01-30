@@ -1,6 +1,5 @@
 #ifndef NDNFD_MESSAGE_MESSAGE_H_
 #define NDNFD_MESSAGE_MESSAGE_H_
-#include "util/defs.h"
 #include "message/messagebase.h"
 #include "face/faceid.h"
 namespace ndnfd {
@@ -13,12 +12,12 @@ class Message : public MessageBase {
 
     FaceId incoming_face(void) const { return this->incoming_face_; }
     void set_incoming_face(FaceId value) { this->incoming_face_ = value; }
-    const sockaddr_storage& incoming_sender(void) const { return this->incoming_sender_; }
-    void set_incoming_sender(const sockaddr_storage value) { this->incoming_sender_ = value; }    
+    const NetworkAddress& incoming_sender(void) const { return this->incoming_sender_; }
+    void set_incoming_sender(const NetworkAddress& value) { this->incoming_sender_ = value; }    
 
   private:
     FaceId incoming_face_;
-    PeerAddress incoming_sender_;
+    NetworkAddress incoming_sender_;
     
     DISALLOW_COPY_AND_ASSIGN(Message);
 };
