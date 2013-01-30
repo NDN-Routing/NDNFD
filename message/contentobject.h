@@ -1,9 +1,9 @@
-#ifndef CCND2_MESSAGE_CONTENTOBJECT_H_
-#define CCND2_MESSAGE_CONTENTOBJECT_H_
+#ifndef NDNFD_MESSAGE_CONTENTOBJECT_H_
+#define NDNFD_MESSAGE_CONTENTOBJECT_H_
 #include "util/defs.h"
 #include "message/ccnbmessage.h"
 #include "message/name.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //represents a ContentObject
 //not currently used
@@ -19,5 +19,5 @@ class ContentObject : public CcnbMessage {
     DISALLOW_COPY_AND_ASSIGN(ContentObject);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_CONTENTOBJECT_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_CONTENTOBJECT_H_

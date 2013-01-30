@@ -1,10 +1,10 @@
-#ifndef CCND2_FACE_CCNBDECODER_H_
-#define CCND2_FACE_CCNBDECODER_H_
+#ifndef NDNFD_FACE_CCNBDECODER_H_
+#define NDNFD_FACE_CCNBDECODER_H_
 #include "util/defs.h"
 #include <deque>
 #include "message/interest.h"
 #include "message/contentobject.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class CcnbDecoder : Object {
   public:
@@ -48,5 +48,5 @@ class CcnbDgramDecoder : public CcnbDecoder {
     DISALLOW_COPY_AND_ASSIGN(CcnbDgramDecoder);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_CCNBDECODER_H_
+};//namespace ndnfd
+#endif//NDNFD_FACE_CCNBDECODER_H_

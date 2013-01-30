@@ -1,10 +1,10 @@
-#ifndef CCND2_FACE_MASTER_H_
-#define CCND2_FACE_MASTER_H_
+#ifndef NDNFD_FACE_MASTER_H_
+#define NDNFD_FACE_MASTER_H_
 #include "util/defs.h"
 #include <unordered_set>
 #include "face/face.h"
 #include "util/pollmgr.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //master of faces sharing the same local binding
 class FaceMaster : public Object {
@@ -38,5 +38,5 @@ class FaceMaster : public Object {
     DISALLOW_COPY_AND_ASSIGN(FaceMaster);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_MASTER_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_MASTER_H

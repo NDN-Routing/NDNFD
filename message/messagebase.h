@@ -1,7 +1,7 @@
-#ifndef CCND2_MESSAGE_MESSAGEBASE_H_
-#define CCND2_MESSAGE_MESSAGEBASE_H_
+#ifndef NDNFD_MESSAGE_MESSAGEBASE_H_
+#define NDNFD_MESSAGE_MESSAGEBASE_H_
 #include "util/defs.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //represents the type of a MessageBase subclass
 //each subclass of MessageBase should have a unique MessageType
@@ -17,5 +17,5 @@ class MessageBase : public Object {
     DISALLOW_COPY_AND_ASSIGN(MessageBase);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_MESSAGEBASE_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_MESSAGEBASE_H_

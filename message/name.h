@@ -1,8 +1,8 @@
-#ifndef CCND2_MESSAGE_MESSAGE_H_
-#define CCND2_MESSAGE_MESSAGE_H_
+#ifndef NDNFD_MESSAGE_MESSAGE_H_
+#define NDNFD_MESSAGE_MESSAGE_H_
 #include "util/defs.h"
 #include <vector>
-namespace ccnd2 {
+namespace ndnfd {
 
 class Name {
   public:
@@ -27,5 +27,5 @@ class Name {
     DISALLOW_COPY_AND_ASSIGN(Name);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_MESSAGE_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_MESSAGE_H_

@@ -1,8 +1,8 @@
-#ifndef CCND2_FACE_FACEMGR_H_
-#define CCND2_FACE_FACEMGR_H_
+#ifndef NDNFD_FACE_FACEMGR_H_
+#define NDNFD_FACE_FACEMGR_H_
 #include "util/defs.h"
 #include "face/face.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class FaceMgr : public Object {
   public:
@@ -13,5 +13,5 @@ class FaceMgr : public Object {
     DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_FACE_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_FACE_H

@@ -1,7 +1,7 @@
-#ifndef CCND2_FACE_UNIX_H_
-#define CCND2_FACE_UNIX_H_
+#ifndef NDNFD_FACE_UNIX_H_
+#define NDNFD_FACE_UNIX_H_
 #include "face/stream.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class UnixFaceMaster : public FaceMaster {
   public:
@@ -20,5 +20,5 @@ class UnixFaceMaster : public FaceMaster {
     DISALLOW_COPY_AND_ASSIGN(UnixFaceMaster);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_UNIX_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_UNIX_H

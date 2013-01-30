@@ -1,10 +1,10 @@
-#ifndef CCND2_UTIL_GLOBAL_H_
-#define CCND2_UTIL_GLOBAL_H_
+#ifndef NDNFD_UTIL_GLOBAL_H_
+#define NDNFD_UTIL_GLOBAL_H_
 #include "util/defs.h"
 extern "C" {
   struct ccnd_handle;
 }
-namespace ccnd2 {
+namespace ndnfd {
 
 class PollMgr;
 
@@ -21,5 +21,5 @@ class Global {
     DISALLOW_COPY_AND_ASSIGN(Global);
 };
 
-};//namespace ccnd2
-#endif//CCND2_UTIL_OBJECT_H
+};//namespace ndnfd
+#endif//NDNFD_UTIL_OBJECT_H

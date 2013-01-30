@@ -1,8 +1,8 @@
-#ifndef CCND2_FACE_FACE_H_
-#define CCND2_FACE_FACE_H_
+#ifndef NDNFD_FACE_FACE_H_
+#define NDNFD_FACE_FACE_H_
 #include "util/defs.h"
 #include "message/message.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 enum FaceKind {
   kFKNone = 0,
@@ -63,5 +63,5 @@ class Face : public Object {
     DISALLOW_COPY_AND_ASSIGN(Face);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_FACE_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_FACE_H

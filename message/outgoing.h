@@ -1,8 +1,8 @@
-#ifndef CCND2_MESSAGE_OUTGOING_H_
-#define CCND2_MESSAGE_OUTGOING_H_
+#ifndef NDNFD_MESSAGE_OUTGOING_H_
+#define NDNFD_MESSAGE_OUTGOING_H_
 #include "util/defs.h"
 #include "message/message.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //a message being sent through a face
 template<typename TMessage>
@@ -32,5 +32,5 @@ class Outgoing {
     DISALLOW_COPY_AND_ASSIGN(Outgoing);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_MESSAGE_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_MESSAGE_H_

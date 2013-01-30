@@ -1,9 +1,9 @@
-#ifndef CCND2_FACE_CHANNEL_H_
-#define CCND2_FACE_CHANNEL_H_
+#ifndef NDNFD_FACE_CHANNEL_H_
+#define NDNFD_FACE_CHANNEL_H_
 #include "util/defs.h"
 #include "util/buffer.h"
 #include "face/face.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class Channel : public Object {
   public:
@@ -59,5 +59,5 @@ class DgramChannel : public Channel {
     DISALLOW_COPY_AND_ASSIGN(DgramChannel);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_CHANNEL_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_CHANNEL_H

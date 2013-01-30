@@ -1,7 +1,7 @@
-#ifndef CCND2_FACE_TCP_H_
-#define CCND2_FACE_TCP_H_
+#ifndef NDNFD_FACE_TCP_H_
+#define NDNFD_FACE_TCP_H_
 #include "face/stream.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class TcpFaceMaster : public FaceMaster {
   public:
@@ -21,5 +21,5 @@ class TcpFaceMaster : public FaceMaster {
     DISALLOW_COPY_AND_ASSIGN(TcpFaceMaster);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_TCP_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_TCP_H

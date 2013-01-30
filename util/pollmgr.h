@@ -1,8 +1,8 @@
-#ifndef CCND2_UTIL_POLLMGR_H_
-#define CCND2_UTIL_POLLMGR_H_
+#ifndef NDNFD_UTIL_POLLMGR_H_
+#define NDNFD_UTIL_POLLMGR_H_
 #include "util/defs.h"
 #include <poll.h>
-namespace ccnd2 {
+namespace ndnfd {
 
 class IPollClient {
   public:
@@ -21,5 +21,5 @@ class PollMgr : Object {
     DISALLOW_COPY_AND_ASSIGN(PollMgr);
 };
 
-};//namespace ccnd2
-#endif//CCND2_UTIL_POLLMGR_H
+};//namespace ndnfd
+#endif//NDNFD_UTIL_POLLMGR_H

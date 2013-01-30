@@ -1,9 +1,9 @@
-#ifndef CCND2_MESSAGE_MESSAGE_H_
-#define CCND2_MESSAGE_MESSAGE_H_
+#ifndef NDNFD_MESSAGE_MESSAGE_H_
+#define NDNFD_MESSAGE_MESSAGE_H_
 #include "util/defs.h"
 #include "message/messagebase.h"
 #include "face/faceid.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //a logical unit that can be sent or received through a face
 class Message : public MessageBase {
@@ -23,5 +23,5 @@ class Message : public MessageBase {
     DISALLOW_COPY_AND_ASSIGN(Message);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_MESSAGE_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_MESSAGE_H_

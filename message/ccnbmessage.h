@@ -1,11 +1,11 @@
-#ifndef CCND2_MESSAGE_CCNBMESSAGE_H_
-#define CCND2_MESSAGE_CCNBMESSAGE_H_
+#ifndef NDNFD_MESSAGE_CCNBMESSAGE_H_
+#define NDNFD_MESSAGE_CCNBMESSAGE_H_
 #include "util/defs.h"
 extern "C" {
 #include <ccn/ccn.h>
 }
 #include "message/message.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 //unparsed ccnb message
 //can pass to process_input_message()
@@ -22,5 +22,5 @@ class CcnbMessage : public Message {
     DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 
-};//namespace ccnd2
-#endif//CCND2_MESSAGE_CCNBMESSAGE_H_
+};//namespace ndnfd
+#endif//NDNFD_MESSAGE_CCNBMESSAGE_H_

@@ -1,5 +1,5 @@
 #include "util/buffer.cc"
-namespace ccnd2 {
+namespace ndnfd {
 
 Buffer* Buffer::Clone() {
   Buffer* copy = new Buffer(this->length());
@@ -12,4 +12,4 @@ void Buffer::CopyFrom(Buffer* source) {
   this->Append(source);
 }
 
-};//namespace ccnd2
+};//namespace ndnfd

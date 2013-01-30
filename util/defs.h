@@ -1,5 +1,5 @@
-#ifndef CCND2_UTIL_DEFS_H_
-#define CCND2_UTIL_DEFS_H_
+#ifndef NDNFD_UTIL_DEFS_H_
+#define NDNFD_UTIL_DEFS_H_
 
 #include <assert.h>
 #include <cstddef>
@@ -19,7 +19,7 @@
   TypeName(const TypeName&); \
   void operator=(const TypeName&)
 
-namespace ccnd2 {
+namespace ndnfd {
 
 template<typename T>
 using Ptr = boost::intrusive_ptr<T>;
@@ -78,5 +78,5 @@ Ptr<T> Element::Create(TArgs... args) {
   return obj;
 }
 
-};//namespace ccnd2
-#endif//CCND2_UTIL_DEFS_H
+};//namespace ndnfd
+#endif//NDNFD_UTIL_DEFS_H

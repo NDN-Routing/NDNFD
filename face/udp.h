@@ -1,9 +1,9 @@
-#ifndef CCND2_FACE_UDP_H_
-#define CCND2_FACE_UDP_H_
+#ifndef NDNFD_FACE_UDP_H_
+#define NDNFD_FACE_UDP_H_
 #include "util/defs.h"
 #include "face/face.h"
 #include "util/pollmgr.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class UdpFace : public Face {
   public:
@@ -40,5 +40,5 @@ class UdpFaceMaster : public FaceMaster, public IPollClient {
     DISALLOW_COPY_AND_ASSIGN(UdpFaceMaster);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_UDP_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_UDP_H

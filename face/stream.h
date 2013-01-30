@@ -1,9 +1,9 @@
-#ifndef CCND2_FACE_STREAM_H_
-#define CCND2_FACE_STREAM_H_
+#ifndef NDNFD_FACE_STREAM_H_
+#define NDNFD_FACE_STREAM_H_
 #include "util/defs.h"
 #include "face/face.h"
 #include "util/pollmgr.h"
-namespace ccnd2 {
+namespace ndnfd {
 
 class StreamFace : public Face, public IPollClient {
   public:
@@ -38,5 +38,5 @@ class StreamListener : public Face, public IPollClient {
     DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_STREAM_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_STREAM_H

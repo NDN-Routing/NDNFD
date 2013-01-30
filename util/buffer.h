@@ -1,10 +1,10 @@
-#ifndef CCND2_UTIL_BUFFER_H_
-#define CCND2_UTIL_BUFFER_H_
+#ifndef NDNFD_UTIL_BUFFER_H_
+#define NDNFD_UTIL_BUFFER_H_
 #include "util/defs.h"
 extern "C" {
 #include <ccn/charbuf.h>
 }
-namespace ccnd2 {
+namespace ndnfd {
 
 class Buffer {
   public:
@@ -33,5 +33,5 @@ class Buffer {
     DISALLOW_COPY_AND_ASSIGN(Buffer);
 };
 
-};//namespace ccnd2
-#endif//CCND2_UTIL_BUFFER_H
+};//namespace ndnfd
+#endif//NDNFD_UTIL_BUFFER_H

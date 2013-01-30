@@ -1,8 +1,8 @@
-#ifndef CCND2_FACE_FACEID_H_
-#define CCND2_FACE_FACEID_H_
+#ifndef NDNFD_FACE_FACEID_H_
+#define NDNFD_FACE_FACEID_H_
 #include "util/defs.h"
 #include <sys/types.h>
-namespace ccnd2 {
+namespace ndnfd {
 
 typedef int16_t FaceId;
 #define PRI_FaceId PRId16//printf format string
@@ -13,5 +13,5 @@ struct NetworkAddress {
   socklen_t wholen;
 };
 
-};//namespace ccnd2
-#endif//CCND2_FACE_FACEID_H
+};//namespace ndnfd
+#endif//NDNFD_FACE_FACEID_H
