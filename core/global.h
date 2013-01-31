@@ -7,6 +7,8 @@ extern "C" {
 namespace ndnfd {
 
 class PollMgr;
+class Scheduler;
+class FaceMgr;
 
 class Global {
   public:
@@ -16,11 +18,14 @@ class Global {
     void set_pollmgr(PollMgr value) { this->pollmgr_ = value; }
     Scheduler scheduler(void) const { return this->scheduler_; }
     void set_scheduler(Scheduler value) { this->scheduler_ = value; }
+    FaceMgr facemgr(void) const { return this->facemgr_; }
+    void set_facemgr(FaceMgr value) { this->facemgr_ = value; }
 
   private:
     ccnd_handle* h_;
     PollMgr pollmgr_;
     Scheduler scheduler_;
+    FaceMgr facemgr_;
     DISALLOW_COPY_AND_ASSIGN(Global);
 };
 
