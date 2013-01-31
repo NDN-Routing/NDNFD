@@ -3,21 +3,11 @@
 #include "face/stream.h"
 namespace ndnfd {
 
-class UnixFaceMaster : public FaceMaster {
+class UnixFaceFactory : Element {
   public:
-    UnixFaceMaster(const std::string& local_socket);
-
-    virtual Ptr<Face> listener(void) { return this->listener_; }
-
-    virtual Ptr<Face> multicast(void) { return NULL; }
-    
-    virtual Ptr<Face> unicast(NetworkAddress peer) { return NULL; }
-    
-    void ListenerAccept(int fd, NetworkAddress peer);
+    Ptr<Face> MakeListener(const std::string& local_socket);
   private:
-    Ptr<StreamListener> listener_;
-    
-    DISALLOW_COPY_AND_ASSIGN(UnixFaceMaster);
+    DISALLOW_COPY_AND_ASSIGN(UnixFaceFactory);
 };
 
 };//namespace ndnfd

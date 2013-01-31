@@ -25,7 +25,7 @@ class Channel : public Element {
     //whether this channel can receive
     bool CanReceive(void) const { return this->can_receive_; }
     //receive a packet or some bytes
-    PushPort<std::tuple<NetworkAddress,Ptr<Buffer>>> Receive;
+    PushPort<NetworkAddress,Ptr<Buffer>> Receive;
     //register a receive buffer provider
     //returns true on success, false if this channel does not support rbp
     //  a channel that supports rbp must:
@@ -39,7 +39,7 @@ class Channel : public Element {
     //whether this channel can accept new connections
     bool CanAccept(void) const { return this->can_accept_; }
     //accept a new connection
-    PushPort<std::tuple<NetworkAddress,int>> Accept;
+    PushPort<NetworkAddress,int> Accept;
     
     //socket error
     PushPort<bool> Error;

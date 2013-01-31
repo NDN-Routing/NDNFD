@@ -12,7 +12,7 @@ class Decoder : public Element {
     };
     Decoder(Mode mode) { this->mode_ = mode; }
     
-    //feed a packet into the decode
+    //feed a packet into the decoder
     virtual void Input(uint8_t* buf, size_t length);
     
     //called for each decoded messages

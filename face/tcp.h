@@ -3,22 +3,12 @@
 #include "face/stream.h"
 namespace ndnfd {
 
-class TcpFaceMaster : public FaceMaster {
+class TcpFaceFactory : Element {
   public:
-    TcpFaceMaster(const NetworkAddress& local_addr);
-
-    virtual Ptr<Face> listener(void) { return this->listener_; }
-
-    virtual Ptr<Face> multicast(void) { return NULL; }
-    
-    virtual Ptr<Face> unicast(NetworkAddress peer);
-    
-    void ListenerAccept(int fd, NetworkAddress peer);
+    Ptr<Face> MakeListener(const NetworkAddress& local_addr);
+    Ptr<Face> MakeConnection(const NetworkAddress& remote_addr);
   private:
-    Ptr<StreamListener> listener_;
-    std::unordered_map<NetworkAddress,Ptr<StreamFace>> unicast_;
-    
-    DISALLOW_COPY_AND_ASSIGN(TcpFaceMaster);
+    DISALLOW_COPY_AND_ASSIGN(TcpFaceFactory);
 };
 
 };//namespace ndnfd

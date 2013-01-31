@@ -6,19 +6,19 @@ namespace ndnfd {
 class Element : Object {
   public:
     //a push port that can connect to another element
-    template<typename TMessage>
+    template<typename... TArgs>
     class PushPort {
       public:
-        typedef std::function<void(TMessage)> Callback;
+        typedef std::function<void(TArgs&...)> Callback;
         void operator=(Callback value) { this->cb_ = value; }
-        PushPort& operator<<(TMessage message) { if (this->cb_ != NULL) this->cb_(message); return *this; }
+        PushPort& operator()(TArgs&... message) { if (this->cb_ != std::nullptr_t) this->cb_(message...); return *this; }
       private:
         Callback cb_;
         DISALLOW_COPY_AND_ASSIGN(PushPort);
     };
     //declare as: PushPort<Message> event
     //connect as: event = callback;
-    //send as: event << message;
+    //send as: event(message);
     
     static Ptr<Element> MakeFirstElement(Global* global);
 
@@ -35,7 +35,7 @@ class Element : Object {
 };
 
 template<typename T, typename... TArgs>
-Ptr<T> Element::Create(TArgs... args) {
+Ptr<T> Element::Create(TArgs&... args) {
   T* obj = new T(args...);
   if (obj != NULL) obj->global_ = this->global_;
   return obj;

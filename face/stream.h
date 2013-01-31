@@ -1,40 +1,43 @@
 #ifndef NDNFD_FACE_STREAM_H_
 #define NDNFD_FACE_STREAM_H_
-#include "util/defs.h"
 #include "face/face.h"
-#include "core/pollmgr.h"
 namespace ndnfd {
 
-class StreamFace : public Face, public IPollClient {
+class StreamFace : public Face {
   public:
-    StreamFace(int fd);
-  
+    StreamFace(Ptr<Channel> channel);
     virtual void Send(Ptr<Message> message);
 
-    virtual void PollCallback(int fd, short revents);
-
   private:
-    int fd_;
-    ccn_charbuf* inbuf_;
-    ccn_skeleton_decoder in_decoder_;
-    ccn_charbuf* outbuf_;
+    //decoder provides ReceiveBuffer to channel, avoid copying
+    Ptr<Channel> channel_;
+    Ptr<Decoder> decoder_;
+
+    //connect to channel.Receive
+    //pass into decoder.Input
+    void OnChannelReceive(const NetworkAddress& peer, Ptr<Buffer> pkt);
+    //connect to decoder.Output
+    //push into Receive
+    void OnDecoderOutput(Ptr<Message> output);
+
     DISALLOW_COPY_AND_ASSIGN(StreamFace);
 };
 
-class StreamListener : public Face, public IPollClient {
+class StreamListener : public Face {
   public:
-    typedef boost::function2<void,int,NetworkAddress> AcceptCb;
-    
-    StreamListener(const NetworkAddress& local_addr, AcceptCb accept_cb);
+    StreamListener(Ptr<Channel> channel);
     
     virtual bool CanSend(void) const { return false; }
     virtual bool CanReceive(void) const { return false; }
-    virtual void Send(Ptr<Message> message) {}
-
-    virtual void PollCallback(int fd, short revents);
+    virtual bool CanAccept() const { return true; }
 
   private:
-    int fd_;
+    Ptr<Channel> channel_;
+
+    //connect to channel.Accept
+    //make new StreamFace and push into Accept
+    void OnChannelAccept(const NetworkAddress& peer, int fd);
+
     DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };
 
