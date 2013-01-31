@@ -6,6 +6,7 @@ extern "C" {
 }
 #include "message/message.h"
 #include "message/decoder.h"
+#include "message/encoder.h"
 #include "face/channel.h"
 namespace ndnfd {
 
@@ -34,6 +35,14 @@ class CcnbDecoder : public Decoder, public Channel::IReceiveBufferProvider {
     
   private:
     DISALLOW_COPY_AND_ASSIGN(CcnbDecoder);
+};
+
+class CcnbEncoder : public Encoder {
+  protected:
+    virtual void Encode(Ptr<Message> message, std::function<void(Ptr<Buffer>)> emit);
+    
+  private:
+    DISALLOW_COPY_AND_ASSIGN(CcnbEncoder);
 };
 
 };//namespace ndnfd

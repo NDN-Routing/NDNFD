@@ -8,15 +8,17 @@ class DgramMasterFace;
 //communicate with one remote peer
 class DgramFace : public Face {
   public:
-    DgramFace(Ptr<DgramMasterFace> master);
+    DgramFace(Ptr<DgramMasterFace> master, const NetworkAddress& peer);
 
+    //encode, and pass to master.SlaveSend
     virtual void Send(Ptr<Message> message);
     
-    //called by DgramMasterFace on receiving a packet from the correct peer
+    //called by DgramMasterFace on receiving a packet from the same peer
     //pass into decoder.Input
-    void MasterDeliver(Ptr<Buffer> pkt);
+    void MasterDeliver(const NetworkAddress& sender, Ptr<Buffer> pkt);
     
   private:
+    NetwordAddress peer_;
     Ptr<DgramMasterFace> master_;
     Ptr<Decoder> decoder_;
     
@@ -31,18 +33,28 @@ class DgramFace : public Face {
 //cannot send through this face because destination is unknown
 //received packets are demuxed by sender address, and passed to unicast face of that sender
 //  if the sender does not have a unicast face, the packet is received on this face
+//  (auto-create and deliver on the new face is not good, because there's no receiver on the new face)
 class DgramMasterFace : public DgramFace {
   public:
-    DgramMasterFace(Ptr<Channel> channel);
+    DgramMasterFace(Ptr<DgramChannel> channel, Ptr<FaceFactory> factory);
 
     virtual bool CanSend(void) const { return false; }
     virtual void Send(Ptr<Message> message) { assert(false); }
     
-    //create a unicast face sharing the same local socket
-    Ptr<DgramFace> MakeUnicast(const NetworkAddress& remote_addr);
+    //create a unicast face sharing the same channel
+    virtual Ptr<DgramFace> MakeUnicast(const NetworkAddress& remote_addr);
+    
+    //called by DgramFace.Send
+    //write to channel
+    virtual void SlaveSend(const NetworkAddress& remote_addr, Ptr<Buffer> pkt);
 
+  protected:
+    Ptr<Channel> channel(void) const { return this->channel_; }
+    Ptr<FaceFactory> factory(void) const { return this->factory_; }
+  
   private:
     Ptr<Channel> channel_;
+    Ptr<FaceFactory> factory_;//to verify address
     std::unordered_map<NetworkAddress,Ptr<DgramFace>> unicast_faces_;
     
     //connect to channel.Receive

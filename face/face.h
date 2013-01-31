@@ -27,6 +27,9 @@ class Face : public Element {
     FaceKind kind(void) const { return this->kind_; }
     FaceStatus status(void) const { return this->status_; }
     Ptr<Channel> channel(void) const { return this->channel_; }
+
+    //called by FaceMgr
+    void set_id(FaceId value) { this->id_ = value; }
     
     //whether this face may be used to send messages
     virtual bool CanSend(void) const { return true; }
@@ -42,7 +45,6 @@ class Face : public Element {
     PushFace<Ptr<Face>> Accept;
   
   protected:
-    void set_id(FaceId value) { this->id_ = value; }
     void set_kind(FaceKind value) { this->kind_ = value; }
     void set_status(FaceStatus value) { this->status_ = value; }
     void set_channel(Ptr<Channel> value) { this->channel_ = value; }
@@ -54,6 +56,18 @@ class Face : public Element {
     Ptr<Channel> channel_;
     
     DISALLOW_COPY_AND_ASSIGN(Face);
+};
+
+class FaceFactory : public Element {
+  public:
+    //check whether an address is valid
+    bool CheckAddress(const NetworkAddress& addr) =0;
+    
+    //clear unnecessary fields in an address so that it's suitable for a hash key
+    void NormalizeAddress(NetworkAddress& addr) {};
+    
+  private:
+    DISALLOW_COPY_AND_ASSIGN(FaceFactory);
 };
 
 };//namespace ndnfd

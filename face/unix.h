@@ -3,8 +3,10 @@
 #include "face/stream.h"
 namespace ndnfd {
 
-class UnixFaceFactory : Element {
+class UnixFaceFactory : public FaceFactory {
   public:
+    bool CheckAddress(const NetworkAddress& addr) { return true; }
+
     Ptr<Face> MakeListener(const std::string& local_socket);
   private:
     DISALLOW_COPY_AND_ASSIGN(UnixFaceFactory);

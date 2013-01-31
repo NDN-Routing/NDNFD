@@ -3,9 +3,13 @@
 #include "face/dgram.h"
 namespace ndnfd {
 
-class UdpFaceFactory : Element {
+class UdpFaceFactory : public FaceFactory {
   public:
-    Ptr<Face> MakeMasterFace(const NetworkAddress& local_addr);
+    bool CheckAddress(const NetworkAddress& addr);
+    
+    void NormalizeAddress(NetworkAddress& addr);
+
+    Ptr<UdpMasterFace> MakeMasterFace(const NetworkAddress& local_addr);
   private:
     DISALLOW_COPY_AND_ASSIGN(UdpFaceFactory);
 };

@@ -13,7 +13,8 @@ class Decoder : public Element {
     Decoder(Mode mode) { this->mode_ = mode; }
     
     //feed a packet into the decoder
-    virtual void Input(uint8_t* buf, size_t length);
+    //for kDMStream, sender must always be the same
+    virtual void Input(const NetworkAddress& sender, uint8_t* buf, size_t length);
     
     //called for each decoded messages
     PushPort<Ptr<Message>> Output;
@@ -34,6 +35,8 @@ class Decoder : public Element {
     };
 
     DecoderMode mode(void) const { return this->mode_; }
+    const NetworkAddress& sender(void) const { return this->sender_; }
+    Buffer& inbuf(void) const { return this->inbuf_; }
 
     //decode one message
     //start is usually 0
@@ -43,7 +46,8 @@ class Decoder : public Element {
     virtual DecodeResult Decode(uint8_t* buf, size_t length, size_t start) =0;
 
   private:
-    DecoderMode stream_mode_;
+    DecoderMode mode_;
+    NetworkAddress sender_;
     Buffer inbuf_;
 
     DISALLOW_COPY_AND_ASSIGN(Decoder);
