@@ -1,43 +1,49 @@
 #ifndef NDNFD_FACE_UDP_H_
 #define NDNFD_FACE_UDP_H_
-#include "util/defs.h"
 #include "face/face.h"
-#include "util/pollmgr.h"
 namespace ndnfd {
 
+
+class UdpMasterFace;
+
+//communicate with one remote peer using UDP
 class UdpFace : public Face {
   public:
     virtual void Send(Ptr<Message> message);
 
   private:
+    Ptr<UdpMasterFace> master_;
+    Ptr<Decoder> decoder_;
     DISALLOW_COPY_AND_ASSIGN(UdpFace);
 };
 
-class UdpFaceMaster : public FaceMaster, public IPollClient {
+//communicate with many remote peers at the same local socket using UDP
+class UdpMasterFace : public UdpFace {
   public:
-    UdpFaceMaster(void);
+    UdpMasterFace(const NetworkAddress& local_addr);
+
+    virtual bool CanSend(void) const { return false; }
+    virtual void Send(Ptr<Message> message) { assert(false); }
     
-    void SetupUnicast(const NetworkAddress& local_addr);
-    void SetupMulticast(const NetworkAddress& local_addr, const NetworkAddress& mcast_addr);
+    //create a unicast face sharing the same local socket
+    Ptr<UdpFace> MakeUnicast(const NetworkAddress& remote_addr);
 
-    virtual void PollCallback(int fd, short revents);
+  private:
+    Ptr<Channel> channel_;
+    std::unordered_map<NetworkAddress,Ptr<UdpFace>> unicast_faces_;
+    DISALLOW_COPY_AND_ASSIGN(UdpMasterFace);
+};
 
-    virtual Ptr<Face> listener(void) { return this->listener_; }
+//communicate on one UDP multicast group
+class UdpMulticastFace : public UdpFace {
+  public:
+    UdpMulticastFace(const NetworkAddress& local_addr, const NetworkAddress& mcast_group);
 
-    virtual Ptr<Face> multicast(void) { return this->multicast_; }
-    
-    virtual Ptr<Face> unicast(PeerAddress peer);
+    virtual void Send(Ptr<Message> message);
     
   private:
-    int fd_unicast_;
-    int fd_multicast_send_;
-    int fd_multicast_recv_;
-    
-    Ptr<UdpFace> listener_;
-    Ptr<UdpFace> multicast_;
-    std::unordered_map<PeerAddress,Ptr<UdpFace>> unicast_;
-    
-    DISALLOW_COPY_AND_ASSIGN(UdpFaceMaster);
+    Ptr<Channel> channel_;
+    DISALLOW_COPY_AND_ASSIGN(UdpMasterFace);
 };
 
 };//namespace ndnfd

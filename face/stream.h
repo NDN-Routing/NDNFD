@@ -2,7 +2,7 @@
 #define NDNFD_FACE_STREAM_H_
 #include "util/defs.h"
 #include "face/face.h"
-#include "util/pollmgr.h"
+#include "core/pollmgr.h"
 namespace ndnfd {
 
 class StreamFace : public Face, public IPollClient {
