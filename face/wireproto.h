@@ -7,6 +7,11 @@ namespace ndnfd {
 
 // A WireProtocolState subclass is the per-peer state of a WireProtocol subclass.
 class WireProtocolState : public Object {
+  private:
+    DISALLOW_COPY_AND_ASSIGN(WireProtocolState);
+};
+
+class StreamBufferWireProtocolState : public WireProtocolState {
   public:
     virtual Ptr<Buffer> GetReceiveBuffer(void);
 
@@ -32,11 +37,13 @@ class WireProtocol : public Element {
     // CreateState creates a new WireProtocolState object suitable for this wire protocol.
     virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { assert(false); return NULL; }
     
-    // Encode gets a new message, and returns zero or more packets encoded of the wire protocol.
-    virtual std::vector<Ptr<Buffer>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
+    // Encode gets a new message, and returns zero or more packets
+    // encoded of the wire protocol (into result_packets).
+    virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
     
-    // Decode gets a new packet of the wire protocol, and returns zero or more messages.
-    virtual std::vector<Ptr<Message>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Buffer> packet);
+    // Decode gets a new packet of the wire protocol,
+    // and returns zero or more messages (into result_messages).
+    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Buffer> packet, std::vector<Ptr<Message>>& result_messages);
 
   private:
     DISALLOW_COPY_AND_ASSIGN(WireProtocol);

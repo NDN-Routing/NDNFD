@@ -5,13 +5,11 @@ extern "C" {
 #include <ccn/ccn.h>
 }
 #include "message/message.h"
-#include "message/decoder.h"
-#include "message/encoder.h"
-#include "face/channel.h"
+#include "face/wireproto.h"
 namespace ndnfd {
 
-//unparsed ccnb message
-//can pass to process_input_message()
+// A CcnbMessage represents an unparsed CCNB message.
+// It can be passed to process_input_message() for processing.
 class CcnbMessage : public Message {
   public:
     static const MessageType kType = 1099;
@@ -25,24 +23,29 @@ class CcnbMessage : public Message {
     DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 
-class CcnbDecoder : public Decoder, public Channel::IReceiveBufferProvider {
+// A CcnbWireProtocol reads and writes CCNB messages on a datagram or stream connection.
+class CcnbWireProtocol : public WireProtocol {
   public:
-    Ptr<Buffer> ObtainReceiveBuffer(void) =0;
-    void ReleaseReceiveBuffer(Ptr<Buffer> buf, bool receive_was_success) =0;
-
-  protected:
-    virtual DecodeResult Decode(uint8_t* buf, size_t length, size_t start);
+    // A State is used when CcnbWireProtocol is used on a stream connection,
+    // so that partial message is decoded only once at this level.
+    struct State : public WireProtocolState {
+      Ptr<Buffer> receive_buffer;//partial message
+      ::ccn_skeleton_decoder decoder;//skeleton decoder state
+    };
     
-  private:
-    DISALLOW_COPY_AND_ASSIGN(CcnbDecoder);
-};
-
-class CcnbEncoder : public Encoder {
-  protected:
-    virtual void Encode(Ptr<Message> message, std::function<void(Ptr<Buffer>)> emit);
+    public CcnbWireProtocol(bool stream);
     
+    virtual bool IsStateful(void) const { return this->stream_; }
+    
+    virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
+    
+    virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
+    
+    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Buffer> packet, std::vector<Ptr<Message>>& result_message
+
   private:
-    DISALLOW_COPY_AND_ASSIGN(CcnbEncoder);
+    bool stream_;
+    DISALLOW_COPY_AND_ASSIGN(CcnbWireProtocol);
 };
 
 };//namespace ndnfd
