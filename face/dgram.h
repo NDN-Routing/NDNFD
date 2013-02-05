@@ -1,81 +1,116 @@
 #ifndef NDNFD_FACE_DGRAM_H_
 #define NDNFD_FACE_DGRAM_H_
 #include "face/face.h"
+#include "face/wireproto.h"
+#include "core/pollmgr.h"
 namespace ndnfd {
 
-class DgramMasterFace;
+class DgramChannel;
 
-//communicate with one remote peer
+// A DgramFace is a Face that communicates on a shared DgramChannel.
 class DgramFace : public Face {
   public:
-    DgramFace(Ptr<DgramMasterFace> master, const NetworkAddress& peer);
-
-    //encode, and pass to master.SlaveSend
-    virtual void Send(Ptr<Message> message);
+    DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer);
+    const NetwordAddress& peer(void) const { return this->peer_; }
+    Ptr<DgramChannel> channel(void) const { return this->channel_; }
     
-    //called by DgramMasterFace on receiving a packet from the same peer
-    //pass into decoder.Input
-    void MasterDeliver(const NetworkAddress& sender, Ptr<Buffer> pkt);
+    virtual bool CanSend(void) const { return true; }
+    virtual bool CanReceive(void) const { return true; }
+    
+    virtual void Send(Ptr<Message> message);
     
   private:
     NetwordAddress peer_;
-    Ptr<DgramMasterFace> master_;
-    Ptr<Decoder> decoder_;
-    
-    //connect to decoder.Output
-    //push into Receive
-    void OnDecoderOutput(Ptr<Message> output);
-    
+    Ptr<DgramChannel> channel_;
     DISALLOW_COPY_AND_ASSIGN(DgramFace);
 };
 
-//communicate with many remote peers at the same local socket
-//cannot send through this face because destination is unknown
-//received packets are demuxed by sender address, and passed to unicast face of that sender
-//  if the sender does not have a unicast face, the packet is received on this face
-//  (auto-create and deliver on the new face is not good, because there's no receiver on the new face)
-class DgramMasterFace : public DgramFace {
+// A DgramFallbackFace is a DgramFace that receives messages
+// from peers with no DgramFace.
+// It cannot be used for sending.
+class DgramFallbackFace : public DgramFace {
   public:
-    DgramMasterFace(Ptr<DgramChannel> channel, Ptr<FaceFactory> factory);
-
+    DgramFallbackFace(Ptr<DgramChannel> channel);
+    
     virtual bool CanSend(void) const { return false; }
-    virtual void Send(Ptr<Message> message) { assert(false); }
     
-    //create a unicast face sharing the same channel
-    virtual Ptr<DgramFace> MakeUnicast(const NetworkAddress& remote_addr);
-    
-    //called by DgramFace.Send
-    //write to channel
-    virtual void SlaveSend(const NetworkAddress& remote_addr, Ptr<Buffer> pkt);
-
-  protected:
-    Ptr<Channel> channel(void) const { return this->channel_; }
-    Ptr<FaceFactory> factory(void) const { return this->factory_; }
-  
   private:
-    Ptr<Channel> channel_;
-    Ptr<FaceFactory> factory_;//to verify address
-    std::unordered_map<NetworkAddress,Ptr<DgramFace>> unicast_faces_;
-    
-    //connect to channel.Receive
-    //demux, and call MasterDeliver of the unicast face (or self if there's no unicast face)
-    void OnChannelReceive(const NetworkAddress& peer, Ptr<Buffer> pkt);
-    
-    DISALLOW_COPY_AND_ASSIGN(DgramMasterFace);
+    DISALLOW_COPY_AND_ASSIGN(DgramFallbackFace);
 };
 
-/*
-//communicate on one multicast group
-class MulticastFace : public DgramFace {
+// A DgramChannel represents a datagram socket shared by zero or more DgramFaces.
+class DgramChannel : public Element, public IPollClient {
   public:
-    MulticastFace(const NetworkAddress& local_addr, const NetworkAddress& mcast_group);
+    // fd: fd of the socket, after bind(local_addr)
+    DgramChannel(int fd, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
+
+    // the fallback face: "unsolicited" messages
+    // (from peers without a DgramFace) are received on this face.
+    Ptr<DgramFallbackFace> fallback_face(void) const { return this->fallback_face_; }
+    
+    // FaceSend sends message to face->peer() over the channel.
+    // This is called by DgramFace.
+    virtual void FaceSend(DgramFace* face, Ptr<Message> message);
+    
+    // PollCallback is invoked with POLLIN when there are packets
+    // on the socket to read.
+    virtual void PollCallback(int fd, short revents);
+    
+  protected:
+    // A PeerEntry represents per-peer information.
+    // If .wp()->IsStateful() is false, Ptr<WireProtocolState> is NULL.
+    typedef std::tuple<Ptr<DgramFace>,Ptr<WireProtocolState>> PeerEntry;
+
+    int fd(void) const { return this->fd_; }
+    Ptr<IAddressVerifier> av(void) const { return this->av_; }
+    Ptr<WireProtocol> wp(void) const { return this->wp_; }
+    std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
+    
+  private:
+    int fd_;
+    Ptr<IAddressVerifier> av_;
+    Ptr<WireProtocol> wp_;
+    std::unordered_map<NetworkAddress,PeerEntry> peers_;
+    Ptr<DgramFallbackFace> fallback_face_;
+    
+    DISALLOW_COPY_AND_ASSIGN(DgramChannel);
+};
+
+// A McastFace sends and receives messages on a multicast group.
+class McastFace : public Face, public IPollClient {
+  public:
+    // fd_recv: fd of the receiving socket, after bind(any) and joining multicast group
+    // fd_send: fd of the sending socket, after bind(local_addr)
+    McastFace(int fd_recv, int fd_send, const NetworkAddress& mcast_group, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
+
+    virtual bool CanSend(void) const { return true; }
+    virtual bool CanReceive(void) const { return true; }
 
     virtual void Send(Ptr<Message> message);
     
+    // PollCallback is invoked with POLLIN when there are packets
+    // on the receiving socket to read.
+    virtual void PollCallback(int fd, short revents);
+    
+  protected:
+    int fd_recv(void) const { return this->fd_recv_; }
+    int fd_send(void) const { return this->fd_send_; }
+    const NetworkAddress& mcast_group(void) const { return this->mcast_group_; }
+    Ptr<IAddressVerifier> av(void) const { return this->av_; }
+    Ptr<WireProtocol> wp(void) const { return this->wp_; }
+    std::unordered_map<NetworkAddress,Ptr<WireProtocolState>>& peers(void) { return this->peers_; }
+    
   private:
-    Ptr<Channel> channel_;
-    DISALLOW_COPY_AND_ASSIGN(MasterFace);
-};*/
+    int fd_recv_;
+    int fd_send_;
+    NetworkAddress mcast_group_;
+    Ptr<IAddressVerifier> av_;
+    Ptr<WireProtocol> wp_;
+    std::unordered_map<NetworkAddress,Ptr<WireProtocolState>> peers_;
+    Ptr<DgramFallbackFace> fallback_face_;
+    
+    DISALLOW_COPY_AND_ASSIGN(McastFace);
+};
 
 };//namespace ndnfd
 #endif//NDNFD_FACE_DGRAM_H

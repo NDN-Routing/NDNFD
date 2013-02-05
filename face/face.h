@@ -20,54 +20,54 @@ enum FaceStatus {
   kFSClosing = 4//close after sending queued messages
 };
 
+
+// A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {
   public:
     Face(void);
     FaceId id(void) const { return this->id_; }
     FaceKind kind(void) const { return this->kind_; }
     FaceStatus status(void) const { return this->status_; }
-    Ptr<Channel> channel(void) const { return this->channel_; }
 
     //called by FaceMgr
     void set_id(FaceId value) { this->id_ = value; }
     
-    //whether this face may be used to send messages
-    virtual bool CanSend(void) const { return true; }
-    //send a message
+    // CanSend returns true if this Face may be used to send messages.
+    virtual bool CanSend(void) const { return false; }
+    // Send enqueues a message for sending.
     virtual void Send(Ptr<Message> message) { assert(false); }
     
-    //whether this face may receive messages
-    virtual bool CanReceive(void) const { return true; }
+    // CanReceive returns true if this Face may be used to receive messages.
+    virtual bool CanReceive(void) const { return false; }
+    // Receive is called when a message is received.
     PushFace<Ptr<Message>> Receive;
     
-    //whether this face may accept new connection
+    // CanAccept returns true if this Face may accept new connection.
     virtual bool CanAccept(void) const { return false; }
+    // Accept is called when a new connection is accepted as a new Face.
     PushFace<Ptr<Face>> Accept;
   
   protected:
     void set_kind(FaceKind value) { this->kind_ = value; }
     void set_status(FaceStatus value) { this->status_ = value; }
-    void set_channel(Ptr<Channel> value) { this->channel_ = value; }
 
   private:
     FaceId id_;
     FaceKind kind_;
     FaceStatus status_;
-    Ptr<Channel> channel_;
     
     DISALLOW_COPY_AND_ASSIGN(Face);
 };
 
-class FaceFactory : public Element {
+// An IAddressVerifier implementor knows about the address format of a lower protocol,
+// such as IPv4 or Ethernet.
+class IAddressVerifier {
   public:
-    //check whether an address is valid
-    bool CheckAddress(const NetworkAddress& addr) =0;
+    // CheckAddress checks whether addr is valid in lower protocol.
+    virtual bool CheckAddress(const NetworkAddress& addr) =0;
     
-    //clear unnecessary fields in an address so that it's suitable for a hash key
-    void NormalizeAddress(NetworkAddress& addr) {};
-    
-  private:
-    DISALLOW_COPY_AND_ASSIGN(FaceFactory);
+    // NormalizeAddress clears certains fields in addr so that it is suitable to use as a hash key.
+    virtual void NormalizeAddress(NetworkAddress& addr) {}
 };
 
 };//namespace ndnfd

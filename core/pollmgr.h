@@ -4,17 +4,25 @@
 #include <poll.h>
 namespace ndnfd {
 
+// A IPollClient implementor can receive events from PollMgr.
 class IPollClient {
   public:
     virtual void PollCallback(int fd, short revents) =0;
 };
 
+// A PollMgr is the central place of poll() syscall.
 class PollMgr : Object {
   public:
+    // Add makes client to be invoked if event occurs on fd.
     void Add(Ptr<IPollClient> client, int fd, short event);
+    
+    // Remove marks client not longer waiting for event on fd.
     void Remove(Ptr<IPollClient> client, int fd, short event);
+    
+    // RemoveAll unregisters all events for client.
     void RemoveAll(Ptr<IPollClient> client);
     
+    // Poll runs poll() syscall and invokes clients.
     void Poll(void);
 
   private:
