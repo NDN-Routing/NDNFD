@@ -1,42 +1,62 @@
 #ifndef NDNFD_FACE_STREAM_H_
 #define NDNFD_FACE_STREAM_H_
 #include "face/face.h"
+#include "face/wireproto.h"
+#include "face/addrverifier.h"
+#include "core/pollmgr.h"
 namespace ndnfd {
 
-class StreamFace : public Face {
+// A StreamFace sends and receives messages on a stream socket.
+//
+// If the socket is blocked for writing, or is still connecting,
+// octets are put in the send queue, and POLLOUT is registered.
+// If all octets in the send queue are sent, POLLOUT is unregistered.
+class StreamFace : public Face, public IPollClient {
   public:
-    StreamFace(Ptr<Channel> channel);
+    // fd: fd of the socket, after connect() or accept()
+    StreamFace(int fd, Ptr<WireProtocol> wp);
+
+    virtual bool CanSend(void) const { return this->status() != kFSError; }
+    virtual bool CanReceive(void) const { return this->status() != kFSError; }
+
+    // Send calls WireProtocol to encode the messages into octets
+    // and writes them to the socket.
     virtual void Send(Ptr<Message> message);
 
-  private:
-    //decoder provides ReceiveBuffer to channel, avoid copying
-    Ptr<Channel> channel_;
-    Ptr<Decoder> decoder_;
+    // PollCallback is invoked with POLLIN when there are packets
+    // on the socket to read.
+    // PollCallback is invoked with POLLOUT when the socket is
+    // available for writing.
+    virtual void PollCallback(int fd, short revents);
 
-    //connect to channel.Receive
-    //pass into decoder.Input
-    void OnChannelReceive(const NetworkAddress& peer, Ptr<Buffer> pkt);
-    //connect to decoder.Output
-    //push into Receive
-    void OnDecoderOutput(Ptr<Message> output);
+  protected:
+    // DeferredWrite writes contents in send queue into the socket,
+    // until socket is blocked again, or the send queue is empty.
+    virtual void DeferredWrite(void);
+
+  private:
+    Ptr<WireProtocol> wp_;
+    Ptr<WireProtocolState> wps_;
+    std::queue<Ptr<Buffer>> send_queue_;
 
     DISALLOW_COPY_AND_ASSIGN(StreamFace);
 };
 
-class StreamListener : public Face {
+// A StreamListener listens for new connections on a stream socket.
+class StreamListener : public Face, public IPollClient {
   public:
-    StreamListener(Ptr<Channel> channel);
+    // fd: fd of the socket, after bind() and listen()
+    StreamListener(int fd, Ptr<IAddressVerifier> av);
     
-    virtual bool CanSend(void) const { return false; }
-    virtual bool CanReceive(void) const { return false; }
     virtual bool CanAccept() const { return true; }
+    
+    // PollCallback is invoked with POLLIN when there are
+    // connection requests on the socket to accept.
+    virtual void PollCallback(int fd, short revents);
 
   private:
-    Ptr<Channel> channel_;
-
-    //connect to channel.Accept
-    //make new StreamFace and push into Accept
-    void OnChannelAccept(const NetworkAddress& peer, int fd);
+    int fd_;
+    Ptr<IAddressVerifier> av_;
 
     DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };

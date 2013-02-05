@@ -2,6 +2,7 @@
 #define NDNFD_FACE_DGRAM_H_
 #include "face/face.h"
 #include "face/wireproto.h"
+#include "face/addrverifier.h"
 #include "core/pollmgr.h"
 namespace ndnfd {
 
@@ -43,14 +44,18 @@ class DgramChannel : public Element, public IPollClient {
   public:
     // fd: fd of the socket, after bind(local_addr)
     DgramChannel(int fd, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
-
-    // the fallback face: "unsolicited" messages
+    
+    // GetFallbackFace returns the fallback face: "unsolicited" messages
     // (from peers without a DgramFace) are received on this face.
-    Ptr<DgramFallbackFace> fallback_face(void) const { return this->fallback_face_; }
+    virtual Ptr<DgramFallbackFace> GetFallbackFace(void) const { return this->fallback_face_; }
+    
+    // GetFace returns a unicast face for a peer.
+    // One is created if it does not exist.
+    virtual Ptr<DgramFace> GetFace(NetworkAddress peer);
     
     // FaceSend sends message to face->peer() over the channel.
     // This is called by DgramFace.
-    virtual void FaceSend(DgramFace* face, Ptr<Message> message);
+    virtual void FaceSend(Ptr<DgramFace> face, Ptr<Message> message);
     
     // PollCallback is invoked with POLLIN when there are packets
     // on the socket to read.

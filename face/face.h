@@ -1,23 +1,26 @@
 #ifndef NDNFD_FACE_FACE_H_
 #define NDNFD_FACE_FACE_H_
-#include "face/channel.h"
+#include "core/element.h"
 #include "message/message.h"
 namespace ndnfd {
 
+// FaceKind describes what's the peer(s) of a Face.
 enum FaceKind {
-  kFKNone = 0,
-  kFKInternal = 1,//talk to the internal client
-  kFKApp = 2,//talk to a local application
+  kFKNone      = 0,
+  kFKInternal  = 1,//talk to the internal client
+  kFKApp       = 2,//talk to a local application
   kFKMulticast = 3,//talk to multiple remote peers; a face receiving unicast packets from unknown peers also belongs to this kind, but that face cannot send
-  kFKUnicast = 4//talk to one remote peer
+  kFKUnicast   = 4 //talk to one remote peer
 };
 
+// FaceStatus describes the status of a Face.
 enum FaceStatus {
-  kFSNone = 0,
-  kFSConnecting = 1,//connecting to remote peer
-  kFSUndecided = 2,//accepted connection, no message received
+  kFSNone        = 0,
+  kFSConnecting  = 1,//connecting to remote peer
+  kFSUndecided   = 2,//accepted connection, no message received
   kFSEstablished = 3,//normal
-  kFSClosing = 4//close after sending queued messages
+  kFSClosing     = 4,//close after sending queued messages
+  kFSError       = 5 //error, no longer usable
 };
 
 
@@ -29,9 +32,6 @@ class Face : public Element {
     FaceKind kind(void) const { return this->kind_; }
     FaceStatus status(void) const { return this->status_; }
 
-    //called by FaceMgr
-    void set_id(FaceId value) { this->id_ = value; }
-    
     // CanSend returns true if this Face may be used to send messages.
     virtual bool CanSend(void) const { return false; }
     // Send enqueues a message for sending.
@@ -46,10 +46,15 @@ class Face : public Element {
     virtual bool CanAccept(void) const { return false; }
     // Accept is called when a new connection is accepted as a new Face.
     PushFace<Ptr<Face>> Accept;
+    
+    // Enroll verifies mgr is the FaceMgr of this router,
+    // and records the assigned FaceId.
+    virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
   
   protected:
+    void set_id(FaceId value) { this->id_ = value; }
     void set_kind(FaceKind value) { this->kind_ = value; }
-    void set_status(FaceStatus value) { this->status_ = value; }
+    void set_status(FaceStatus value);//should notify FaceMgr
 
   private:
     FaceId id_;
@@ -57,17 +62,6 @@ class Face : public Element {
     FaceStatus status_;
     
     DISALLOW_COPY_AND_ASSIGN(Face);
-};
-
-// An IAddressVerifier implementor knows about the address format of a lower protocol,
-// such as IPv4 or Ethernet.
-class IAddressVerifier {
-  public:
-    // CheckAddress checks whether addr is valid in lower protocol.
-    virtual bool CheckAddress(const NetworkAddress& addr) =0;
-    
-    // NormalizeAddress clears certains fields in addr so that it is suitable to use as a hash key.
-    virtual void NormalizeAddress(NetworkAddress& addr) {}
 };
 
 };//namespace ndnfd

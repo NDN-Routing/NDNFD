@@ -3,11 +3,16 @@
 #include "face/stream.h"
 namespace ndnfd {
 
-class UnixFaceFactory : public FaceFactory {
+// A UnixFaceFactory creates Face objects for UNIX sockets.
+class UnixFaceFactory : public Element, public IAddressVerifier {
   public:
-    bool CheckAddress(const NetworkAddress& addr) { return true; }
+    bool CheckAddress(const NetworkAddress& addr);
+    void NormalizeAddress(NetworkAddress& addr);
 
-    Ptr<Face> MakeListener(const std::string& local_socket);
+    // MakeChannel creates a StreamListener for TCP over IPv4 or IPv6.
+    // local_addr should be either sockaddr_un.
+    Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);
+
   private:
     DISALLOW_COPY_AND_ASSIGN(UnixFaceFactory);
 };
