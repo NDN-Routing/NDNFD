@@ -1,13 +1,13 @@
 #include "util/buffer.h"
 namespace ndnfd {
 
-Buffer* Buffer::Clone() {
-  Buffer* copy = new Buffer(this->length());
+CharBuf* CharBuf::Clone() {
+  CharBuf* copy = new CharBuf(this->length());
   copy->Append(this);
   return copy;
 }
 
-void Buffer::CopyFrom(Buffer* source) {
+void CharBuf::CopyFrom(CharBuf* source) {
   this->Reset();
   this->Append(source);
 }
