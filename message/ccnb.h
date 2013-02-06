@@ -23,28 +23,28 @@ class CcnbMessage : public Message {
     DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 
-// A CcnbWireProtocol reads and writes CCNB messages on a datagram or stream connection.
+// CcnbWireProtocol provides CCNB encoding/decoding on a datagram or stream connection.
 class CcnbWireProtocol : public WireProtocol {
   public:
-    // A State is used when CcnbWireProtocol is used on a stream connection,
-    // so that partial message is decoded only once at this level.
+    // A State remembers the skeleton decoder state of partial message.
+    // This is only used in stream mode.
     struct State : public WireProtocolState {
       size_t last_length;//previous length of buffer; the difference is new arrival
       ::ccn_skeleton_decoder decoder;//skeleton decoder state
     };
     
-    public CcnbWireProtocol(bool stream);
+    public CcnbWireProtocol(bool stream_mode);
     
-    virtual bool IsStateful(void) const { return this->stream_; }
+    virtual bool IsStateful(void) const { return this->stream_mode_; }
     
     virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
     
     virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
     
-    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Buffer> packet, std::vector<Ptr<Message>>& result_message
+    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_message
 
   private:
-    bool stream_;
+    bool stream_mode_;
     DISALLOW_COPY_AND_ASSIGN(CcnbWireProtocol);
 };
 

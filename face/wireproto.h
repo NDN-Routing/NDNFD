@@ -40,7 +40,7 @@ class WireProtocol : public Element {
     
     // Decode gets a new packet of the wire protocol,
     // and returns zero or more messages (into result_messages).
-    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Buffer> packet, std::vector<Ptr<Message>>& result_messages);
+    virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_messages);
 
   private:
     DISALLOW_COPY_AND_ASSIGN(WireProtocol);
