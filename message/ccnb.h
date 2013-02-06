@@ -29,7 +29,7 @@ class CcnbWireProtocol : public WireProtocol {
     // A State is used when CcnbWireProtocol is used on a stream connection,
     // so that partial message is decoded only once at this level.
     struct State : public WireProtocolState {
-      Ptr<Buffer> receive_buffer;//partial message
+      size_t last_length;//previous length of buffer; the difference is new arrival
       ::ccn_skeleton_decoder decoder;//skeleton decoder state
     };
     

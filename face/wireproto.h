@@ -7,12 +7,9 @@ namespace ndnfd {
 
 // A WireProtocolState subclass is the per-peer state of a WireProtocol subclass.
 class WireProtocolState : public Object {
-  private:
-    DISALLOW_COPY_AND_ASSIGN(WireProtocolState);
-};
-
-class StreamBufferWireProtocolState : public WireProtocolState {
   public:
+    // GetReceiveBuffer provides a buffer that received packet should be appended into.
+    // This is useful for stream sockets that arriving octets are put after a partial message.
     virtual Ptr<Buffer> GetReceiveBuffer(void);
 
   protected:

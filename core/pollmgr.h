@@ -1,6 +1,6 @@
 #ifndef NDNFD_CORE_POLLMGR_H_
 #define NDNFD_CORE_POLLMGR_H_
-#include "util/defs.h"
+#include "core/element.h"
 #include <poll.h>
 namespace ndnfd {
 
@@ -11,7 +11,7 @@ class IPollClient {
 };
 
 // A PollMgr is the central place of poll() syscall.
-class PollMgr : Object {
+class PollMgr : public Element {
   public:
     // Add makes client to be invoked if event occurs on fd.
     void Add(Ptr<IPollClient> client, int fd, short event);

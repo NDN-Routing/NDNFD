@@ -71,6 +71,14 @@ class DgramChannel : public Element, public IPollClient {
     Ptr<WireProtocol> wp(void) const { return this->wp_; }
     std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
     
+    // ReceiveFrom calls recvfrom() syscall to read one or more packets
+    // from the socket, and call DeliverPacket for each packet.
+    virtual void ReceiveFrom(void);
+    
+    // DeliverPacket decodes pkt, delivers any result messages
+    // to the Face associated with peer or the fallback face.
+    virtual void DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt);
+    
   private:
     int fd_;
     Ptr<IAddressVerifier> av_;

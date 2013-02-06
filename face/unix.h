@@ -4,16 +4,22 @@
 namespace ndnfd {
 
 // A UnixFaceFactory creates Face objects for UNIX sockets.
+// Address is sockaddr_un.
 class UnixFaceFactory : public Element, public IAddressVerifier {
   public:
+    UnixFaceFactory(Ptr<WireProtocol> wp);
+    
+    // MakeListener creates a StreamListener for TCP over IPv4 or IPv6.
+    Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);
+
     bool CheckAddress(const NetworkAddress& addr);
     void NormalizeAddress(NetworkAddress& addr);
 
-    // MakeChannel creates a StreamListener for TCP over IPv4 or IPv6.
-    // local_addr should be either sockaddr_un.
-    Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);
-
   private:
+    Ptr<WireProtocol> wp_;
+
+    Ptr<WireProtocol> wp(void) const { return this->wp_; }
+
     DISALLOW_COPY_AND_ASSIGN(UnixFaceFactory);
 };
 

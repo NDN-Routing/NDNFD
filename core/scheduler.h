@@ -1,10 +1,9 @@
 #ifndef NDNFD_CORE_SCHEDULER_H_
 #define NDNFD_CORE_SCHEDULER_H_
-#include "util/defs.h"
-#include <poll.h>
+#include "core/element.h"
 namespace ndnfd {
 
-class Scheduler : Object {
+class Scheduler : public Element {
   public:
     void Run(void);
 
