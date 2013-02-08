@@ -3,18 +3,18 @@
 #include "util/defs.h"
 namespace ndnfd {
 
-//represents the type of a MessageBase subclass
-//each subclass of MessageBase should have a unique MessageType
+// MessageType indicates the type of a MessageBase subclass.
+// Each subclass of MessageBase must have a unique MessageType.
 typedef uint16_t MessageType;
 
-//base for most interactions between elements
+// MessageBase is the base class for most information moving between Elements.
 class MessageBase : public Object {
-  public:
-    static const MessageType kType = 1;
-    virtual MessageType type(void) const { return MessageBase::kType; }
+ public:
+  static const MessageType kType = 1;
+  virtual MessageType type(void) const { return MessageBase::kType; }
 
-  private:
-    DISALLOW_COPY_AND_ASSIGN(MessageBase);
+ private:
+  DISALLOW_COPY_AND_ASSIGN(MessageBase);
 };
 
 };//namespace ndnfd

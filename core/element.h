@@ -3,39 +3,49 @@
 #include "core/global.h"
 namespace ndnfd {
 
+// An Element provides access to the Global object.
 class Element : Object {
-  public:
-    //a push port that can connect to another element
-    template<typename... TArgs>
-    class PushPort {
-      public:
-        typedef std::function<void(TArgs&...)> Callback;
-        void operator=(Callback value) { this->cb_ = value; }
-        PushPort& operator()(TArgs&... message) { if (this->cb_ != std::nullptr_t) this->cb_(message...); return *this; }
-      private:
-        Callback cb_;
-        DISALLOW_COPY_AND_ASSIGN(PushPort);
-    };
-    //declare as: PushPort<Message> event
-    //connect as: event = callback;
-    //send as: event(message);
+ public:
+  // A PushPort is a function callback that passes information from this element to another.
+  template<typename... TArgs>
+  class PushPort {
+   public:
+    typedef std::function<void(TArgs&...)> Callback;
     
-    static Ptr<Element> MakeFirstElement(Global* global);
-
-  protected:
-    Global* global() { return this->global_; }
+    // `port = callback` sets the callback.
+    // This is typically used from an initialization function.
+    void operator=(Callback value) { this->cb_ = value; }
     
-    //create a new element, inheriting global object
-    template<typename T, typename... TArgs>
-    Ptr<T> Create(TArgs... args);
+    // `port(args)` invokes the callback.
+    // This is typically used within the element defining the PushPort.
+    PushPort& operator()(TArgs&... message) { if (this->cb() != std::nullptr) this->cb()(message...); return *this; }
+    
+    // callback function
+    Callback cb() const { return this->cb_; }
 
-  private:
-    Global* global_;
-    DISALLOW_COPY_AND_ASSIGN(Element);
+   private:
+    Callback cb_;
+    DISALLOW_COPY_AND_ASSIGN(PushPort);
+  };
+  
+  // MakeFirstElement creates a new element with a new Global object.
+  static Ptr<Element> MakeFirstElement(Global* global);
+
+ protected:
+  // the Global object
+  Global* global() { return this->global_; }
+  
+  // Create makes a new element of type T which shares the same Global object.
+  template<typename T, typename... TArgs>
+  Ptr<T> Create(TArgs... args) const;
+
+ private:
+  Global* global_;
+  DISALLOW_COPY_AND_ASSIGN(Element);
 };
 
 template<typename T, typename... TArgs>
-Ptr<T> Element::Create(TArgs&... args) {
+Ptr<T> Element::Create(TArgs&... args) const {
   T* obj = new T(args...);
   if (obj != NULL) obj->global_ = this->global_;
   return obj;

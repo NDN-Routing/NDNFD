@@ -3,12 +3,14 @@
 #include "core/element.h"
 namespace ndnfd {
 
+// A Scheduler provides a mechanism to periodically execute a calllback.
 class Scheduler : public Element {
-  public:
-    void Run(void);
+ public:
+  void Run(void);
 
-  private:
-    DISALLOW_COPY_AND_ASSIGN(Scheduler);
+ private:
+  //TODO design private fields (as a call to ccn scheduler)
+  DISALLOW_COPY_AND_ASSIGN(Scheduler);
 };
 
 };//namespace ndnfd

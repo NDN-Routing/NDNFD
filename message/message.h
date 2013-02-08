@@ -4,22 +4,26 @@
 #include "face/faceid.h"
 namespace ndnfd {
 
-//a logical unit that can be sent or received through a face
+// A Message is a logical unit that can be sent or received through a Face.
 class Message : public MessageBase {
-  public:
-    static const MessageType kType = 1000;
-    virtual MessageType type(void) const { return Message::kType; }
+ public:
+  static const MessageType kType = 1000;
+  virtual MessageType type(void) const { return Message::kType; }
 
-    FaceId incoming_face(void) const { return this->incoming_face_; }
-    void set_incoming_face(FaceId value) { this->incoming_face_ = value; }
-    const NetworkAddress& incoming_sender(void) const { return this->incoming_sender_; }
-    void set_incoming_sender(const NetworkAddress& value) { this->incoming_sender_ = value; }    
+  // Face through which this Message enters the router
+  FaceId incoming_face(void) const { return this->incoming_face_; }
+  void set_incoming_face(FaceId value) { this->incoming_face_ = value; }
 
-  private:
-    FaceId incoming_face_;
-    NetworkAddress incoming_sender_;
-    
-    DISALLOW_COPY_AND_ASSIGN(Message);
+  // remote peer that sends this Message
+  // Address format is defined by the incoming Face.
+  const NetworkAddress& incoming_sender(void) const { return this->incoming_sender_; }
+  void set_incoming_sender(const NetworkAddress& value) { this->incoming_sender_ = value; }  
+
+ private:
+  FaceId incoming_face_;
+  NetworkAddress incoming_sender_;
+  
+  DISALLOW_COPY_AND_ASSIGN(Message);
 };
 
 };//namespace ndnfd

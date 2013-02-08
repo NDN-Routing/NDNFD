@@ -21,20 +21,26 @@
 
 namespace ndnfd {
 
-//smart pointer
+// A Ptr is an intrusive smart pointer.
 template<typename T>
 using Ptr = boost::intrusive_ptr<T>;
 
-//object base with smart pointer support
+// Object is the based class for objects that needs smart pointer support.
 class Object {
-  public:
-    Object(void) { this->refcount_ = 0; }
-    virtual ~Object(void) {}
-    void Ref(void) const { ++this->refcount_; }
-    void Unref(void) const { if (--this->refcount_ == 0) delete this; }
+ public:
+  Object(void) { this->refcount_ = 0; }
+  virtual ~Object(void) {}
+  
+  // Ref increments the reference counter.
+  void Ref(void) const { ++(const_cast<Object*>(this)->refcount_); }
+  
+  // Unref decrements the reference counter,
+  // and deletes the object if no longer needed.
+  void Unref(void) const { if (--(const_cast<Object*>(this)->refcount_) == 0) delete this; }
 
-  private:
-    std::atomic_size_t refcount_;
+ private:
+  std::atomic_size_t refcount_;
+  DISALLOW_COPY_AND_ASSIGN(Object);
 };
 
 void intrusive_ptr_add_ref(Object* p) {

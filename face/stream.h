@@ -12,53 +12,53 @@ namespace ndnfd {
 // octets are put in the send queue, and POLLOUT is registered.
 // If all octets in the send queue are sent, POLLOUT is unregistered.
 class StreamFace : public Face, public IPollClient {
-  public:
-    // fd: fd of the socket, after connect() or accept()
-    StreamFace(int fd, Ptr<WireProtocol> wp);
+ public:
+  // fd: fd of the socket, after connect() or accept()
+  StreamFace(int fd, Ptr<WireProtocol> wp);
 
-    virtual bool CanSend(void) const { return this->status() != kFSError; }
-    virtual bool CanReceive(void) const { return this->status() != kFSError; }
+  virtual bool CanSend(void) const { return this->status() != kFSError; }
+  virtual bool CanReceive(void) const { return this->status() != kFSError; }
 
-    // Send calls WireProtocol to encode the messages into octets
-    // and writes them to the socket.
-    virtual void Send(Ptr<Message> message);
+  // Send calls WireProtocol to encode the messages into octets
+  // and writes them to the socket.
+  virtual void Send(Ptr<Message> message);
 
-    // PollCallback is invoked with POLLIN when there are packets
-    // on the socket to read.
-    // PollCallback is invoked with POLLOUT when the socket is
-    // available for writing.
-    virtual void PollCallback(int fd, short revents);
+  // PollCallback is invoked with POLLIN when there are packets
+  // on the socket to read.
+  // PollCallback is invoked with POLLOUT when the socket is
+  // available for writing.
+  virtual void PollCallback(int fd, short revents);
 
-  protected:
-    // DeferredWrite writes contents in send queue into the socket,
-    // until socket is blocked again, or the send queue is empty.
-    virtual void DeferredWrite(void);
+ protected:
+  // DeferredWrite writes contents in send queue into the socket,
+  // until socket is blocked again, or the send queue is empty.
+  virtual void DeferredWrite(void);
 
-  private:
-    Ptr<WireProtocol> wp_;
-    Ptr<WireProtocolState> wps_;
-    std::queue<Ptr<Buffer>> send_queue_;
+ private:
+  Ptr<WireProtocol> wp_;
+  Ptr<WireProtocolState> wps_;
+  std::queue<Ptr<Buffer>> send_queue_;
 
-    DISALLOW_COPY_AND_ASSIGN(StreamFace);
+  DISALLOW_COPY_AND_ASSIGN(StreamFace);
 };
 
 // A StreamListener listens for new connections on a stream socket.
 class StreamListener : public Face, public IPollClient {
-  public:
-    // fd: fd of the socket, after bind() and listen()
-    StreamListener(int fd, Ptr<IAddressVerifier> av);
-    
-    virtual bool CanAccept() const { return true; }
-    
-    // PollCallback is invoked with POLLIN when there are
-    // connection requests on the socket to accept.
-    virtual void PollCallback(int fd, short revents);
+ public:
+  // fd: fd of the socket, after bind() and listen()
+  StreamListener(int fd, Ptr<IAddressVerifier> av);
+  
+  virtual bool CanAccept() const { return true; }
+  
+  // PollCallback is invoked with POLLIN when there are
+  // connection requests on the socket to accept.
+  virtual void PollCallback(int fd, short revents);
 
-  private:
-    int fd_;
-    Ptr<IAddressVerifier> av_;
+ private:
+  int fd_;
+  Ptr<IAddressVerifier> av_;
 
-    DISALLOW_COPY_AND_ASSIGN(StreamListener);
+  DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };
 
 };//namespace ndnfd

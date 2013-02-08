@@ -10,16 +10,18 @@ class PollMgr;
 class Scheduler;
 class FaceMgr;
 
+// A Global contains all global structures of a router.
+// A pointer to the Global object is provided in every Element.
 class Global {
-  public:
-    //getter and setter for all fields
+ public:
+  //TODO generate getter and setter for all fields
 
-  private:
-    ccnd_handle* h_;
-    Ptr<PollMgr> pollmgr_;
-    Ptr<Scheduler> scheduler_;
-    Ptr<FaceMgr> facemgr_;
-    DISALLOW_COPY_AND_ASSIGN(Global);
+ private:
+  ccnd_handle* h_;
+  Ptr<PollMgr> pollmgr_;
+  Ptr<Scheduler> scheduler_;
+  Ptr<FaceMgr> facemgr_;
+  DISALLOW_COPY_AND_ASSIGN(Global);
 };
 
 };//namespace ndnfd
