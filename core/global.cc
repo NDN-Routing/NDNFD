@@ -1,4 +1,7 @@
 #include "core/global.h"
+extern "C" {
+#include "ccnd/ccnd_private.h"
+}
 #include "core/pollmgr.h"
 #include "core/scheduler.h"
 #include "face/facemgr.h"
