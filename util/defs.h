@@ -13,7 +13,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <functional>
-#include <boost/intrusive_ptr.hpp>
+#include "ptr.h"
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&); \
@@ -23,7 +23,7 @@ namespace ndnfd {
 
 // A Ptr is an intrusive smart pointer.
 template<typename T>
-using Ptr = boost::intrusive_ptr<T>;
+using Ptr = ns3::Ptr<T>;
 
 // Object is the based class for objects that needs smart pointer support.
 class Object {
@@ -42,15 +42,6 @@ class Object {
   std::atomic_size_t refcount_;
   DISALLOW_COPY_AND_ASSIGN(Object);
 };
-
-void intrusive_ptr_add_ref(Object* p) {
-  BOOST_ASSERT(p);
-  p->Ref();
-}
-void intrusive_ptr_release(Object* p) {
-  BOOST_ASSERT(p);
-  p->Unref();
-}
 
 };//namespace ndnfd
 #endif//NDNFD_CORE_DEFS_H

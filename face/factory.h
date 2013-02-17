@@ -3,7 +3,7 @@
 #include "face/wireproto.h"
 namespace ndnfd {
 
-// A FaceFactory creates Face-related objects for a lower protocl.
+// A FaceFactory creates Face-related objects for a lower protocol.
 class FaceFactory : public Element {
  public:
   FaceFactory(Ptr<WireProtocol> wp);
