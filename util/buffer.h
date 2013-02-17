@@ -24,7 +24,10 @@ class BufferView : public Object {
   // AsBuffer turns the BufferView into a Buffer.
   // If clone is true, the Buffer is guaranteed to have separate
   // storage with this BufferView.
-  virtual Ptr<Buffer> AsBuffer(bool clone) const;
+  virtual Ptr<Buffer> AsBuffer(bool clone);
+
+ protected:
+  BufferView(void) {}
   
  private:
   Ptr<Buffer> buffer_;
@@ -37,13 +40,13 @@ class BufferView : public Object {
 class Buffer : public BufferView {
  public:
   Buffer(size_t size, size_t headroom = 0, size_t tailroom = 0);
-  virtual ~Buffer(void) {}
+  virtual ~Buffer(void);
   
   // pointer to data
-  virtual uint8_t* mutable_data() const;
+  virtual uint8_t* mutable_data() const { return this->c_->buf + this->headroom_; }
   virtual const uint8_t* data() const { return this->mutable_data(); }
   // length of data
-  virtual size_t length() const;
+  virtual size_t length() const { return this->c_->length - this->headroom_; }
 
   // Put adds n octets after the end of data,
   // and returns a pointer to the start of new space.
@@ -58,10 +61,12 @@ class Buffer : public BufferView {
   void Pull(size_t n);
   
   // AsBuffer returns or clones self.
-  virtual Ptr<Buffer> AsBuffer(bool clone) const;
+  virtual Ptr<Buffer> AsBuffer(bool clone);
   
  private:
   ::ccn_charbuf* c_;
+  size_t initial_headroom_;
+  size_t initial_tailroom_;
   size_t headroom_;
   DISALLOW_COPY_AND_ASSIGN(Buffer);
 };
