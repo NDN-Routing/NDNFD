@@ -15,7 +15,7 @@ class NdnlpWireProtocol : public WireProtocol {
   class State : public WireProtocolState {
    public:
     State();
-    ~State();
+    virtual ~State();
     ::SeqGen* seqgen;
     ::MsgSlicer* slicer;
     ::PartialMsgs* pms;
@@ -23,6 +23,8 @@ class NdnlpWireProtocol : public WireProtocol {
    private:
     DISALLOW_COPY_AND_ASSIGN(State);
   };
+  
+  virtual ~NdnlpWireProtocol(void) {}
   
   virtual bool IsStateful(void) const { return true; }
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }

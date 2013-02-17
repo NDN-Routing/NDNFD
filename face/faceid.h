@@ -1,6 +1,7 @@
 #ifndef NDNFD_FACE_FACEID_H_
 #define NDNFD_FACE_FACEID_H_
-#include <sys/types.h>
+#include "util/defs.h"
+#include <sys/socket.h>
 namespace ndnfd {
 
 // A FaceId is a number that identifies a Face within a router.
@@ -16,8 +17,8 @@ static const FaceId FaceId_none = -1;
 
 // A NetworkAddress represents the address in any lower protocol.
 struct NetworkAddress {
-  sockaddr_storage who;
-  socklen_t wholen;
+  ::sockaddr_storage who;
+  ::socklen_t wholen;
 };
 
 };//namespace ndnfd

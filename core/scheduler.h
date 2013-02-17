@@ -6,6 +6,9 @@ namespace ndnfd {
 // A Scheduler provides a mechanism to periodically execute a calllback.
 class Scheduler : public Element {
  public:
+  Scheduler(void);
+  virtual ~Scheduler(void) {}
+  
   void Run(void);
 
  private:

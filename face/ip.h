@@ -6,11 +6,11 @@
 namespace ndnfd {
 
 // An IpAddressVerifier verifies sockaddr_in or sockaddr_in6 addresses.
-class IpAddressVerifier : public IAddressVerifier {
+class IpAddressVerifier : public AddressVerifier {
  public:
+  virtual ~IpAddressVerifier(void) {}
   virtual bool CheckAddress(const NetworkAddress& addr);
   virtual void NormalizeAddress(NetworkAddress& addr);
-  
  private:
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
 };
@@ -20,6 +20,7 @@ class IpAddressVerifier : public IAddressVerifier {
 class UdpFaceFactory : public FaceFactory {
  public:
   UdpFaceFactory(Ptr<WireProtocol> wp);
+  virtual ~UdpFaceFactory(void) {}
   
   // MakeChannel creates a DgramChannel for UDP over IPv4 or IPv6.
   Ptr<DgramChannel> MakeChannel(const NetworkAddress& local_addr);
@@ -34,6 +35,7 @@ class UdpFaceFactory : public FaceFactory {
 class TcpFaceFactory : public FaceFactory {
  public:
   TcpFaceFactory(Ptr<WireProtocol> wp);
+  virtual ~TcpFaceFactory(void) {}
   
   // MakeListener creates a StreamListener for TCP over IPv4 or IPv6.
   Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);

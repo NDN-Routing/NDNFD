@@ -3,15 +3,20 @@
 #include "face/faceid.h"
 namespace ndnfd {
 
-// An IAddressVerifier implementor knows about the address format of a lower protocol,
+// An AddressVerifier subclass knows about the address format of a lower protocol,
 // such as IPv4 or Ethernet.
-class IAddressVerifier {
+class AddressVerifier : public Object {
  public:
+  virtual ~AddressVerifier(void) {}
+  
   // CheckAddress checks whether addr is valid in lower protocol.
   virtual bool CheckAddress(const NetworkAddress& addr) =0;
   
   // NormalizeAddress clears certains fields in addr so that it is suitable to use as a hash key.
   virtual void NormalizeAddress(NetworkAddress& addr) {}
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(AddressVerifier);
 };
 
 };//namespace ndnfd

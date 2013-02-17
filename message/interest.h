@@ -9,13 +9,13 @@ namespace ndnfd {
 class InterestMessage : public CcnbMessage {
  public:
   static const MessageType kType = 1001;
-  virtual MessageType type(void) const { return Interest::kType; }
+  virtual MessageType type(void) const { return InterestMessage::kType; }
   
   const Name& name(void) const;
   ccn_parsed_interest parsed;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(Interest);
+  DISALLOW_COPY_AND_ASSIGN(InterestMessage);
 };
 
 };//namespace ndnfd

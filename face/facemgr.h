@@ -6,6 +6,9 @@ namespace ndnfd {
 // A FaceMgr manages all Faces of a router.
 class FaceMgr : public Element {
  public:
+  FaceMgr(void);
+  virtual ~FaceMgr(void) {}
+  
   // GetFace finds a Face by FaceId.
   Ptr<Face> GetFace(FaceId id);
   

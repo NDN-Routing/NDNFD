@@ -13,14 +13,17 @@ class IPollClient {
 // A PollMgr is the central place of poll() syscall.
 class PollMgr : public Element {
  public:
+  PollMgr(void);
+  virtual ~PollMgr(void) {}
+  
   // Add makes client to be invoked if event occurs on fd.
-  void Add(Ptr<IPollClient> client, int fd, short event);
+  void Add(IPollClient* client, int fd, short event);
   
   // Remove marks client not longer waiting for event on fd.
-  void Remove(Ptr<IPollClient> client, int fd, short event);
+  void Remove(IPollClient* client, int fd, short event);
   
   // RemoveAll unregisters all events for client.
-  void RemoveAll(Ptr<IPollClient> client);
+  void RemoveAll(IPollClient* client);
   
   // Poll runs poll() syscall and invokes clients.
   void Poll(void);

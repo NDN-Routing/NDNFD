@@ -29,11 +29,12 @@ class CcnbWireProtocol : public WireProtocol {
   // A State remembers the skeleton decoder state of partial message.
   // This is only used in stream mode.
   struct State : public WireProtocolState {
+    State();
     size_t last_length;//previous length of buffer; the difference is new arrival
     ::ccn_skeleton_decoder decoder;//skeleton decoder state
   };
   
-  public CcnbWireProtocol(bool stream_mode);
+  CcnbWireProtocol(bool stream_mode);
   
   virtual bool IsStateful(void) const { return this->stream_mode_; }
   
@@ -41,7 +42,7 @@ class CcnbWireProtocol : public WireProtocol {
   
   virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
   
-  virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_message
+  virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_message);
 
  private:
   bool stream_mode_;

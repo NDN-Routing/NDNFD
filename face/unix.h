@@ -3,17 +3,25 @@
 #include "face/stream.h"
 namespace ndnfd {
 
-// A UnixFaceFactory creates Face objects for UNIX sockets.
+// A UnixAddressVerifier verifies UNIX socket addresses.
 // Address is sockaddr_un.
-class UnixFaceFactory : public Element, public IAddressVerifier {
+class UnixAddressVerifier : public AddressVerifier {
+ public:
+  virtual ~UnixAddressVerifier(void) {}
+  virtual bool CheckAddress(const NetworkAddress& addr);
+  virtual void NormalizeAddress(NetworkAddress& addr);
+ private:
+  DISALLOW_COPY_AND_ASSIGN(UnixAddressVerifier);
+};
+
+// A UnixFaceFactory creates Face objects for UNIX sockets.
+class UnixFaceFactory : public Element {
  public:
   UnixFaceFactory(Ptr<WireProtocol> wp);
+  virtual ~UnixFaceFactory(void) {}
   
   // MakeListener creates a StreamListener for TCP over IPv4 or IPv6.
   Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);
-
-  bool CheckAddress(const NetworkAddress& addr);
-  void NormalizeAddress(NetworkAddress& addr);
 
  private:
   Ptr<WireProtocol> wp_;

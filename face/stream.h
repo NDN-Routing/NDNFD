@@ -15,9 +15,10 @@ class StreamFace : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after connect() or accept()
   StreamFace(int fd, Ptr<WireProtocol> wp);
+  virtual ~StreamFace(void) {}
 
-  virtual bool CanSend(void) const { return this->status() != kFSError; }
-  virtual bool CanReceive(void) const { return this->status() != kFSError; }
+  virtual bool CanSend(void) const { return this->status() != FaceStatus::kError; }
+  virtual bool CanReceive(void) const { return this->status() != FaceStatus::kError; }
 
   // Send calls WireProtocol to encode the messages into octets
   // and writes them to the socket.
@@ -46,7 +47,8 @@ class StreamFace : public Face, public IPollClient {
 class StreamListener : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after bind() and listen()
-  StreamListener(int fd, Ptr<IAddressVerifier> av);
+  StreamListener(int fd, Ptr<AddressVerifier> av);
+  virtual ~StreamListener(void) {}
   
   virtual bool CanAccept() const { return true; }
   
@@ -56,7 +58,7 @@ class StreamListener : public Face, public IPollClient {
 
  private:
   int fd_;
-  Ptr<IAddressVerifier> av_;
+  Ptr<AddressVerifier> av_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };

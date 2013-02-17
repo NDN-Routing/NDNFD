@@ -4,7 +4,7 @@
 namespace ndnfd {
 
 // An Element provides access to the Global object.
-class Element : Object {
+class Element : public Object {
  public:
   // A PushPort is a function callback that passes information from this element to another.
   template<typename... TArgs>
@@ -18,7 +18,7 @@ class Element : Object {
     
     // `port(args)` invokes the callback.
     // This is typically used within the element defining the PushPort.
-    PushPort& operator()(TArgs&... message) { if (this->cb() != std::nullptr) this->cb()(message...); return *this; }
+    PushPort& operator()(TArgs&... message) { if (this->cb() != nullptr) this->cb()(message...); return *this; }
     
     // callback function
     Callback cb() const { return this->cb_; }
@@ -27,6 +27,8 @@ class Element : Object {
     Callback cb_;
     DISALLOW_COPY_AND_ASSIGN(PushPort);
   };
+  
+  virtual ~Element(void) {}
   
   // MakeFirstElement creates a new element with a new Global object.
   static Ptr<Element> MakeFirstElement(Global* global);
@@ -37,7 +39,7 @@ class Element : Object {
   
   // Create makes a new element of type T which shares the same Global object.
   template<typename T, typename... TArgs>
-  Ptr<T> Create(TArgs... args) const;
+  Ptr<T> Create(TArgs&&... args) const;
 
  private:
   Global* global_;
@@ -45,7 +47,7 @@ class Element : Object {
 };
 
 template<typename T, typename... TArgs>
-Ptr<T> Element::Create(TArgs&... args) const {
+Ptr<T> Element::Create(TArgs&&... args) const {
   T* obj = new T(args...);
   if (obj != NULL) obj->global_ = this->global_;
   return obj;

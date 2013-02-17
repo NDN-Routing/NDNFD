@@ -7,6 +7,7 @@ namespace ndnfd {
 class FaceFactory : public Element {
  public:
   FaceFactory(Ptr<WireProtocol> wp);
+  virtual ~FaceFactory(void) {}
 
  protected:
   Ptr<WireProtocol> wp(void) const { return this->wp_; }

@@ -8,7 +8,8 @@ namespace ndnfd {
 // to send and receive Ethernet frames.
 class BpfChannel : DgramChannel {
  public:
-  BpfChannel(int fd, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
+  BpfChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual ~BpfChannel(void) {}
 
  protected:
   virtual void ReceiveFrom(void);
@@ -17,18 +18,26 @@ class BpfChannel : DgramChannel {
   DISALLOW_COPY_AND_ASSIGN(BpfChannel);
 };
 
-// A EtherFaceFactory creates Face objects for Ethernet.
+// A EtherAddressVerifier verifies Ethernet addresses.
 // Address is uint8_t[6] MAC address.
-class EtherFaceFactory : public FaceFactory, public IAddressVerifier {
+class EtherAddressVerifier : public AddressVerifier {
+ public:
+  virtual ~EtherAddressVerifier(void) {}
+  virtual bool CheckAddress(const NetworkAddress& addr);
+  virtual void NormalizeAddress(NetworkAddress& addr);
+ private:
+  DISALLOW_COPY_AND_ASSIGN(EtherAddressVerifier);
+};
+
+// A EtherFaceFactory creates Face objects for Ethernet.
+class EtherFaceFactory : public FaceFactory {
  public:
   EtherFaceFactory(Ptr<WireProtocol> wp);
+  virtual ~EtherFaceFactory(void) {}
   
   // MakeChannel creates a DgramChannel (BpfChannel) for Ethernet.
   Ptr<DgramChannel> MakeChannel(std::string ifname);
 
-  virtual bool CheckAddress(const NetworkAddress& addr);
-  virtual void NormalizeAddress(NetworkAddress& addr);
-  
  private:
   Ptr<WireProtocol> wp_;
   Ptr<WireProtocol> wp(void) const { return this->wp_; }

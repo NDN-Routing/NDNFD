@@ -1,6 +1,9 @@
 #ifndef NDNFD_MESSAGE_NAME_H_
 #define NDNFD_MESSAGE_NAME_H_
 #include "util/defs.h"
+extern "C" {
+#include <ccn/charbuf.h>
+}
 namespace ndnfd {
 
 // A Name represents an NDN Name.

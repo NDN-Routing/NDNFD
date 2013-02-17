@@ -8,6 +8,7 @@ namespace ndnfd {
 // A WireProtocolState subclass is the per-peer state of a WireProtocol subclass.
 class WireProtocolState : public Object {
  public:
+  virtual ~WireProtocolState(void) {}
   // GetReceiveBuffer provides a buffer that received packet should be appended into.
   // This is useful for stream sockets that arriving octets are put after a partial message.
   virtual Ptr<Buffer> GetReceiveBuffer(void);
@@ -28,6 +29,7 @@ class WireProtocolState : public Object {
 // if it is stateful, per-peer state should be stored in a WireProtocolState class.
 class WireProtocol : public Element {
  public:
+  virtual ~WireProtocol(void) {}
   // IsStateful returns true if per-peer state is needed.
   virtual bool IsStateful(void) const { return false; }
   

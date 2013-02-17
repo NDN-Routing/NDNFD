@@ -9,7 +9,7 @@ namespace ndnfd {
 class ContentObjectMessage : public CcnbMessage {
  public:
   static const MessageType kType = 1002;
-  virtual MessageType type(void) const { return ContentObject::kType; }
+  virtual MessageType type(void) const { return ContentObjectMessage::kType; }
   
   const Name& name(void) const;
   ::ccn_parsed_ContentObject parsed;

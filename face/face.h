@@ -28,6 +28,7 @@ enum class FaceStatus {
 class Face : public Element {
  public:
   Face(void);
+  virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
   FaceStatus status(void) const { return this->status_; }
@@ -40,12 +41,12 @@ class Face : public Element {
   // CanReceive returns true if this Face may be used to receive messages.
   virtual bool CanReceive(void) const { return false; }
   // Receive is called when a message is received.
-  PushFace<Ptr<Message>> Receive;
+  PushPort<Ptr<Message>> Receive;
   
   // CanAccept returns true if this Face may accept new connection.
   virtual bool CanAccept(void) const { return false; }
   // Accept is called when a new connection is accepted as a new Face.
-  PushFace<Ptr<Face>> Accept;
+  PushPort<Ptr<Face>> Accept;
   
   // Enroll verifies mgr is the FaceMgr of this router,
   // and records the assigned FaceId.

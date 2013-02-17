@@ -12,7 +12,9 @@ class DgramChannel;
 class DgramFace : public Face {
  public:
   DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer);
-  const NetwordAddress& peer(void) const { return this->peer_; }
+  virtual ~DgramFace(void) {}
+
+  const NetworkAddress& peer(void) const { return this->peer_; }
   Ptr<DgramChannel> channel(void) const { return this->channel_; }
   
   virtual bool CanSend(void) const { return true; }
@@ -21,7 +23,7 @@ class DgramFace : public Face {
   virtual void Send(Ptr<Message> message);
   
  private:
-  NetwordAddress peer_;
+  NetworkAddress peer_;
   Ptr<DgramChannel> channel_;
   DISALLOW_COPY_AND_ASSIGN(DgramFace);
 };
@@ -32,6 +34,7 @@ class DgramFace : public Face {
 class DgramFallbackFace : public DgramFace {
  public:
   DgramFallbackFace(Ptr<DgramChannel> channel);
+  virtual ~DgramFallbackFace(void) {}
   
   virtual bool CanSend(void) const { return false; }
   
@@ -43,7 +46,8 @@ class DgramFallbackFace : public DgramFace {
 class DgramChannel : public Element, public IPollClient {
  public:
   // fd: fd of the socket, after bind(local_addr)
-  DgramChannel(int fd, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
+  DgramChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual ~DgramChannel(void) {}
   
   // GetFallbackFace returns the fallback face: "unsolicited" messages
   // (from peers without a DgramFace) are received on this face.
@@ -67,7 +71,7 @@ class DgramChannel : public Element, public IPollClient {
   typedef std::tuple<Ptr<DgramFace>,Ptr<WireProtocolState>> PeerEntry;
 
   int fd(void) const { return this->fd_; }
-  Ptr<IAddressVerifier> av(void) const { return this->av_; }
+  Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
   
@@ -81,7 +85,7 @@ class DgramChannel : public Element, public IPollClient {
   
  private:
   int fd_;
-  Ptr<IAddressVerifier> av_;
+  Ptr<AddressVerifier> av_;
   Ptr<WireProtocol> wp_;
   std::unordered_map<NetworkAddress,PeerEntry> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
@@ -94,7 +98,8 @@ class McastFace : public Face, public IPollClient {
  public:
   // fd_recv: fd of the receiving socket, after bind(any) and joining multicast group
   // fd_send: fd of the sending socket, after bind(local_addr)
-  McastFace(int fd_recv, int fd_send, const NetworkAddress& mcast_group, Ptr<IAddressVerifier> av, Ptr<WireProtocol> wp);
+  McastFace(int fd_recv, int fd_send, const NetworkAddress& mcast_group, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual ~McastFace(void) {}
 
   virtual bool CanSend(void) const { return true; }
   virtual bool CanReceive(void) const { return true; }
@@ -109,7 +114,7 @@ class McastFace : public Face, public IPollClient {
   int fd_recv(void) const { return this->fd_recv_; }
   int fd_send(void) const { return this->fd_send_; }
   const NetworkAddress& mcast_group(void) const { return this->mcast_group_; }
-  Ptr<IAddressVerifier> av(void) const { return this->av_; }
+  Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<NetworkAddress,Ptr<WireProtocolState>>& peers(void) { return this->peers_; }
   
@@ -117,7 +122,7 @@ class McastFace : public Face, public IPollClient {
   int fd_recv_;
   int fd_send_;
   NetworkAddress mcast_group_;
-  Ptr<IAddressVerifier> av_;
+  Ptr<AddressVerifier> av_;
   Ptr<WireProtocol> wp_;
   std::unordered_map<NetworkAddress,Ptr<WireProtocolState>> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
