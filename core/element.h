@@ -3,14 +3,16 @@
 #include "core/global.h"
 namespace ndnfd {
 
-// An Element provides access to the Global object.
+// Element base class provides access to the Global object.
 class Element : public Object {
  public:
   // A PushPort is a function callback that passes information from this element to another.
   template<typename... TArgs>
   class PushPort {
    public:
-    typedef std::function<void(TArgs&...)> Callback;
+    typedef std::function<void(TArgs&&...)> Callback;
+    
+    PushPort(void) { this->cb_ = nullptr; }
     
     // `port = callback` sets the callback.
     // This is typically used from an initialization function.
@@ -18,7 +20,7 @@ class Element : public Object {
     
     // `port(args)` invokes the callback.
     // This is typically used within the element defining the PushPort.
-    PushPort& operator()(TArgs&... message) { if (this->cb() != nullptr) this->cb()(message...); return *this; }
+    PushPort& operator()(TArgs&&... message) { if (this->cb() != nullptr) this->cb()(message...); return *this; }
     
     // callback function
     Callback cb() const { return this->cb_; }
@@ -33,13 +35,15 @@ class Element : public Object {
   // MakeFirstElement creates a new element with a new Global object.
   static Ptr<Element> MakeFirstElement(Global* global);
 
+  // New makes a new element of type T which shares the same Global object.
+  template<typename T, typename... TArgs>
+  Ptr<T> New(TArgs&&... args) const;
+
  protected:
+  Element(void) {}
+
   // the Global object
   Global* global() { return this->global_; }
-  
-  // Create makes a new element of type T which shares the same Global object.
-  template<typename T, typename... TArgs>
-  Ptr<T> Create(TArgs&&... args) const;
 
  private:
   Global* global_;
@@ -47,10 +51,10 @@ class Element : public Object {
 };
 
 template<typename T, typename... TArgs>
-Ptr<T> Element::Create(TArgs&&... args) const {
-  T* obj = new T(args...);
-  if (obj != NULL) obj->global_ = this->global_;
-  return obj;
+Ptr<T> Element::New(TArgs&&... args) const {
+  T* ele = new T(args...);
+  if (ele != NULL) ele->global_ = this->global_;
+  return ele;
 }
 
 

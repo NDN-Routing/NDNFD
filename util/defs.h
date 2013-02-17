@@ -24,6 +24,8 @@ namespace ndnfd {
 // A Ptr is an intrusive smart pointer.
 //template<typename T> using Ptr = ns3::Ptr<T>;
 #define Ptr ns3::Ptr
+#define PeekPointer(ptr) ns3::PeekPointer((ptr))
+#define GetPointer(ptr) ns3::GetPointer((ptr))
 
 // Object is the based class for objects that needs smart pointer support.
 class Object {
