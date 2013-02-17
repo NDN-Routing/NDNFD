@@ -53,10 +53,21 @@ Ptr<Buffer> Buffer::AsBuffer(bool clone) {
 }
 
 
+BufferView::BufferView(Ptr<Buffer> buffer, size_t start, size_t length) {
+  assert(buffer != nullptr);
+  assert(buffer->length() >= start + length);
+  this->buffer_ = buffer;
+  this->start_ = start;
+  this->length_ = length;
+}
 
 Ptr<Buffer> BufferView::AsBuffer(bool clone) {
-  //TODO implement
-  return nullptr;
+  if (!clone && this->start_ == 0U && this->length() == this->buffer_->length()) {
+    return this->buffer_;
+  }
+  Ptr<Buffer> buffer = new Buffer(this->length());
+  ::memcpy(buffer->mutable_data(), this->data(), this->length());
+  return buffer;
 }
 
 };//namespace ndnfd
