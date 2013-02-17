@@ -1,6 +1,8 @@
 VERSION='0.1'
 APPNAME='NDNFD'
 
+import waflib
+
 
 def options(opt):
     opt.load('compiler_c compiler_cxx')
@@ -64,5 +66,14 @@ def build(bld):
             use='common gtest',
             install_path=None,
             )
+
+
+def check(ctx):
+    unittest_node=ctx.root.find_node(waflib.Context.out_dir+'/unittest')
+    if unittest_node is None:
+        ctx.fatal('unittest is not built; configure with --gtest and build')
+    else:
+        import subprocess
+        subprocess.call(unittest_node.abspath())
 
 
