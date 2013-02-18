@@ -8,6 +8,7 @@ namespace ndnfd {
 // A WireProtocolState subclass is the per-peer state of a WireProtocol subclass.
 class WireProtocolState : public Object {
  public:
+  WireProtocolState(void) {}
   virtual ~WireProtocolState(void) {}
   // GetReceiveBuffer provides a buffer that received packet should be appended into.
   // This is useful for stream sockets that arriving octets are put after a partial message.
@@ -30,6 +31,7 @@ class WireProtocolState : public Object {
 class WireProtocol : public Element {
  public:
   virtual ~WireProtocol(void) {}
+
   // IsStateful returns true if per-peer state is needed.
   virtual bool IsStateful(void) const { return false; }
   
@@ -37,13 +39,17 @@ class WireProtocol : public Element {
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { assert(false); return NULL; }
   
   // Encode gets a new message, and returns zero or more packets
-  // encoded of the wire protocol (into result_packets).
-  virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
+  // encoded of the wire protocol.
+  virtual std::list<Ptr<Buffer>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) =0;
   
   // Decode gets a new packet of the wire protocol,
-  // and returns zero or more messages (into result_messages).
-  virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_messages);
+  // and returns whether success, zero or more messages.
+  // (first return value = false indicates protocol error)
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) =0;
 
+ protected:
+  WireProtocol(void) {}
+ 
  private:
   DISALLOW_COPY_AND_ASSIGN(WireProtocol);
 };

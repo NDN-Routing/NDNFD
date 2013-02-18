@@ -36,8 +36,8 @@ class CcnbWireProtocol : public WireProtocol {
   // This is only used in stream mode.
   struct State : public WireProtocolState {
     State();
-    size_t last_length;//previous length of buffer; the difference is new arrival
-    ::ccn_skeleton_decoder decoder;//skeleton decoder state
+    void Clear();
+    ::ccn_skeleton_decoder d_;//skeleton decoder state
   };
   
   CcnbWireProtocol(bool stream_mode);
@@ -46,12 +46,13 @@ class CcnbWireProtocol : public WireProtocol {
   
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
   
-  virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
+  virtual std::list<Ptr<Buffer>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
   
-  virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_message);
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
 
  private:
   bool stream_mode_;
+  State state_;//a State for use in dgram mode
   DISALLOW_COPY_AND_ASSIGN(CcnbWireProtocol);
 };
 
