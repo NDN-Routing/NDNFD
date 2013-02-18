@@ -8,6 +8,7 @@ namespace ndnfd {
 class Message : public MessageBase {
  public:
   static const MessageType kType = 1000;
+  virtual ~Message(void) {}
   virtual MessageType type(void) const { return Message::kType; }
 
   // Face through which this Message enters the router
@@ -18,6 +19,9 @@ class Message : public MessageBase {
   // Address format is defined by the incoming Face.
   const NetworkAddress& incoming_sender(void) const { return this->incoming_sender_; }
   void set_incoming_sender(const NetworkAddress& value) { this->incoming_sender_ = value; }  
+
+ protected:
+  Message(void) {}
 
  private:
   FaceId incoming_face_;

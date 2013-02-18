@@ -11,7 +11,11 @@ typedef uint16_t MessageType;
 class MessageBase : public Object {
  public:
   static const MessageType kType = 1;
+  virtual ~MessageBase(void) {}
   virtual MessageType type(void) const { return MessageBase::kType; }
+
+ protected:
+  MessageBase(void) {}
 
  private:
   DISALLOW_COPY_AND_ASSIGN(MessageBase);
