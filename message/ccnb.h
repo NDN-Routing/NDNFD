@@ -9,17 +9,23 @@ extern "C" {
 namespace ndnfd {
 
 // A CcnbMessage represents an unparsed CCNB message.
-// It can be passed to process_input_message() for processing.
+// It does not own the buffer.
 class CcnbMessage : public Message {
  public:
   static const MessageType kType = 1099;
+  CcnbMessage(uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
+  virtual ~CcnbMessage(void) {}
   virtual MessageType type(void) const { return CcnbMessage::kType; }
   
-  //CcnbMessage does not own this buffer
-  uint8_t* msg;
-  size_t size;
+  uint8_t* msg(void) const { return this->msg_; }
+  size_t length(void) const { return this->length_; }
+  
+  // Verify checks whether CcnbMessage has correct CCNB format
+  bool Verify(void) const;
 
  private:
+  uint8_t* msg_;
+  size_t length_;
   DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 

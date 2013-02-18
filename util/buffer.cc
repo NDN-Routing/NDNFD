@@ -1,5 +1,4 @@
 #include "util/buffer.h"
-#include <cstring>
 namespace ndnfd {
 
 Buffer::Buffer(size_t size, size_t headroom, size_t tailroom) {

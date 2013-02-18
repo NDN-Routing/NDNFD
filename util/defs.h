@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <cstddef>
 #include <cinttypes>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <deque>
