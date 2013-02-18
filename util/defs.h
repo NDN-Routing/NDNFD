@@ -1,5 +1,5 @@
-#ifndef NDNFD_CORE_DEFS_H_
-#define NDNFD_CORE_DEFS_H_
+#ifndef NDNFD_UTIL_DEFS_H_
+#define NDNFD_UTIL_DEFS_H_
 
 #include <assert.h>
 #include <cstddef>
@@ -9,6 +9,7 @@
 #include <deque>
 #include <queue>
 #include <tuple>
+#include <map>
 #include <unordered_set>
 #include <unordered_map>
 #include <atomic>
@@ -46,4 +47,4 @@ class Object {
 };
 
 };//namespace ndnfd
-#endif//NDNFD_CORE_DEFS_H
+#endif//NDNFD_UTIL_DEFS_H

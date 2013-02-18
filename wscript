@@ -23,6 +23,7 @@ def configure(conf):
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
     conf.env.append_unique('CFLAGS', flags + ['-Wstrict-prototypes', '-std=c99'])
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'])
+    conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
 
     if conf.options.optimize:
         conf.env.append_unique('CFLAGS', ['-O3', '-g1'])
@@ -31,19 +32,23 @@ def configure(conf):
         conf.env.append_unique('CFLAGS', ['-O0', '-g3'])
         conf.env.append_unique('CXXFLAGS', ['-O0', '-g3'])
 
+    conf.check_cxx(lib='rt')
+
     if conf.options.gtest:
         conf.env.GTEST = 1
-        if not conf.env['LIB_PTHREAD']:
+        if not conf.env.LIB_PTHREAD:
             conf.check_cxx(lib='pthread')
 
 
 def build(bld):
+    bld.read_shlib('rt', paths=bld.env.LIBPATH)
+
     source_subdirs = ['core','util','face','message']
     bld.objects(target='common',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL',
+        use='CCNX SSL rt',
         )
     #bld.program(target='ndnfd',
     #    source='tools/ndnfd.cc',
@@ -55,7 +60,7 @@ def build(bld):
         try:
             bld.get_tgen_by_name('pthread')
         except:
-            bld.read_shlib('pthread', paths=['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
+            bld.read_shlib('pthread', paths=bld.env.LIBPATH)
         bld.stlib(target='gtest',
             source=['gtest/gtest.cc', 'gtest/gtest_main.cc'],
             includes='. gtest',
