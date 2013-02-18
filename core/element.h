@@ -3,7 +3,7 @@
 #include "core/global.h"
 namespace ndnfd {
 
-// Element base class provides access to the Global object.
+// Element base class.
 class Element : public Object {
  public:
   // A PushPort is a function callback that passes information from this element to another.
@@ -43,7 +43,9 @@ class Element : public Object {
   Element(void) {}
 
   // the Global object
-  Global* global() { return this->global_; }
+  Global* global() const { return const_cast<Global*>(this->global_); }
+  
+  void Log(LoggingLevel level, LoggingComponent component, const char* format, ...) const;
 
  private:
   Global* global_;

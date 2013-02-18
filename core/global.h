@@ -1,6 +1,7 @@
 #ifndef NDNFD_CORE_GLOBAL_H_
 #define NDNFD_CORE_GLOBAL_H_
 #include "util/defs.h"
+#include "util/logging.h"
 extern "C" {
   struct ccnd_handle;
 }
@@ -9,6 +10,7 @@ namespace ndnfd {
 // Member types are forward declared in global.h.
 // Therefore, Global class saves T* instead of Ptr<T>.
 // set_*() methods Ref() new elements and Unref() old elements.
+class Logging;
 class PollMgr;
 class Scheduler;
 class FaceMgr;
@@ -20,6 +22,7 @@ class Global {
   Global(void);
   ~Global(void);
 
+  Logging* logging(void) { return &this->logging_; }
   ccnd_handle* ccndh(void) const { return this->ccndh_; }
   void set_ccnd(ccnd_handle* value) { this->ccndh_ = value; }
   PollMgr* pollmgr(void) const { return this->pollmgr_; }
@@ -28,8 +31,9 @@ class Global {
   void set_scheduler(Ptr<Scheduler> value);
   FaceMgr* facemgr(void) const { return this->facemgr_; }
   void set_facemgr(Ptr<FaceMgr> value);
-
+  
  private:
+  Logging logging_;
   ccnd_handle* ccndh_;
   PollMgr* pollmgr_;
   Scheduler* scheduler_;
