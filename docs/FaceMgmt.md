@@ -1,6 +1,6 @@
 # NDNFD Face Management Protocol
 
-NDNFD is compatible with (CCNx Face Management and Registration Protocol)[http://www.ccnx.org/releases/latest/doc/technical/Registration.html]. The same protocol is used to create UDP and TCP faces, and register or unregister prefixes.
+NDNFD is compatible with [CCNx Face Management and Registration Protocol](http://www.ccnx.org/releases/latest/doc/technical/Registration.html). The same protocol is used to create UDP and TCP faces, and register or unregister prefixes.
 
 ## Ethernet Face
 
