@@ -1,4 +1,5 @@
 #include "face.h"
+#include "facemgr.h"
 namespace ndnfd {
 
 std::string FaceKind_ToString(FaceKind kind) {
@@ -59,8 +60,18 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 }
 
 void Face::set_status(FaceStatus value) {
-  // TODO notify FaceMgr
+  FaceStatus old_status = this->status_;
+  if (old_status == value) return;
   this->status_ = value;
+  if (old_status != FaceStatus::kNone) {
+    this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%"PRIxPTR",%"PRI_FaceId")::set_status %s=>%s", this, this->id(), FaceStatus_ToString(old_status).c_str(), FaceStatus_ToString(value).c_str());
+  }
+  if (this->id() != FaceId_none) {
+    this->global()->facemgr()->NotifyStatusChange(this);
+    if (value == FaceStatus::kClosed) {
+      this->global()->facemgr()->RemoveFace(this);
+    }
+  }
 }
 
 };//namespace ndnfd

@@ -23,8 +23,9 @@ class FaceMgr : public Element {
   void NotifyStatusChange(Ptr<Face> face);
   
  private:
-  std::unordered_map<FaceId,Ptr<Face>> faces_;
-  //TODO design private fields
+  FaceId next_id_;
+  std::map<FaceId,Ptr<Face>> table_;
+
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };
 

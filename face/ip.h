@@ -10,7 +10,8 @@ class IpAddressVerifier : public AddressVerifier {
  public:
   virtual ~IpAddressVerifier(void) {}
   virtual bool CheckAddress(const NetworkAddress& addr);
-  virtual void NormalizeAddress(NetworkAddress& addr);
+  virtual void NormalizeAddress(NetworkAddress* addr);
+  virtual std::string AddressToString(const NetworkAddress& addr);
  private:
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
 };

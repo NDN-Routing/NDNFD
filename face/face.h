@@ -38,6 +38,7 @@ class Face : public Element {
   virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
+  void set_kind(FaceKind value) { this->kind_ = value; }
   FaceStatus status(void) const { return this->status_; }
 
   // CanSend returns true if this Face may be used to send messages.
@@ -62,7 +63,6 @@ class Face : public Element {
  protected:
   Face(void);
   void set_id(FaceId value) { this->id_ = value; }
-  void set_kind(FaceKind value) { this->kind_ = value; }
   void set_status(FaceStatus value);//should notify FaceMgr
 
  private:

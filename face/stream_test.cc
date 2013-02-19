@@ -20,7 +20,7 @@ TEST(FaceTest, StreamFace) {
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
 
   TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
-  //TODO initialize SockMgr
+  TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
 
   StreamFaceTest_MakeSocketPair(sockets);
   Ptr<StreamFace> f1 = NewTestElement<StreamFace>(sockets[1], false, netaddr, ccnbwp);
@@ -58,5 +58,7 @@ TEST(FaceTest, StreamFace) {
   f1->SetClosing();
   EXPECT_EQ(FaceStatus::kClosed, f1->status());
 }
+
+// TODO unit test StreamListener in TCP
 
 };//namespace ndnfd

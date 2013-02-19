@@ -13,8 +13,11 @@ class AddressVerifier : public Object {
   virtual bool CheckAddress(const NetworkAddress& addr) =0;
   
   // NormalizeAddress clears certains fields in addr so that it is suitable to use as a hash key.
-  virtual void NormalizeAddress(NetworkAddress& addr) {}
+  virtual void NormalizeAddress(NetworkAddress* addr) {}
 
+  // AddressToString returns a human readable string representation of an address.
+  virtual std::string AddressToString(const NetworkAddress& addr) =0;
+  
  private:
   DISALLOW_COPY_AND_ASSIGN(AddressVerifier);
 };

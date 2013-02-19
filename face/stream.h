@@ -4,6 +4,7 @@
 #include "face/wireproto.h"
 #include "face/addrverifier.h"
 #include "core/pollmgr.h"
+#include "face/facemgr.h"
 namespace ndnfd {
 
 // A StreamFace sends and receives messages on a stream socket.
@@ -79,18 +80,36 @@ class StreamFace : public Face, public IPollClient {
 class StreamListener : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after bind() and listen()
-  StreamListener(int fd, Ptr<AddressVerifier> av);
-  virtual ~StreamListener(void) {}
+  StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual void Init(void);
+  virtual ~StreamListener(void);
   
-  virtual bool CanAccept() const { return true; }
+  virtual bool CanAccept(void) const { return true; }
   
   // PollCallback is invoked with POLLIN when there are
   // connection requests on the socket to accept.
   virtual void PollCallback(int fd, short revents);
 
+  // Close closes the socket.
+  void Close(void);
+
+ protected:
+  int fd(void) const { return this->fd_; }
+  void set_fd(int value) { this->fd_ = value; }
+  Ptr<AddressVerifier> av(void) const { return this->av_; }
+  void set_av(Ptr<AddressVerifier> value) { this->av_ = value; }
+  Ptr<WireProtocol> wp(void) const { return this->wp_; }
+  void set_wp(Ptr<WireProtocol> value) { this->wp_ = value; }
+  
+  // AcceptConnection accepts a connection request.
+  void AcceptConnection(void);
+  // MakeFace makes a StreamFace from an accepted connection.
+  virtual Ptr<StreamFace> MakeFace(int fd, NetworkAddress* peer);
+
  private:
   int fd_;
   Ptr<AddressVerifier> av_;
+  Ptr<WireProtocol> wp_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };
