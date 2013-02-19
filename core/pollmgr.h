@@ -1,7 +1,7 @@
 #ifndef NDNFD_CORE_POLLMGR_H_
 #define NDNFD_CORE_POLLMGR_H_
 #include "core/element.h"
-#include "util/time.h"
+#include <chrono>
 #include <poll.h>
 namespace ndnfd {
 
@@ -22,8 +22,6 @@ class PollMgr : public Element {
   static const short kEvents = POLLIN | POLLOUT;
   // error events that are always delivered
   static const short kErrors = POLLERR | POLLHUP | POLLNVAL;
-  // infinite timeout
-  static const TimeSpan kInfiniteTimeout = -1;
   
   PollMgr(void);
   virtual ~PollMgr(void);
@@ -39,7 +37,7 @@ class PollMgr : public Element {
   
   // Poll runs poll() syscall and invokes clients.
   // Returns true on success, false on error.
-  bool Poll(TimeSpan timeout);
+  bool Poll(std::chrono::milliseconds timeout);
 
  private:
   // A Reg lists the clients interested in an fd.
@@ -51,11 +49,11 @@ class PollMgr : public Element {
   std::map<int,Reg> regs_;
   
   // struct pollfd[]
-  ::pollfd* pfds_;
+  pollfd* pfds_;
   // number of pollfds in use
-  ::nfds_t nfds_;
+  nfds_t nfds_;
   // number of pollfds allocated
-  ::nfds_t pfds_limit_;
+  nfds_t pfds_limit_;
   
   // UpdatePfds updates pfds_ according to Reg.events_.
   void UpdatePfds(void);

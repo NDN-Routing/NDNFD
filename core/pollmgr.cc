@@ -7,7 +7,7 @@ PollMgr::PollMgr(void) {
 }
 
 PollMgr::~PollMgr(void) {
-  if (this->pfds_ != nullptr) ::free(this->pfds_);
+  if (this->pfds_ != nullptr) free(this->pfds_);
 }
 
 void PollMgr::Add(IPollClient* client, int fd, short events) {
@@ -40,11 +40,11 @@ void PollMgr::RemoveAll(IPollClient* client) {
 }
 
 void PollMgr::UpdatePfds(void) {
-  ::nfds_t nfds = this->regs_.size();
+  nfds_t nfds = this->regs_.size();
   if (this->pfds_limit_ < nfds) {
     this->pfds_limit_ = 1;
     while (this->pfds_limit_ < nfds) this->pfds_limit_ = this->pfds_limit_ << 1;
-    if (this->pfds_ != nullptr) ::free(this->pfds_);
+    if (this->pfds_ != nullptr) free(this->pfds_);
     this->pfds_ = static_cast<pollfd*>(::malloc(this->pfds_limit_ * sizeof(pollfd)));
   }
   nfds = 0;
@@ -69,15 +69,15 @@ void PollMgr::UpdateRegEvents(Reg* reg) {
   reg->events_ = events;
 }
 
-bool PollMgr::Poll(TimeSpan timeout) {
-  int timeout_ms = timeout == PollMgr::kInfiniteTimeout ? -1 : static_cast<int>(timeout / 1000000);
-  int r = ::poll(this->pfds_, this->nfds_, timeout_ms);
+bool PollMgr::Poll(std::chrono::milliseconds timeout) {
+  int timeout_ms = static_cast<int>(timeout.count());
+  int r = poll(this->pfds_, this->nfds_, timeout_ms);
   if (r == -1) return false;
   if (r == 0) return true;
 
   auto it = this->regs_.cbegin();
   for (::nfds_t i = 0; i < this->nfds_; ++i) {
-    const ::pollfd& pfd = this->pfds_[i];
+    const pollfd& pfd = this->pfds_[i];
     int fd = pfd.fd; short revents = pfd.revents;
     if (revents == 0) continue;
     while (it != this->regs_.cend() && it->first < fd) ++it;

@@ -1,5 +1,6 @@
 #ifndef NDNFD_FACE_IP_H_
 #define NDNFD_FACE_IP_H_
+#include <netinet/ip.h>
 #include "face/dgram.h"
 #include "face/stream.h"
 #include "face/factory.h"
@@ -8,10 +9,12 @@ namespace ndnfd {
 // An IpAddressVerifier verifies sockaddr_in or sockaddr_in6 addresses.
 class IpAddressVerifier : public AddressVerifier {
  public:
+  IpAddressVerifier(void) {}
   virtual ~IpAddressVerifier(void) {}
-  virtual bool CheckAddress(const NetworkAddress& addr);
-  virtual void NormalizeAddress(NetworkAddress* addr);
-  virtual std::string AddressToString(const NetworkAddress& addr);
+  virtual bool Check(const NetworkAddress& addr);
+  virtual NetworkAddress Normalize(const NetworkAddress& addr);
+  virtual std::string ToString(const NetworkAddress& addr);
+  std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
 };

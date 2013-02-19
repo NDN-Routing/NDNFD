@@ -46,7 +46,7 @@ void StreamFace::Send(Ptr<Message> message) {
 void StreamFace::PollCallback(int fd, short revents) {
   assert(fd == this->fd());
   if ((revents & PollMgr::kErrors) != 0) {
-    ::close(this->fd());
+    close(this->fd());
     this->set_status(FaceStatus::kDisconnect);
     return;
   }
@@ -63,7 +63,7 @@ void StreamFace::SetClosing(void) {
     this->set_status(FaceStatus::kClosing);
   }
   if (this->status() == FaceStatus::kClosing && !this->SendBlocked()) {
-    ::close(this->fd());
+    close(this->fd());
     this->set_status(FaceStatus::kClosed);
   }
 }
@@ -75,10 +75,10 @@ void StreamFace::Enqueue(std::list<Ptr<Buffer>>* pkts) {
 void StreamFace::Write(void) {
   while (!this->send_queue().empty()) {
     Ptr<Buffer>& pkt = this->send_queue().front();
-    ssize_t res = ::write(this->fd(), pkt->data(), pkt->length());
+    ssize_t res = write(this->fd(), pkt->data(), pkt->length());
     if (res < 0) {
       if (errno != EAGAIN && errno != EWOULDBLOCK) {
-        ::close(this->fd());
+        close(this->fd());
         this->set_status(FaceStatus::kDisconnect);
         return;
       }
@@ -100,7 +100,7 @@ void StreamFace::Write(void) {
   } else {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
     if (this->status() == FaceStatus::kClosing) {
-      ::close(this->fd());
+      close(this->fd());
       this->set_status(FaceStatus::kClosed);
     }
   }
@@ -117,21 +117,21 @@ Ptr<Buffer> StreamFace::GetReceiveBuffer(void) {
 }
 
 void StreamFace::Read(void) {
-  int sockerr = 0; ::socklen_t sockerr_size = sizeof(sockerr);
-  int sockerr_res = ::getsockopt(this->fd(), SOL_SOCKET, SO_ERROR, &sockerr, &sockerr_size);
+  int sockerr = 0; socklen_t sockerr_size = sizeof(sockerr);
+  int sockerr_res = getsockopt(this->fd(), SOL_SOCKET, SO_ERROR, &sockerr, &sockerr_size);
   if (sockerr_res >= 0 && sockerr != 0) {
     if (sockerr == ETIMEDOUT && this->status() == FaceStatus::kConnecting) {
-      ::close(this->fd());
+      close(this->fd());
       this->set_status(FaceStatus::kConnectError);
     }
   }
 
   Ptr<Buffer> pkt = this->GetReceiveBuffer();
   const size_t bufsize = 1<<20;
-  ssize_t res = ::read(this->fd(), pkt->Reserve(bufsize), bufsize);
+  ssize_t res = read(this->fd(), pkt->Reserve(bufsize), bufsize);
   if (res < 0) {
     if (errno != EAGAIN && errno != EWOULDBLOCK) {
-      ::close(this->fd());
+      close(this->fd());
       this->set_status(FaceStatus::kDisconnect);
     }
     return;
@@ -171,7 +171,7 @@ StreamListener::~StreamListener(void) {
 void StreamListener::PollCallback(int fd, short revents) {
   assert(fd == this->fd());
   if ((revents & PollMgr::kErrors) != 0) {
-    ::close(this->fd());
+    close(this->fd());
     this->set_status(FaceStatus::kDisconnect);
     return;
   }
@@ -181,27 +181,27 @@ void StreamListener::PollCallback(int fd, short revents) {
 }
 
 void StreamListener::AcceptConnection(void) {
-  NetworkAddress peer; peer.wholen = sizeof(peer.who);
-  int fd = ::accept(this->fd(), (struct sockaddr*)&peer.who, &peer.wholen);
+  NetworkAddress peer;
+  int fd = accept(this->fd(), (struct sockaddr*)&peer.who, &peer.wholen);
   if (fd < 0) return;
-  if (!this->av()->CheckAddress(peer)) {
+  if (!this->av()->Check(peer)) {
     this->Log(kLLError, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection peer address not valid", this);
-    ::close(fd);
+    close(fd);
     return;
   }
-  Ptr<StreamFace> face = this->MakeFace(fd, &peer);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection fd=%d face=%"PRIxPTR" peer=%s", this, fd, PeekPointer(face), this->av()->AddressToString(peer).c_str());
+  Ptr<StreamFace> face = this->MakeFace(fd, peer);
+  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection fd=%d face=%"PRIxPTR" peer=%s", this, fd, PeekPointer(face), this->av()->ToString(peer).c_str());
   this->global()->facemgr()->AddFace(face);
 }
 
-Ptr<StreamFace> StreamListener::MakeFace(int fd, NetworkAddress* peer) {
-  this->av()->NormalizeAddress(peer);
-  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, *peer, this->wp());
+Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
+  NetworkAddress normalized = this->av()->Normalize(peer);
+  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, normalized, this->wp());
   return face;
 }
 
 void StreamListener::Close(void) {
-  ::close(this->fd());
+  close(this->fd());
   this->set_status(FaceStatus::kClosed);
 }
 

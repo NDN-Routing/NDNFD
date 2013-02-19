@@ -9,14 +9,17 @@ class AddressVerifier : public Object {
  public:
   virtual ~AddressVerifier(void) {}
   
-  // CheckAddress checks whether addr is valid in lower protocol.
-  virtual bool CheckAddress(const NetworkAddress& addr) =0;
+  // Check checks whether addr is valid in lower protocol.
+  virtual bool Check(const NetworkAddress& addr) =0;
   
-  // NormalizeAddress clears certains fields in addr so that it is suitable to use as a hash key.
-  virtual void NormalizeAddress(NetworkAddress* addr) {}
+  // Normalize returns an address that is suitable to use as a hash key.
+  virtual NetworkAddress Normalize(const NetworkAddress& addr) { return addr; }
 
-  // AddressToString returns a human readable string representation of an address.
-  virtual std::string AddressToString(const NetworkAddress& addr) =0;
+  // ToString returns a human readable string representation of an address.
+  virtual std::string ToString(const NetworkAddress& addr) =0;
+
+ protected:
+  AddressVerifier(void) {}
   
  private:
   DISALLOW_COPY_AND_ASSIGN(AddressVerifier);

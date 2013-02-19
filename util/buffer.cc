@@ -5,7 +5,7 @@ Buffer::Buffer(size_t size, size_t headroom, size_t tailroom) {
   this->initial_headroom_ = headroom;
   this->initial_tailroom_ = tailroom;
   this->headroom_ = headroom;
-  this->c_ = ::ccn_charbuf_create_n(headroom + size + tailroom);
+  this->c_ = ccn_charbuf_create_n(headroom + size + tailroom);
   this->c_->length = headroom + size;
 }
 
@@ -14,7 +14,7 @@ Buffer::~Buffer(void) {
 }
 
 uint8_t* Buffer::Reserve(size_t n) {
-  return ::ccn_charbuf_reserve(this->c_, n);
+  return ccn_charbuf_reserve(this->c_, n);
 }
 
 uint8_t* Buffer::Put(size_t n) {
@@ -32,8 +32,8 @@ uint8_t* Buffer::Push(size_t n) {
   if (n > this->headroom_) {
     size_t add_headroom = this->initial_headroom_ - this->headroom_ + n;
     this->headroom_ += add_headroom;
-    ::ccn_charbuf_reserve(this->c_, add_headroom);
-    ::memmove(this->c_->buf + add_headroom, this->c_->buf, this->c_->length);
+    ccn_charbuf_reserve(this->c_, add_headroom);
+    memmove(this->c_->buf + add_headroom, this->c_->buf, this->c_->length);
     this->c_->length += add_headroom;
   }
   this->headroom_ -= n;
@@ -51,13 +51,13 @@ void Buffer::Rebase(void) {
   size_t datalen = this->length();
   if (datalen == 0) {
     this->headroom_ = this->initial_headroom_;
-    ::ccn_charbuf_reserve(this->c_, this->headroom_);
+    ccn_charbuf_reserve(this->c_, this->headroom_);
     this->c_->length = this->headroom_;
     return;
   }
   if (this->headroom_ < this->initial_headroom_) return;
   
-  ::memmove(this->c_->buf + this->initial_headroom_, this->c_->buf + this->headroom_, datalen);
+  memmove(this->c_->buf + this->initial_headroom_, this->c_->buf + this->headroom_, datalen);
   this->headroom_ = this->initial_headroom_;
   this->c_->length = this->headroom_ + datalen;
 }
@@ -65,7 +65,7 @@ void Buffer::Rebase(void) {
 Ptr<Buffer> Buffer::AsBuffer(bool clone) {
   if (clone) {
     Buffer* other = new Buffer(this->length(), this->initial_headroom_, this->initial_tailroom_);
-    ::memcpy(other->mutable_data(), this->mutable_data(), this->length());
+    memcpy(other->mutable_data(), this->mutable_data(), this->length());
     return other;
   } else {
     return this;
@@ -97,7 +97,7 @@ Ptr<Buffer> BufferView::AsBuffer(bool clone) {
     return this->buffer_;
   }
   Ptr<Buffer> buffer = new Buffer(this->length());
-  ::memcpy(buffer->mutable_data(), this->data(), this->length());
+  memcpy(buffer->mutable_data(), this->data(), this->length());
   return buffer;
 }
 

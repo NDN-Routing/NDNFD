@@ -17,8 +17,10 @@ static const FaceId FaceId_none = -1;
 
 // A NetworkAddress represents the address in any lower protocol.
 struct NetworkAddress {
-  ::sockaddr_storage who;
-  ::socklen_t wholen;
+  NetworkAddress(void) { memset(this, 0, sizeof(this)); this->wholen = sizeof(this->who); }
+  sa_family_t family(void) const { return reinterpret_cast<const sockaddr*>(&this->who)->sa_family; }
+  sockaddr_storage who;
+  socklen_t wholen;
 };
 
 };//namespace ndnfd

@@ -16,9 +16,9 @@ class NdnlpWireProtocol : public WireProtocol {
    public:
     State();
     virtual ~State();
-    ::SeqGen* seqgen;
-    ::MsgSlicer* slicer;
-    ::PartialMsgs* pms;
+    SeqGen* seqgen;
+    MsgSlicer* slicer;
+    PartialMsgs* pms;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(State);

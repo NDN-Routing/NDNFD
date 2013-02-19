@@ -12,7 +12,7 @@ class ContentObjectMessage : public CcnbMessage {
   virtual MessageType type(void) const { return ContentObjectMessage::kType; }
   
   const Name& name(void) const;
-  ::ccn_parsed_ContentObject parsed;
+  ccn_parsed_ContentObject parsed;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ContentObjectMessage);

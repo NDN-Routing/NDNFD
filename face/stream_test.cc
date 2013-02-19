@@ -7,11 +7,11 @@ namespace ndnfd {
 
 void StreamFaceTest_MakeSocketPair(int sockets[2]) {
   int res;
-  ASSERT_EQ(0, ::socketpair(AF_UNIX, SOCK_STREAM, 0, sockets));
-  ASSERT_NE(-1, res = ::fcntl(sockets[0], F_GETFL));
-  ASSERT_EQ(0, ::fcntl(sockets[0], F_SETFL, res | O_NONBLOCK));
-  ASSERT_NE(-1, res = ::fcntl(sockets[1], F_GETFL));
-  ASSERT_EQ(0, ::fcntl(sockets[1], F_SETFL, res | O_NONBLOCK));
+  ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, sockets));
+  ASSERT_NE(-1, res = fcntl(sockets[0], F_GETFL));
+  ASSERT_EQ(0, fcntl(sockets[0], F_SETFL, res | O_NONBLOCK));
+  ASSERT_NE(-1, res = fcntl(sockets[1], F_GETFL));
+  ASSERT_EQ(0, fcntl(sockets[1], F_SETFL, res | O_NONBLOCK));
 }
 
 TEST(FaceTest, StreamFace) {
@@ -27,8 +27,8 @@ TEST(FaceTest, StreamFace) {
   EXPECT_EQ(FaceStatus::kUndecided, f1->status());
   
   uint8_t buf[2054];
-  ::memset(buf, 0, 2054);
-  ::memcpy(buf, "\x4E\x64\x4C\xB2\x7F\xFD", 6);
+  memset(buf, 0, 2054);
+  memcpy(buf, "\x4E\x64\x4C\xB2\x7F\xFD", 6);
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 2054);
   ASSERT_TRUE(m1->Verify());
   
@@ -52,7 +52,7 @@ TEST(FaceTest, StreamFace) {
     EXPECT_EQ(0x4E, m->msg()[0]);
   };
   while (received < sent) {
-    TestGlobal->pollmgr()->Poll(1000);
+    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
   }
 
   f1->SetClosing();

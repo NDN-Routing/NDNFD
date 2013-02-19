@@ -37,7 +37,7 @@ class CcnbWireProtocol : public WireProtocol {
   struct State : public WireProtocolState {
     State();
     void Clear();
-    ::ccn_skeleton_decoder d_;//skeleton decoder state
+    ccn_skeleton_decoder d_;//skeleton decoder state
   };
   
   CcnbWireProtocol(bool stream_mode);

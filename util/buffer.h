@@ -80,7 +80,7 @@ class Buffer : public BufferView {
   virtual Ptr<Buffer> AsBuffer(bool clone);
   
  private:
-  ::ccn_charbuf* c_;
+  ccn_charbuf* c_;
   size_t initial_headroom_;
   size_t initial_tailroom_;
   size_t headroom_;

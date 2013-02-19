@@ -104,7 +104,7 @@ class StreamListener : public Face, public IPollClient {
   // AcceptConnection accepts a connection request.
   void AcceptConnection(void);
   // MakeFace makes a StreamFace from an accepted connection.
-  virtual Ptr<StreamFace> MakeFace(int fd, NetworkAddress* peer);
+  virtual Ptr<StreamFace> MakeFace(int fd, const NetworkAddress& peer);
 
  private:
   int fd_;
