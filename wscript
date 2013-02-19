@@ -10,6 +10,7 @@ def options(opt):
 
     opt.add_option('--optimize',action='store_true',default=False,dest='optimize',help='''optimize object code''')
     opt.add_option('--gtest', action='store_true',default=False,dest='gtest',help='''build unit tests''')
+    opt.add_option('--markdown', action='store_true',default=False,dest='markdown',help='''build Markdown into HTML''')
 
 
 def configure(conf):
@@ -38,6 +39,10 @@ def configure(conf):
         conf.env.GTEST = 1
         if not conf.env.LIB_PTHREAD:
             conf.check_cxx(lib='pthread')
+    
+    if conf.options.markdown:
+        conf.env.MARKDOWN = 1
+        conf.find_program('pandoc', var='PANDOC')
 
 
 def build(bld):
@@ -71,6 +76,17 @@ def build(bld):
             use='common gtest',
             install_path=None,
             )
+    
+    if bld.env.MARKDOWN:
+        waflib.TaskGen.declare_chain(name='markdown2html',
+            rule='${PANDOC} -f markdown -t html -o ${TGT} ${SRC}',
+            shell=False,
+            ext_in='.md',
+            ext_out='.htm',
+            reentrant=False,
+            install_path=None,
+            )
+        bld(source=bld.path.ant_glob(['**/*.md']))
 
 
 def check(ctx):
