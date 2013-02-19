@@ -27,7 +27,6 @@ enum class FaceStatus {
 // A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {
  public:
-  Face(void);
   virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
@@ -53,6 +52,7 @@ class Face : public Element {
   virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
   
  protected:
+  Face(void);
   void set_id(FaceId value) { this->id_ = value; }
   void set_kind(FaceKind value) { this->kind_ = value; }
   void set_status(FaceStatus value);//should notify FaceMgr
