@@ -9,6 +9,11 @@ TEST(UtilTest, Buffer) {
   b1->mutable_data()[0] = 0xBE;
   EXPECT_EQ(0xBE, b1->data()[0]);
   
+  b1->Reserve(1)[0] = 0xBB;
+  EXPECT_NE(nullptr, b1->Reserve(0));
+  EXPECT_EQ(0xBB, b1->Reserve(1)[0]);
+  EXPECT_EQ(0xBB, b1->Reserve(4)[0]);
+  
   b1->Put(2)[0] = 0xAA;
   EXPECT_EQ(42U, b1->length());
   EXPECT_EQ(0xBE, b1->data()[0]);
@@ -39,6 +44,9 @@ TEST(UtilTest, Buffer) {
   EXPECT_EQ(0xC1, b3->data()[0]);
   EXPECT_EQ(0x0D, b3->data()[513]);
   EXPECT_NE(b1->data(), b3->data());
+  
+  b3->Reset();
+  EXPECT_EQ(0U, b3->length());
 }
 
 TEST(UtilTest, BufferView) {

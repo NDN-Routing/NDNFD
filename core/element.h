@@ -20,7 +20,8 @@ class Element : public Object {
     
     // `port(args)` invokes the callback.
     // This is typically used within the element defining the PushPort.
-    PushPort& operator()(TArgs&&... message) { if (this->cb() != nullptr) this->cb()(message...); return *this; }
+    void operator()(TArgs&... message) { if (this->cb() != nullptr) this->cb()(std::forward<TArgs...>(message...)); }
+    void operator()(TArgs&&... message) { if (this->cb() != nullptr) this->cb()(std::forward<TArgs...>(message...)); }
     
     // callback function
     Callback cb() const { return this->cb_; }

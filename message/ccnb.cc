@@ -20,14 +20,14 @@ void CcnbWireProtocol::State::Clear() {
   ::memset(&this->d_, 0, sizeof(this->d_));
 }
 
-std::list<Ptr<Buffer>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
+std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
   CcnbMessage* msg = dynamic_cast<CcnbMessage*>(PeekPointer(message));
   Ptr<Buffer> pkt = new Buffer(msg->length());
   ::memcpy(pkt->mutable_data(), msg->msg(), pkt->length());
 
   std::list<Ptr<Buffer>> results;
   results.push_back(pkt);
-  return results;
+  return std::forward_as_tuple(true, results);
 }
 
 std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) {

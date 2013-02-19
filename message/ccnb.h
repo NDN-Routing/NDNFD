@@ -46,7 +46,7 @@ class CcnbWireProtocol : public WireProtocol {
   
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
   
-  virtual std::list<Ptr<Buffer>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
   
   virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
 

@@ -13,8 +13,12 @@ Buffer::~Buffer(void) {
   ccn_charbuf_destroy(&(this->c_));
 }
 
+uint8_t* Buffer::Reserve(size_t n) {
+  return ::ccn_charbuf_reserve(this->c_, n);
+}
+
 uint8_t* Buffer::Put(size_t n) {
-  uint8_t* p = ::ccn_charbuf_reserve(this->c_, n);
+  uint8_t* p = this->Reserve(n);
   this->c_->length += n;
   return p;
 }

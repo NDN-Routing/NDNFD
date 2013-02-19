@@ -6,23 +6,29 @@ namespace ndnfd {
 
 // FaceKind describes what's the peer(s) of a Face.
 enum class FaceKind {
-  kNone    = 0,
+  kNone      = 0,
   kInternal  = 1,//talk to the internal client
-  kApp     = 2,//talk to a local application
+  kApp       = 2,//talk to a local application
   kMulticast = 3,//talk to multiple remote peers; a face receiving unicast packets from unknown peers also belongs to this kind, but that face cannot send
   kUnicast   = 4 //talk to one remote peer
 };
 
 // FaceStatus describes the status of a Face.
 enum class FaceStatus {
-  kNone    = 0,
-  kConnecting  = 1,//connecting to remote peer
-  kUndecided   = 2,//accepted connection, no message received
-  kEstablished = 3,//normal
-  kClosing   = 4,//close after sending queued messages
-  kError     = 5 //error, no longer usable
+  kNone          =  0,
+  kConnecting    =  1,//connecting to remote peer
+  kUndecided     =  2,//accepted connection, no message received
+  kEstablished   =  3,//normal
+  kClosing       =  4,//close after sending queued messages
+  kClosed        =  5,//closed
+  kConnectError  = 11,//cannot establish connection
+  kProtocolError = 12,//protocol error
+  kDisconnect    = 13,//connection is reset
 };
-
+// FaceStatus_IsError returns true if status represents an error condition.
+bool FaceStatus_IsError(FaceStatus status);
+// FaceStatus_WillBeUsable returns true if status is or may become Established.
+bool FaceStatus_IsUsable(FaceStatus status);
 
 // A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {

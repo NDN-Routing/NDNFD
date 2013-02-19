@@ -23,9 +23,11 @@ TEST(MessageTest, CcnbWireProtoEncode) {
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
 
   Ptr<CcnbWireProtocol> wp = new CcnbWireProtocol(false);
-  std::list<Ptr<Buffer>> pkts = wp->Encode(netaddr, nullptr, m1);
+  bool ok; std::list<Ptr<Buffer>> pkts;
+  std::tie(ok, pkts) = wp->Encode(netaddr, nullptr, m1);
+  EXPECT_TRUE(ok);
   ASSERT_EQ(1U, pkts.size());
-  ASSERT_EQ(5U, pkts.front()->length());
+  EXPECT_EQ(5U, pkts.front()->length());
 }
 
 TEST(MessageTest, CcnbWireProtoDecodeDgram) {

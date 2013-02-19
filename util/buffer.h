@@ -48,6 +48,11 @@ class Buffer : public BufferView {
   // length of data
   virtual size_t length() const { return this->c_->length - this->headroom_; }
 
+  // Reserve makes n octets space after the end of data,
+  // and returns a pointer to the start of new space,
+  // but does not increase length,
+  uint8_t* Reserve(size_t n);
+
   // Put adds n octets after the end of data,
   // and returns a pointer to the start of new space.
   uint8_t* Put(size_t n);
@@ -59,6 +64,9 @@ class Buffer : public BufferView {
   uint8_t* Push(size_t n);
   // Pull removes n octets at the start of data.
   void Pull(size_t n);
+
+  // Reset removes clears the buffer.
+  void Reset(void) { this->Take(this->length()); }
   
   // AsBuffer returns or clones self.
   virtual Ptr<Buffer> AsBuffer(bool clone);

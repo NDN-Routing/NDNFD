@@ -14,11 +14,11 @@ namespace ndnfd {
 class StreamFace : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after connect() or accept()
-  StreamFace(int fd, Ptr<WireProtocol> wp);
+  StreamFace(int fd, const NetworkAddress& peer, Ptr<WireProtocol> wp);
   virtual ~StreamFace(void) {}
 
-  virtual bool CanSend(void) const { return this->status() != FaceStatus::kError; }
-  virtual bool CanReceive(void) const { return this->status() != FaceStatus::kError; }
+  virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
+  virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
 
   // Send calls WireProtocol to encode the messages into octets
   // and writes them to the socket.
@@ -31,14 +31,37 @@ class StreamFace : public Face, public IPollClient {
   virtual void PollCallback(int fd, short revents);
 
  protected:
-  // DeferredWrite writes contents in send queue into the socket,
-  // until socket is blocked again, or the send queue is empty.
-  virtual void DeferredWrite(void);
+  int fd(void) const { return this->fd_; }
+  void set_fd(int value) { this->fd_ = value; }
+  Ptr<WireProtocol> wp(void) const { return this->wp_; }
+  void set_wp(Ptr<WireProtocol> value) { this->wp_ = value; }
+  Ptr<WireProtocolState> wps(void) const { return this->wps_; }
+  void set_wps(Ptr<WireProtocolState> value) { this->wps_ = value; }
+  const NetworkAddress& peer(void) const { return this->peer_; }
+  void set_peer(const NetworkAddress& value) { this->peer_ = value; }
+  Ptr<Buffer> inbuf(void) const { return this->inbuf_; }
+  void set_inbuf(Ptr<Buffer> value) { this->inbuf_ = value; }
+  std::list<Ptr<Buffer>>& send_queue(void) { return this->send_queue_; }
+  
+  // Enqueue appends pkts into send queue.
+  void Enqueue(std::list<Ptr<Buffer>>* pkts);
+  // Write writes octets from send queue into the socket,
+  // until socket is blocked, or queue is empty.
+  virtual void Write(void);
+  
+  // GetReceiveBuffer obtains a buffer for reading from socket.
+  Ptr<Buffer> GetReceiveBuffer(void);
+  // Read reads octets from socket, calls WireProtocol to decode as messages,
+  // and writes them to Receive port.
+  virtual void Read(void);
 
  private:
+  int fd_;
   Ptr<WireProtocol> wp_;
   Ptr<WireProtocolState> wps_;
-  std::queue<Ptr<Buffer>> send_queue_;
+  NetworkAddress peer_;
+  Ptr<Buffer> inbuf_;
+  std::list<Ptr<Buffer>> send_queue_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamFace);
 };

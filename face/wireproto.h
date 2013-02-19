@@ -40,7 +40,7 @@ class WireProtocol : public Element {
   
   // Encode gets a new message, and returns zero or more packets
   // encoded of the wire protocol.
-  virtual std::list<Ptr<Buffer>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) =0;
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) =0;
   
   // Decode gets a new packet of the wire protocol,
   // and returns whether success, zero or more messages.
