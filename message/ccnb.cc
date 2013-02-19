@@ -58,11 +58,15 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
     ok = false;
   }
   if (this->stream_mode_) {
+    Ptr<Buffer> rbuf = packet->AsBuffer(false);
+    assert(rbuf == state->GetReceiveBuffer());
     if (msgstart < packet->length()) { 
-      Ptr<Buffer> rbuf = packet->AsBuffer(false);
       ::memmove(rbuf->mutable_data(), rbuf->data() + msgstart, rbuf->length() - msgstart);
       rbuf->Take(msgstart);
       d->index -= msgstart;
+    } else {
+      rbuf->Reset();
+      d->index = 0;
     }
   }
   return std::forward_as_tuple(ok, results);

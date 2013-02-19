@@ -41,7 +41,11 @@ class Element : public Object {
   Ptr<T> New(TArgs&&... args) const;
 
  protected:
-  Element(void) {}
+  Element(void) { this->global_ = nullptr; }
+  // Init is called after immediately constructor.
+  // Element constructor does not have access to Global object,
+  // but Init can access Global.
+  virtual void Init(void) {}
 
   // the Global object
   Global* global() const { return const_cast<Global*>(this->global_); }
@@ -56,7 +60,8 @@ class Element : public Object {
 template<typename T, typename... TArgs>
 Ptr<T> Element::New(TArgs&&... args) const {
   T* ele = new T(args...);
-  if (ele != NULL) ele->global_ = this->global_;
+  ele->global_ = this->global_;
+  static_cast<Element*>(ele)->Init();
   return ele;
 }
 

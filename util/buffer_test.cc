@@ -29,6 +29,9 @@ TEST(UtilTest, Buffer) {
   b1->Pull(78);
   EXPECT_EQ(2U, b1->length());
   EXPECT_EQ(0x0D, b1->data()[1]);
+  b1->Rebase();
+  EXPECT_EQ(2U, b1->length());
+  EXPECT_EQ(0x0D, b1->data()[1]);
   b1->Push(512)[0] = 0xC1;
   EXPECT_EQ(514U, b1->length());
   EXPECT_EQ(0xC1, b1->data()[0]);
@@ -74,6 +77,13 @@ TEST(UtilTest, BufferView) {
   EXPECT_EQ(0x24, b2->data()[2]);
   b1->mutable_data()[10] = 0x25;
   EXPECT_EQ(0x24, b2->data()[2]);
+  
+  v2->Pull(2);
+  EXPECT_EQ(14U, v2->length());
+  EXPECT_EQ(0x25, v2->data()[0]);
+  v2->Take(4);
+  EXPECT_EQ(10U, v2->length());
+  EXPECT_EQ(0x25, v2->data()[0]);
   
   Ptr<BufferView> v3 = new BufferView(b1, 0, 40);
   EXPECT_EQ(40U, v3->length());

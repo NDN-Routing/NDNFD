@@ -14,15 +14,19 @@ namespace ndnfd {
 class StreamFace : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after connect() or accept()
-  StreamFace(int fd, const NetworkAddress& peer, Ptr<WireProtocol> wp);
-  virtual ~StreamFace(void) {}
+  StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp);
+  virtual void Init(void);
+  virtual ~StreamFace(void);
 
   virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
   virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
-
+  
   // Send calls WireProtocol to encode the messages into octets
   // and writes them to the socket.
   virtual void Send(Ptr<Message> message);
+  
+  // SendBlocked returns true if send queue is not empty.
+  bool SendBlocked(void) { return !this->send_queue().empty(); }
 
   // PollCallback is invoked with POLLIN when there are packets
   // on the socket to read.
@@ -30,7 +34,12 @@ class StreamFace : public Face, public IPollClient {
   // available for writing.
   virtual void PollCallback(int fd, short revents);
 
+  // SetClosing sets FaceStatus to kClosing,
+  // so that face is closed after queued messages are sent.
+  void SetClosing(void);
+
  protected:
+
   int fd(void) const { return this->fd_; }
   void set_fd(int value) { this->fd_ = value; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }

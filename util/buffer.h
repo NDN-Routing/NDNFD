@@ -20,6 +20,12 @@ class BufferView : public Object {
   virtual const uint8_t* end_data() const { return this->data() + this->length(); }
   // length of data
   virtual size_t length(void) const { return this->length_; }
+
+  // Take removes n octets at the end of data.
+  virtual void Take(size_t n);
+  
+  // Pull removes n octets at the start of data.
+  virtual void Pull(size_t n);
   
   // AsBuffer turns the BufferView into a Buffer.
   // If clone is true, the Buffer is guaranteed to have separate
@@ -57,14 +63,16 @@ class Buffer : public BufferView {
   // and returns a pointer to the start of new space.
   uint8_t* Put(size_t n);
   // Take removes n octets at the end of data.
-  void Take(size_t n);
+  virtual void Take(size_t n);
   
   // Push adds n octets before the start of data,
   // and returns a pointer to the start of new space.
   uint8_t* Push(size_t n);
   // Pull removes n octets at the start of data.
-  void Pull(size_t n);
+  virtual void Pull(size_t n);
 
+  // Rebase makes headroom <= initial_headroom by moving data.
+  void Rebase(void);
   // Reset removes clears the buffer.
   void Reset(void) { this->Take(this->length()); }
   

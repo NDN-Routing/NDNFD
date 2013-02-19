@@ -45,6 +45,23 @@ void Buffer::Pull(size_t n) {
   this->headroom_ += n;
 }
 
+void Buffer::Rebase(void) {
+  if (this->headroom_ == this->initial_headroom_) return;
+
+  size_t datalen = this->length();
+  if (datalen == 0) {
+    this->headroom_ = this->initial_headroom_;
+    ::ccn_charbuf_reserve(this->c_, this->headroom_);
+    this->c_->length = this->headroom_;
+    return;
+  }
+  if (this->headroom_ < this->initial_headroom_) return;
+  
+  ::memmove(this->c_->buf + this->initial_headroom_, this->c_->buf + this->headroom_, datalen);
+  this->headroom_ = this->initial_headroom_;
+  this->c_->length = this->headroom_ + datalen;
+}
+
 Ptr<Buffer> Buffer::AsBuffer(bool clone) {
   if (clone) {
     Buffer* other = new Buffer(this->length(), this->initial_headroom_, this->initial_tailroom_);
@@ -62,6 +79,17 @@ BufferView::BufferView(Ptr<Buffer> buffer, size_t start, size_t length) {
   this->buffer_ = buffer;
   this->start_ = start;
   this->length_ = length;
+}
+
+void BufferView::Take(size_t n) {
+  assert(n <= this->length());
+  this->length_ -= n;
+}
+
+void BufferView::Pull(size_t n) {
+  assert(n <= this->length());
+  this->start_ += n;
+  this->length_ -= n;
 }
 
 Ptr<Buffer> BufferView::AsBuffer(bool clone) {

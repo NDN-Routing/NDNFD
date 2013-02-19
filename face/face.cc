@@ -1,6 +1,30 @@
 #include "face.h"
 namespace ndnfd {
 
+std::string FaceKind_ToString(FaceKind kind) {
+  switch (kind) {
+    case FaceKind::kInternal:  return "Internal";
+    case FaceKind::kApp:       return "App";
+    case FaceKind::kMulticast: return "Multicast";
+    case FaceKind::kUnicast:   return "Unicast";
+    default:                   return "None";
+  }
+}
+
+std::string FaceStatus_ToString(FaceStatus status) {
+  switch (status) {
+    case FaceStatus::kConnecting:    return "Connecting";
+    case FaceStatus::kUndecided:     return "Undecided";
+    case FaceStatus::kEstablished:   return "Established";
+    case FaceStatus::kClosing:       return "Closing";
+    case FaceStatus::kClosed:        return "Closed";
+    case FaceStatus::kConnectError:  return "ConnectError";
+    case FaceStatus::kProtocolError: return "ProtocolError";
+    case FaceStatus::kDisconnect:    return "Disconnect";
+    default:                         return "None";
+  }
+}
+
 bool FaceStatus_IsError(FaceStatus status) {
   switch (status) {
     case FaceStatus::kConnectError:

@@ -6,7 +6,7 @@ Ptr<Element> theTestFirstElement = nullptr;
 
 Ptr<Element> TestFirstElement(void) {
   if (theTestFirstElement == nullptr) {
-    TestGlobal = new Global();
+    if (TestGlobal == nullptr) TestGlobal = new Global();
     theTestFirstElement = Element::MakeFirstElement(TestGlobal);
   }
   return theTestFirstElement;
