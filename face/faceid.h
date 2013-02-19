@@ -6,10 +6,10 @@ namespace ndnfd {
 
 // A FaceId is a number that identifies a Face within a router.
 // It is assigned by FaceMgr.
-typedef int16_t FaceId;
+typedef int32_t FaceId;
 
 // PRI_FaceId is a printf format string for FaceId.
-#define PRI_FaceId PRId16
+#define PRI_FaceId PRId32
 
 // FaceId_none indicates no FaceId is assigned.
 static const FaceId FaceId_none = -1;
