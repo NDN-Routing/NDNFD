@@ -21,8 +21,9 @@ def configure(conf):
     conf.check_ccnx(path=conf.options.ccnx_dir)
 
     conf.define('_BSD_SOURCE', 1)
+    conf.define('_POSIX_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
-    conf.env.append_unique('CFLAGS', flags + ['-Wstrict-prototypes', '-std=c99'])
+    conf.env.append_unique('CFLAGS', ['-Wall', '-Wpointer-arith', '-Wstrict-prototypes', '-std=c99'])#sadly, ccnd won't compile with -Werror
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'])
     conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
 
@@ -32,8 +33,6 @@ def configure(conf):
     else:
         conf.env.append_unique('CFLAGS', ['-O0', '-g3'])
         conf.env.append_unique('CXXFLAGS', ['-O0', '-g3'])
-
-    conf.check_cxx(lib='rt')
 
     if conf.options.gtest:
         conf.env.GTEST = 1
@@ -46,34 +45,39 @@ def configure(conf):
 
 
 def build(bld):
-    bld.read_shlib('rt', paths=bld.env.LIBPATH)
-
     source_subdirs = ['core','util','face','message']
-    bld.objects(target='common',
+    bld.stlib(target='ndnfdcommon',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL rt',
+        use='CCNX SSL',
         )
-    #bld.program(target='ndnfd',
-    #    source='tools/ndnfd.cc',
-    #    includes='.',
-    #    use='common',
-    #    )
+        
+    bld.stlib(target='ccnd/ccndcore',
+        source=['ccnd/ccnd.c','ccnd/ccnd_internal_client.c','ccnd/ccnd_stats.c','ccnd/ccnd_msg.c'],
+        includes='ccnd',
+        use='CCNX SSL pthread',
+        )
+    
+    bld.program(target='ccnd/ccnd',
+        source=['ccnd/ccnd_main.c'],
+        includes='ccnd',
+        use='ccnd/ccndcore',
+        )
     
     if bld.env.GTEST:
         try:
             bld.get_tgen_by_name('pthread')
         except:
             bld.read_shlib('pthread', paths=bld.env.LIBPATH)
-        bld.stlib(target='gtest',
+        bld.stlib(target='gtest/gtest',
             source=['gtest/gtest.cc', 'gtest/gtest_main.cc'],
             includes='. gtest',
             use='pthread',
             )
         bld.program(target='unittest',
             source=bld.path.ant_glob([subdir+'/*_test*.cc' for subdir in source_subdirs]),
-            use='common gtest',
+            use='common ndnfdcommon gtest/gtest',
             install_path=None,
             )
     
