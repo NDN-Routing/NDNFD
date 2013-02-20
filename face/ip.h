@@ -26,8 +26,8 @@ class UdpFaceFactory : public FaceFactory {
   UdpFaceFactory(Ptr<WireProtocol> wp);
   virtual ~UdpFaceFactory(void) {}
   
-  // MakeChannel creates a DgramChannel for UDP over IPv4 or IPv6.
-  Ptr<DgramChannel> MakeChannel(const NetworkAddress& local_addr);
+  // Channel creates a DgramChannel for UDP over IPv4 or IPv6.
+  Ptr<DgramChannel> Channel(const NetworkAddress& local_addr);
 
  private:
   Ptr<IpAddressVerifier> av_;

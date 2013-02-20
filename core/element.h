@@ -48,7 +48,7 @@ class Element : public Object {
   virtual void Init(void) {}
 
   // the Global object
-  Global* global() const { return const_cast<Global*>(this->global_); }
+  Global* global() const { assert(this->global_ != nullptr); return const_cast<Global*>(this->global_); }
   
   void Log(LoggingLevel level, LoggingComponent component, const char* format, ...) const;
 

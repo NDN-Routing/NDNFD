@@ -24,9 +24,7 @@ void Logging::LogVA(LoggingLevel level, LoggingComponent component, const char* 
 }
 
 std::string Logging::ErrorString(int errnum) {
-  char msg[80];
-  strerror_r(errnum, msg, sizeof(msg));
-  return std::string(msg);
+  return std::string(strerror(errno));
 }
 
 };//namespace ndnfd

@@ -19,6 +19,66 @@ TEST(FaceTest, IpAddressParse) {
   EXPECT_EQ(std::string("[::1]:80"), av->ToString(addr));
 }
 
+TEST(FaceTest, Udp) {
+  bool ok; NetworkAddress addr1, addr2, addr3;
+  Ptr<IpAddressVerifier> av = new IpAddressVerifier();
+  std::tie(ok, addr1) = av->Parse("127.0.0.1:23089");
+  ASSERT_TRUE(ok);
+  std::tie(ok, addr2) = av->Parse("127.0.0.1:28075");
+  ASSERT_TRUE(ok);
+  std::tie(ok, addr3) = av->Parse("127.0.0.1:10971");
+  ASSERT_TRUE(ok);
+  Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(false);
+  
+  TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
+  TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
+
+  uint8_t buf[5];
+  memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
+  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
+
+  Ptr<UdpFaceFactory> factory = NewTestElement<UdpFaceFactory>(ccnbwp);
+  Ptr<DgramChannel> ch1 = factory->Channel(addr1);
+  ASSERT_NE(nullptr, ch1);
+  Ptr<DgramChannel> ch2 = factory->Channel(addr2);
+  ASSERT_NE(nullptr, ch2);
+  Ptr<DgramChannel> ch3 = factory->Channel(addr3);
+  ASSERT_NE(nullptr, ch3);
+  
+  int r10 = 0;
+  ch1->GetFallbackFace()->Receive = [&r10] (Ptr<Message> msg) { ++r10; };
+  
+  Ptr<DgramFace> f21 = ch2->GetFace(addr1);
+  for (int i = 0; i < 10; ++i) {
+    f21->Send(m1);
+    if (r10 > 0) break;
+    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+  }
+  EXPECT_NE(0, r10);
+  r10 = 0;
+  for (int i = 0; i < 5; ++i) {
+    r10 = 0;
+    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    if (r10 == 0) break;
+  }
+  r10 = 0;
+  
+  Ptr<DgramFace> f12 = ch1->GetFace(addr2);
+  int r12 = 0;
+  f12->Receive = [&r12] (Ptr<Message> msg) { ++r12; };
+  for (int i = 0; i < 10; ++i) {
+    f21->Send(m1);
+    if (r12 > 0) break;
+    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+  }
+  EXPECT_NE(0, r12);
+  EXPECT_EQ(0, r10);
+  
+  ch1->Close();
+  ch2->Close();
+  ch3->Close();
+}
+
 TEST(FaceTest, Tcp) {
   bool ok; NetworkAddress addr;
   Ptr<IpAddressVerifier> av = new IpAddressVerifier();
@@ -29,12 +89,13 @@ TEST(FaceTest, Tcp) {
   TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
   TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
 
-  uint8_t buf[16];
+  uint8_t buf[5];
   memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
 
   Ptr<TcpFaceFactory> factory = NewTestElement<TcpFaceFactory>(ccnbwp);
   Ptr<StreamListener> listener = factory->Listen(addr);
+  ASSERT_NE(nullptr, listener);
   
   int accepted = 0;
   ASSERT_TRUE(listener->CanAccept());

@@ -1,6 +1,7 @@
 #include "ip.h"
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "util/socket_helper.h"
 namespace ndnfd {
 
 bool IpAddressVerifier::Check(const NetworkAddress& addr) {
@@ -84,21 +85,37 @@ std::tuple<bool,NetworkAddress> IpAddressVerifier::Parse(std::string s) {
   return std::forward_as_tuple(false, addr);
 }
 
+UdpFaceFactory::UdpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
+  this->av_ = new IpAddressVerifier();
+}
+
+Ptr<DgramChannel> UdpFaceFactory::Channel(const NetworkAddress& local_addr) {
+  int fd = Socket_CreateForListen(local_addr.family(), SOCK_DGRAM);
+  if (fd < 0) {
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::Channel socket(): %s", Logging::ErrorString().c_str());
+    return nullptr;
+  }
+  
+  int res;
+  res = bind(fd, reinterpret_cast<const sockaddr*>(&local_addr.who), local_addr.wholen);
+  if (res != 0) {
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::Channel bind(): %s", Logging::ErrorString().c_str());
+    close(fd);
+    return nullptr;
+  }
+  Ptr<DgramChannel> channel = this->New<DgramChannel>(fd, this->av_, this->wp());
+  return channel;
+}
+
 TcpFaceFactory::TcpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
   this->av_ = new IpAddressVerifier();
 }
 
 Ptr<StreamListener> TcpFaceFactory::Listen(const NetworkAddress& local_addr) {
-  int fd = socket(local_addr.family(), SOCK_STREAM, 0);
+  int fd = Socket_CreateForListen(local_addr.family(), SOCK_STREAM);
   if (fd < 0) {
     this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Listen socket(): %s", Logging::ErrorString().c_str());
     return nullptr;
-  }
-  
-  int yes = 1;
-  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-  if (local_addr.family() == AF_INET6) {
-    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes));
   }
   
   int res;
