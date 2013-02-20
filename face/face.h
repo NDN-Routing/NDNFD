@@ -1,5 +1,8 @@
 #ifndef NDNFD_FACE_FACE_H_
 #define NDNFD_FACE_FACE_H_
+extern "C" {
+#include "ccnd/ccnd_private.h"
+}
 #include "core/element.h"
 #include "message/message.h"
 namespace ndnfd {
@@ -40,6 +43,7 @@ class Face : public Element {
   FaceKind kind(void) const { return this->kind_; }
   void set_kind(FaceKind value) { this->kind_ = value; }
   FaceStatus status(void) const { return this->status_; }
+  face* ccnd_face(void) const { return const_cast<face*>(&this->ccnd_face_); }
 
   // CanSend returns true if this Face may be used to send messages.
   virtual bool CanSend(void) const { return false; }
@@ -62,13 +66,17 @@ class Face : public Element {
   
  protected:
   Face(void);
-  void set_id(FaceId value) { this->id_ = value; }
+  void set_id(FaceId value);
   void set_status(FaceStatus value);//should notify FaceMgr
+  
+  // update ccnd_face->flags
+  void UpdateCcndFlags(void);
 
  private:
   FaceId id_;
   FaceKind kind_;
   FaceStatus status_;
+  face ccnd_face_;
   
   DISALLOW_COPY_AND_ASSIGN(Face);
 };

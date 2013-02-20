@@ -19,9 +19,6 @@ TEST(FaceTest, StreamFace) {
   NetworkAddress netaddr;
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
 
-  TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
-  TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
-
   StreamFaceTest_MakeSocketPair(sockets);
   Ptr<StreamFace> f1 = NewTestElement<StreamFace>(sockets[1], false, netaddr, ccnbwp);
   EXPECT_EQ(FaceStatus::kUndecided, f1->status());
@@ -54,7 +51,7 @@ TEST(FaceTest, StreamFace) {
     EXPECT_EQ(0x4E, m->msg()[0]);
   };
   while (received < sent) {
-    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
   }
 
   f1->SetClosing();

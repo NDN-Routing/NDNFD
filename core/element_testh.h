@@ -2,7 +2,7 @@
 namespace ndnfd {
 
 // TestGlobal is the Global object for Elements created by NewTestElement.
-extern Global* TestGlobal;
+Global* TestGlobal(void);
 Ptr<Element> TestFirstElement(void);
 
 // NewTestElement creates an Element for test purpose.

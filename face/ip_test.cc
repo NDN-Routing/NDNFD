@@ -30,9 +30,6 @@ TEST(FaceTest, Udp) {
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(false);
   
-  TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
-  TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
-
   uint8_t buf[5];
   memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
@@ -52,13 +49,13 @@ TEST(FaceTest, Udp) {
   for (int i = 0; i < 10; ++i) {
     f21->Send(m1);
     if (r10 > 0) break;
-    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
   }
   EXPECT_NE(0, r10);
   r10 = 0;
   for (int i = 0; i < 5; ++i) {
     r10 = 0;
-    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
     if (r10 == 0) break;
   }
   r10 = 0;
@@ -69,7 +66,7 @@ TEST(FaceTest, Udp) {
   for (int i = 0; i < 10; ++i) {
     f21->Send(m1);
     if (r12 > 0) break;
-    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
   }
   EXPECT_NE(0, r12);
   EXPECT_EQ(0, r10);
@@ -86,8 +83,8 @@ TEST(FaceTest, Tcp) {
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
   
-  TestGlobal->set_pollmgr(NewTestElement<PollMgr>());
-  TestGlobal->set_facemgr(NewTestElement<FaceMgr>());
+  TestGlobal()->set_pollmgr(NewTestElement<PollMgr>());
+  TestGlobal()->set_facemgr(NewTestElement<FaceMgr>());
 
   uint8_t buf[5];
   memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
@@ -119,7 +116,7 @@ TEST(FaceTest, Tcp) {
   }
 
   while (accepted < 10 || received < 10) {
-    TestGlobal->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
   }
   listener->Close();
 }

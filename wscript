@@ -50,7 +50,7 @@ def build(bld):
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL',
+        use='CCNX SSL ccnd/ccndcore',
         )
         
     bld.stlib(target='ccnd/ccndcore',

@@ -14,6 +14,13 @@ Global::Global(void) {
   this->facemgr_ = nullptr;
 }
 
+void Global::Init(void) {
+  this->set_ccndh(new ccnd_handle());
+  this->set_pollmgr(new PollMgr());
+  //this->set_scheduler(new Scheduler());
+  this->set_facemgr(new FaceMgr());
+}
+
 Global::~Global(void) {
   this->set_pollmgr(nullptr);
   this->set_scheduler(nullptr);
