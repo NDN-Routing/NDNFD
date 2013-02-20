@@ -25,6 +25,8 @@ TEST(FaceTest, StreamFace) {
   StreamFaceTest_MakeSocketPair(sockets);
   Ptr<StreamFace> f1 = NewTestElement<StreamFace>(sockets[1], false, netaddr, ccnbwp);
   EXPECT_EQ(FaceStatus::kUndecided, f1->status());
+  ASSERT_TRUE(f1->CanSend());
+  ASSERT_TRUE(f1->CanReceive());
   
   uint8_t buf[2054];
   memset(buf, 0, 2054);
@@ -45,7 +47,7 @@ TEST(FaceTest, StreamFace) {
 
   Ptr<StreamFace> f2 = NewTestElement<StreamFace>(sockets[0], false, netaddr, ccnbwp);
   int received = 0;
-  f2->Receive = [&received](Ptr<Message> msg){
+  f2->Receive = [&received] (Ptr<Message> msg) {
     ++received;
     CcnbMessage* m = dynamic_cast<CcnbMessage*>(PeekPointer(msg));
     EXPECT_EQ(2054U, m->length());
@@ -57,8 +59,10 @@ TEST(FaceTest, StreamFace) {
 
   f1->SetClosing();
   EXPECT_EQ(FaceStatus::kClosed, f1->status());
+  EXPECT_FALSE(f1->CanSend());
+  EXPECT_FALSE(f1->CanReceive());
 }
 
-// TODO unit test StreamListener in TCP
+// StreamListener is tested with TCP
 
 };//namespace ndnfd

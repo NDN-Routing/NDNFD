@@ -26,6 +26,9 @@ class Logging {
     
     void Log(LoggingLevel level, LoggingComponent component, const char* format, ...);
     void LogVA(LoggingLevel level, LoggingComponent component, const char* format, va_list* args);
+
+    static std::string ErrorString(int errnum);
+    static std::string ErrorString(void) { return Logging::ErrorString(errno); }
     
   private:
     LoggingLevel min_level_;

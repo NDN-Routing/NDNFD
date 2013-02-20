@@ -41,8 +41,8 @@ class TcpFaceFactory : public FaceFactory {
   TcpFaceFactory(Ptr<WireProtocol> wp);
   virtual ~TcpFaceFactory(void) {}
   
-  // MakeListener creates a StreamListener for TCP over IPv4 or IPv6.
-  Ptr<StreamListener> MakeListener(const NetworkAddress& local_addr);
+  // Listen creates a StreamListener for TCP over IPv4 or IPv6.
+  Ptr<StreamListener> Listen(const NetworkAddress& local_addr);
 
   // Connect creates a StreamFace for TCP over IPv4 or IPv6,
   // and connects to a remote peer.

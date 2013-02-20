@@ -47,7 +47,9 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
   size_t msgstart = 0;
   ccn_skeleton_decode(d, packet->data() + d->index, packet->length() - d->index);
   while (d->state == 0) {
-    results.emplace_back(new CcnbMessage(const_cast<uint8_t*>(packet->data() + msgstart), d->index - msgstart));
+    if (d->index > static_cast<ssize_t>(msgstart)) {
+      results.emplace_back(new CcnbMessage(const_cast<uint8_t*>(packet->data() + msgstart), d->index - msgstart));
+    }
     msgstart = d->index;
     if (msgstart == packet->length()) {
       break;

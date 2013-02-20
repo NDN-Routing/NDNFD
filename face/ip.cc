@@ -1,4 +1,5 @@
 #include "ip.h"
+#include <fcntl.h>
 #include <arpa/inet.h>
 namespace ndnfd {
 
@@ -81,6 +82,59 @@ std::tuple<bool,NetworkAddress> IpAddressVerifier::Parse(std::string s) {
     return std::forward_as_tuple(true, addr);
   }
   return std::forward_as_tuple(false, addr);
+}
+
+TcpFaceFactory::TcpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
+  this->av_ = new IpAddressVerifier();
+}
+
+Ptr<StreamListener> TcpFaceFactory::Listen(const NetworkAddress& local_addr) {
+  int fd = socket(local_addr.family(), SOCK_STREAM, 0);
+  if (fd < 0) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Listen socket(): %s", Logging::ErrorString().c_str());
+    return nullptr;
+  }
+  
+  int yes = 1;
+  setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  if (local_addr.family() == AF_INET6) {
+    setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes));
+  }
+  
+  int res;
+  res = bind(fd, reinterpret_cast<const sockaddr*>(&local_addr.who), local_addr.wholen);
+  if (res != 0) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Listen bind(): %s", Logging::ErrorString().c_str());
+    close(fd);
+    return nullptr;
+  }
+  res = listen(fd, 30);
+  if (res != 0) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Listen listen(): %s", Logging::ErrorString().c_str());
+    close(fd);
+    return nullptr;
+  }
+  Ptr<StreamListener> face = this->New<StreamListener>(fd, this->av_, this->wp());
+  return face;
+}
+
+Ptr<StreamFace> TcpFaceFactory::Connect(const NetworkAddress& remote_addr) {
+  int fd = socket(remote_addr.family(), SOCK_STREAM, 0);
+  if (fd < 0) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect socket(): %s", Logging::ErrorString().c_str());
+    return nullptr;
+  }
+
+  int res = fcntl(fd, F_SETFL, O_NONBLOCK);
+  if (res == -1) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect fcntl(O_NONBLOCK) %s", Logging::ErrorString().c_str());
+  }
+  res = connect(fd, reinterpret_cast<const sockaddr*>(&remote_addr.who), remote_addr.wholen);
+  if (res == -1 && errno != EINPROGRESS) {
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
+  }
+  Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->wp());
+  return face;
 }
 
 };//namespace ndnfd

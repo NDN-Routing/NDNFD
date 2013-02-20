@@ -6,10 +6,10 @@ namespace ndnfd {
 // A FaceFactory creates Face-related objects for a lower protocol.
 class FaceFactory : public Element {
  public:
-  FaceFactory(Ptr<WireProtocol> wp);
   virtual ~FaceFactory(void) {}
 
  protected:
+  FaceFactory(Ptr<WireProtocol> wp) { assert(wp != nullptr); this->wp_ = wp; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
 
  private:

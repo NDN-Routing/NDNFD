@@ -1,5 +1,6 @@
 #include "stream.h"
 #include <unistd.h>
+#include <fcntl.h>
 namespace ndnfd {
 
 StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp) {
@@ -18,12 +19,14 @@ void StreamFace::Init(void) {
     this->wps_ = nullptr;
   }
   this->inbuf_ = nullptr;
+  this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR")::StreamFace fd=%d status=%s", this, this->fd(), FaceStatus_ToString(this->status()).c_str());
+  //this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR")::StreamFace fd=%d status=%s", this, this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
 StreamFace::~StreamFace(void) {
   this->global()->pollmgr()->RemoveAll(this);
+  ::close(this->fd());
 }
 
 void StreamFace::Send(Ptr<Message> message) {
@@ -161,11 +164,13 @@ StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol
 }
 
 void StreamListener::Init(void) {
+  this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
 }
 
 StreamListener::~StreamListener(void) {
   this->global()->pollmgr()->RemoveAll(this);
+  ::close(this->fd());
 }
 
 void StreamListener::PollCallback(int fd, short revents) {
@@ -191,10 +196,15 @@ void StreamListener::AcceptConnection(void) {
   }
   Ptr<StreamFace> face = this->MakeFace(fd, peer);
   this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection fd=%d face=%"PRIxPTR" peer=%s", this, fd, PeekPointer(face), this->av()->ToString(peer).c_str());
-  this->global()->facemgr()->AddFace(face);
+  this->Accept(face);
 }
 
 Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
+  int res = fcntl(fd, F_SETFL, O_NONBLOCK);
+  if (res == -1) {
+    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d O_NONBLOCK %s", this, fd, Logging::ErrorString().c_str());
+  }
+  
   NetworkAddress normalized = this->av()->Normalize(peer);
   Ptr<StreamFace> face = this->New<StreamFace>(fd, false, normalized, this->wp());
   return face;
