@@ -1,6 +1,6 @@
 #include "stream.h"
 #include <unistd.h>
-#include <fcntl.h>
+#include "util/socket_helper.h"
 namespace ndnfd {
 
 StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp) {
@@ -120,13 +120,10 @@ Ptr<Buffer> StreamFace::GetReceiveBuffer(void) {
 }
 
 void StreamFace::Read(void) {
-  int sockerr = 0; socklen_t sockerr_size = sizeof(sockerr);
-  int sockerr_res = getsockopt(this->fd(), SOL_SOCKET, SO_ERROR, &sockerr, &sockerr_size);
-  if (sockerr_res >= 0 && sockerr != 0) {
-    if (sockerr == ETIMEDOUT && this->status() == FaceStatus::kConnecting) {
-      close(this->fd());
-      this->set_status(FaceStatus::kConnectError);
-    }
+  int sockerr = Socket_ClearError(this->fd());
+  if (sockerr == ETIMEDOUT && this->status() == FaceStatus::kConnecting) {
+    close(this->fd());
+    this->set_status(FaceStatus::kConnectError);
   }
 
   Ptr<Buffer> pkt = this->GetReceiveBuffer();
@@ -148,9 +145,9 @@ void StreamFace::Read(void) {
     return;
   }
 
-  this->set_status(FaceStatus::kEstablished);
-  for (auto it = msgs.begin(); it != msgs.end(); ++it) {
-    this->Receive(*it);
+  if (!msgs.empty()) this->set_status(FaceStatus::kEstablished);
+  for (Ptr<Message> msg : msgs) {
+    this->Receive(msg);
   }
 }
 
@@ -200,8 +197,7 @@ void StreamListener::AcceptConnection(void) {
 }
 
 Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
-  int res = fcntl(fd, F_SETFL, O_NONBLOCK);
-  if (res == -1) {
+  if (!Socket_SetNonBlock(fd)) {
     this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d O_NONBLOCK %s", this, fd, Logging::ErrorString().c_str());
   }
   

@@ -17,10 +17,13 @@ class DgramFace : public Face {
   const NetworkAddress& peer(void) const { return this->peer_; }
   Ptr<DgramChannel> channel(void) const { return this->channel_; }
   
-  virtual bool CanSend(void) const { return true; }
-  virtual bool CanReceive(void) const { return true; }
+  virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
+  virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
   
   virtual void Send(Ptr<Message> message);
+  
+  void Deliver(Ptr<Message> msg);
+  void Close(void);
   
  private:
   NetworkAddress peer_;
@@ -47,15 +50,16 @@ class DgramChannel : public Element, public IPollClient {
  public:
   // fd: fd of the socket, after bind(local_addr)
   DgramChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
-  virtual ~DgramChannel(void) {}
+  virtual void Init(void);
+  virtual ~DgramChannel(void);
   
   // GetFallbackFace returns the fallback face: "unsolicited" messages
   // (from peers without a DgramFace) are received on this face.
-  virtual Ptr<DgramFallbackFace> GetFallbackFace(void) const { return this->fallback_face_; }
+  Ptr<DgramFallbackFace> GetFallbackFace(void) const { return this->fallback_face_; }
   
   // GetFace returns a unicast face for a peer.
   // One is created if it does not exist.
-  virtual Ptr<DgramFace> GetFace(NetworkAddress peer);
+  Ptr<DgramFace> GetFace(const NetworkAddress& peer);
   
   // FaceSend sends message to face->peer() over the channel.
   // This is called by DgramFace.
@@ -64,6 +68,9 @@ class DgramChannel : public Element, public IPollClient {
   // PollCallback is invoked with POLLIN when there are packets
   // on the socket to read.
   virtual void PollCallback(int fd, short revents);
+  
+  // Close closes the channel and all associated faces.
+  virtual void Close(void);
   
  protected:
   // A PeerEntry represents per-peer information.
@@ -74,6 +81,15 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
+  Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
+  
+  // GetOrCreatePeer ensures PeerEntry exists for peer.
+  // DgramFace is created if create_face is true.
+  // WireProtocolState is created if WireProtocol is stateful.
+  PeerEntry GetOrCreatePeer(const NetworkAddress& peer, bool create_face);
+  
+  // SendTo calls sendto() syscall to send one packet to the socket.
+  virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   
   // ReceiveFrom calls recvfrom() syscall to read one or more packets
   // from the socket, and call DeliverPacket for each packet.
@@ -89,6 +105,7 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<WireProtocol> wp_;
   std::unordered_map<NetworkAddress,PeerEntry> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
+  Ptr<Buffer> recvbuf_;
   
   DISALLOW_COPY_AND_ASSIGN(DgramChannel);
 };
