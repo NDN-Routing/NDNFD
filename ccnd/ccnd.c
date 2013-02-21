@@ -61,6 +61,10 @@
 
 #include "ccnd_private.h"
 
+#ifdef NDNFD
+#include "face/ccnd_interface.h"
+#endif
+
 /** Ops for strategy callout */
 enum ccn_strategy_op {
     CCNST_NOP,      /* no-operation */
@@ -274,6 +278,7 @@ indexbuf_release(struct ccnd_handle *h, struct ccn_indexbuf *c)
         ccn_indexbuf_destroy(&c);
 }
 
+#ifndef NDNFD
 /**
  * Looks up a face based on its faceid (private).
  */
@@ -289,6 +294,7 @@ face_from_faceid(struct ccnd_handle *h, unsigned faceid)
     }
     return(face);
 }
+#endif
 
 /**
  * Looks up a face based on its faceid.

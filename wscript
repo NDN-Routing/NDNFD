@@ -46,23 +46,25 @@ def configure(conf):
 
 def build(bld):
     source_subdirs = ['core','util','face','message']
-    bld.stlib(target='ndnfdcommon',
+    bld.objects(target='ndnfdcommon',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
         use='CCNX SSL ccnd/ccndcore',
         )
         
-    bld.stlib(target='ccnd/ccndcore',
+    bld.objects(target='ccnd/ccndcore',
         source=['ccnd/ccnd.c','ccnd/ccnd_internal_client.c','ccnd/ccnd_stats.c','ccnd/ccnd_msg.c'],
-        includes='ccnd',
+        features='c cxxstlib',
+        includes='.',
         use='CCNX SSL pthread',
         )
     
-    bld.program(target='ccnd/ccnd',
+    bld.program(target='ndnfd',
         source=['ccnd/ccnd_main.c'],
-        includes='ccnd',
-        use='ccnd/ccndcore',
+        features='c cxxprogram',
+        includes='.',
+        use='ccnd/ccndcore ndnfdcommon',
         )
     
     if bld.env.GTEST:
