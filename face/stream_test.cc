@@ -46,7 +46,7 @@ TEST(FaceTest, StreamFace) {
   int received = 0;
   f2->Receive = [&received] (Ptr<Message> msg) {
     ++received;
-    CcnbMessage* m = dynamic_cast<CcnbMessage*>(PeekPointer(msg));
+    CcnbMessage* m = static_cast<CcnbMessage*>(PeekPointer(msg));
     EXPECT_EQ(2054U, m->length());
     EXPECT_EQ(0x4E, m->msg()[0]);
   };

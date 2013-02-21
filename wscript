@@ -24,7 +24,7 @@ def configure(conf):
     conf.define('_POSIX_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
     conf.env.append_unique('CFLAGS', ['-Wall', '-Wpointer-arith', '-Wstrict-prototypes', '-std=c99'])#sadly, ccnd won't compile with -Werror
-    conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'])
+    conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-fno-rtti', '-std=c++0x'])
     conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
 
     if conf.options.optimize:

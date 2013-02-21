@@ -103,7 +103,7 @@ TEST(FaceTest, Tcp) {
     EXPECT_TRUE(face->CanSend());
     EXPECT_TRUE(face->CanReceive());
     face->Send(m1);
-    dynamic_cast<StreamFace*>(PeekPointer(face))->SetClosing();
+    static_cast<StreamFace*>(PeekPointer(face))->SetClosing();
   };
   
   int received = 0;

@@ -21,7 +21,7 @@ void CcnbWireProtocol::State::Clear() {
 }
 
 std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
-  CcnbMessage* msg = dynamic_cast<CcnbMessage*>(PeekPointer(message));
+  CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
   Ptr<Buffer> pkt = new Buffer(msg->length());
   memcpy(pkt->mutable_data(), msg->msg(), pkt->length());
 
