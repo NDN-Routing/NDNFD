@@ -6,6 +6,10 @@ FaceMgr::FaceMgr(void) {
   this->next_id_ = 0;
 }
 
+void FaceMgr::Init(void) {
+  this->ccnd_face_interface_ = this->New<CcndFaceInterface>();
+}
+
 Ptr<Face> FaceMgr::GetFace(FaceId id) {
   auto it = this->table_.find(id);
   if (it == this->table_.end()) return nullptr;
@@ -17,6 +21,7 @@ void FaceMgr::AddFace(Ptr<Face> face) {
   if (face->kind() != FaceKind::kInternal) id = ++this->next_id_;
   face->Enroll(id, this);
   this->table_[id] = face;
+  this->ccnd_face_interface()->BindFace(face);
 }
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {

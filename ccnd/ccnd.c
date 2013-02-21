@@ -82,8 +82,12 @@ static struct face *record_connection(struct ccnd_handle *h,
                                       struct sockaddr *who,
                                       socklen_t wholen,
                                       int setflags);
+#ifdef NDNFD
+void process_input_message(struct ccnd_handle *h, struct face *face, unsigned char *msg, size_t size, int pdu_ok);
+#else
 static void process_input_message(struct ccnd_handle *h, struct face *face,
                                   unsigned char *msg, size_t size, int pdu_ok);
+#endif
 static void process_input(struct ccnd_handle *h, int fd);
 static int ccn_stuff_interest(struct ccnd_handle *h,
                               struct face *face, struct ccn_charbuf *c);
@@ -4653,9 +4657,15 @@ Bail:
  * This is where we decide whether we have an Interest message,
  * a ContentObject, or something else.
  */
+#ifdef NDNFD
+void
+process_input_message(struct ccnd_handle *h, struct face *face,
+                      unsigned char *msg, size_t size, int pdu_ok)
+#else
 static void
 process_input_message(struct ccnd_handle *h, struct face *face,
                       unsigned char *msg, size_t size, int pdu_ok)
+#endif
 {
     struct ccn_skeleton_decoder decoder = {0};
     struct ccn_skeleton_decoder *d = &decoder;
@@ -5088,6 +5098,7 @@ sending_fd(struct ccnd_handle *h, struct face *face)
     return(-1);
 }
 
+#ifndef NDNFD
 /**
  * Send data to the face.
  *
@@ -5161,6 +5172,7 @@ ccnd_send(struct ccnd_handle *h,
     ccn_charbuf_append(face->outbuf,
                        ((const unsigned char *)data) + res, size - res);
 }
+#endif
 
 /**
  * Do deferred sends.

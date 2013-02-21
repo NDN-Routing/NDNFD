@@ -172,8 +172,8 @@ struct ccnd_handle {
 #ifdef __cplusplus
 namespace ndnfd {
 class Global;
-inline Global* ccnd_ndnfdGlobal(ccnd_handle* h) { return reinterpret_cast<Global*>(h->ndnfd_global); }
 };//namespace ndnfd
+inline ndnfd::Global* ccnd_ndnfdGlobal(ccnd_handle* h) { return reinterpret_cast<ndnfd::Global*>(h->ndnfd_global); }
 #endif
 
 /**
