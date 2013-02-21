@@ -14,6 +14,12 @@ class AddressVerifier : public Object {
   
   // Normalize returns an address that is suitable to use as a hash key.
   virtual NetworkAddress Normalize(const NetworkAddress& addr) { return addr; }
+  
+  // IsLocal returns true if addr represents localhost.
+  virtual bool IsLocal(const NetworkAddress& addr) { return false; };
+  
+  // AreSameHost returns true if a and b represent the same host (but not necessarily same endpoint).
+  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b) { return false; }
 
   // ToString returns a human readable string representation of an address.
   virtual std::string ToString(const NetworkAddress& addr) =0;

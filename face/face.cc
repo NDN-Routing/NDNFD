@@ -72,11 +72,34 @@ void Face::set_id(FaceId value) {
   this->ccnd_face()->faceid = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value);
 }
 
+void Face::set_kind(FaceKind value) {
+  this->kind_ = value;
+  
+  const int ccnd_flags_mask = CCN_FACE_GG | CCN_FACE_LOCAL | CCN_FACE_MCAST | CCN_FACE_LOOPBACK;
+  int ccnd_flags = 0;
+  switch (value) {
+    case FaceKind::kInternal:  ccnd_flags = CCN_FACE_GG | CCN_FACE_LOCAL; break;
+    case FaceKind::kApp:       ccnd_flags = CCN_FACE_LOOPBACK;            break;
+    case FaceKind::kMulticast: ccnd_flags = CCN_FACE_MCAST;               break;
+    default: break;
+  }
+  this->set_ccnd_flags(ccnd_flags, ccnd_flags_mask);
+}
+
 void Face::set_status(FaceStatus value) {
   FaceStatus old_status = this->status_;
   if (old_status == value) return;
   this->status_ = value;
-  this->UpdateCcndFlags();
+
+  const int ccnd_flags_mask = CCN_FACE_CONNECTING | CCN_FACE_UNDECIDED | CCN_FACE_CLOSING;
+  int ccnd_flags = 0;
+  switch (value) {
+    case FaceStatus::kConnecting: ccnd_flags = CCN_FACE_CONNECTING; break;
+    case FaceStatus::kUndecided:  ccnd_flags = CCN_FACE_UNDECIDED;  break;
+    case FaceStatus::kClosing:    ccnd_flags = CCN_FACE_CLOSING;    break;
+    default: break;
+  }
+  this->set_ccnd_flags(ccnd_flags, ccnd_flags_mask);
   
   if (old_status != FaceStatus::kNone) {
     this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%"PRIxPTR",%"PRI_FaceId")::set_status %s=>%s", this, this->id(), FaceStatus_ToString(old_status).c_str(), FaceStatus_ToString(value).c_str());
@@ -89,6 +112,7 @@ void Face::set_status(FaceStatus value) {
   }
 }
 
+/*
 void Face::UpdateCcndFlags(void) {
   const int mask = CCN_FACE_LINK | CCN_FACE_DGRAM | CCN_FACE_GG | CCN_FACE_LOCAL | CCN_FACE_INET | CCN_FACE_MCAST | CCN_FACE_INET6 | CCN_FACE_NOSEND | CCN_FACE_UNDECIDED | CCN_FACE_CONNECTING | CCN_FACE_LOOPBACK | CCN_FACE_CLOSING | CCN_FACE_PASSIVE;
   int flags = this->ccnd_face()->flags & ~mask;
@@ -96,14 +120,7 @@ void Face::UpdateCcndFlags(void) {
   // TODO
   //   unix sockets: set LOCAL, and GG when kEstablished
   //   loopback: set LOOPBACK, and GG when kEstablished
-  //   listener: set PASSIVE
-  //   send blocked: set NOSEND
-  switch (this->status()) {
-    case FaceStatus::kConnecting: flags |= CCN_FACE_CONNECTING; break;
-    case FaceStatus::kUndecided:  flags |= CCN_FACE_UNDECIDED;  break;
-    case FaceStatus::kClosing:    flags |= CCN_FACE_CLOSING;    break;
-    default: break;
-  }
 }
+*/
 
 };//namespace ndnfd

@@ -100,8 +100,10 @@ void StreamFace::Write(void) {
   }
   if (this->SendBlocked()) {
     this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
+    this->set_ccnd_flags(CCN_FACE_NOSEND, CCN_FACE_NOSEND);
   } else {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
+    this->set_ccnd_flags(0, CCN_FACE_NOSEND);
     if (this->status() == FaceStatus::kClosing) {
       close(this->fd());
       this->set_status(FaceStatus::kClosed);
@@ -158,6 +160,7 @@ StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol
   this->set_fd(fd);
   this->set_av(av);
   this->set_wp(wp);
+  this->set_ccnd_flags(CCN_FACE_PASSIVE, CCN_FACE_PASSIVE);
 }
 
 void StreamListener::Init(void) {

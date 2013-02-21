@@ -11,42 +11,82 @@ bool IpAddressVerifier::Check(const NetworkAddress& addr) {
 
 NetworkAddress IpAddressVerifier::Normalize(const NetworkAddress& addr) {
   NetworkAddress n; n.wholen = addr.wholen;
-  if (addr.wholen == sizeof(sockaddr_in)) {
-    const sockaddr_in* src = reinterpret_cast<const sockaddr_in*>(&addr.who);
-    sockaddr_in* dst = reinterpret_cast<sockaddr_in*>(&n.who);
-    dst->sin_family = AF_INET;
-    dst->sin_port = src->sin_port;
-    dst->sin_addr.s_addr = src->sin_addr.s_addr;
-  } else if (addr.wholen == sizeof(sockaddr_in6)) {
-    const sockaddr_in6* src = reinterpret_cast<const sockaddr_in6*>(&addr.who);
-    sockaddr_in6* dst = reinterpret_cast<sockaddr_in6*>(&n.who);
-    dst->sin6_family = AF_INET6;
-    dst->sin6_port = src->sin6_port;
-    memcpy(dst->sin6_addr.s6_addr, src->sin6_addr.s6_addr, sizeof(dst->sin6_addr.s6_addr));
-  } else {
-    assert(false);
+  switch (addr.family()) {
+    case AF_INET: {
+      const sockaddr_in* src = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      sockaddr_in* dst = reinterpret_cast<sockaddr_in*>(&n.who);
+      dst->sin_family = AF_INET;
+      dst->sin_port = src->sin_port;
+      dst->sin_addr.s_addr = src->sin_addr.s_addr;
+      } break;
+    case AF_INET6: {
+      const sockaddr_in6* src = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      sockaddr_in6* dst = reinterpret_cast<sockaddr_in6*>(&n.who);
+      dst->sin6_family = AF_INET6;
+      dst->sin6_port = src->sin6_port;
+      memcpy(dst->sin6_addr.s6_addr, src->sin6_addr.s6_addr, sizeof(dst->sin6_addr.s6_addr));
+      } break;
+    default: assert(false); break;
   }
   return n;
+}
+
+bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) {
+  switch (addr.family()) {
+    case AF_INET: {
+      const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      const uint8_t* rawaddr = reinterpret_cast<const uint8_t*>(&sa->sin_addr.s_addr);
+      if (rawaddr[0] == 127) return true;
+    } break;
+    case AF_INET6: {
+      const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      #ifdef IN6_IS_ADDR_LOOPBACK
+      if (IN6_IS_ADDR_LOOPBACK(&sa->sin6_addr)) return true;
+      #endif
+  } break;
+    default: assert(false); break;
+  }
+  return false;
+}
+
+bool IpAddressVerifier::AreSameHost(const NetworkAddress& a, const NetworkAddress& b) {
+  if (a.family() != b.family()) return false;
+  switch (a.family()) {
+    case AF_INET: {
+      const sockaddr_in* sa_a = reinterpret_cast<const sockaddr_in*>(&a.who);
+      const sockaddr_in* sa_b = reinterpret_cast<const sockaddr_in*>(&b.who);
+      if (sa_a->sin_addr.s_addr == sa_b->sin_addr.s_addr) return true;
+    } break;
+    case AF_INET6: {
+      const sockaddr_in6* sa_a = reinterpret_cast<const sockaddr_in6*>(&a.who);
+      const sockaddr_in6* sa_b = reinterpret_cast<const sockaddr_in6*>(&b.who);
+      if (0 == memcmp(sa_a->sin6_addr.s6_addr, sa_b->sin6_addr.s6_addr, sizeof(sa_a->sin6_addr.s6_addr))) return true;
+  } break;
+    default: assert(false); break;
+  }
+  return false;
 }
 
 std::string IpAddressVerifier::ToString(const NetworkAddress& addr) {
   char buf[INET6_ADDRSTRLEN];
   std::string r;
   in_port_t port = 0;
-  if (addr.wholen == sizeof(sockaddr_in)) {
-    const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
-    inet_ntop(AF_INET, &sa->sin_addr, buf, sizeof(buf));
-    r.append(buf);
-    port = sa->sin_port;
-  } else if (addr.wholen == sizeof(sockaddr_in6)) {
-    const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
-    inet_ntop(AF_INET6, &sa->sin6_addr, buf, sizeof(buf));
-    r.push_back('[');
-    r.append(buf);
-    r.push_back(']');
-    port = sa->sin6_port;
-  } else {
-    assert(false);
+  switch (addr.family()) {
+    case AF_INET: {
+      const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      inet_ntop(AF_INET, &sa->sin_addr, buf, sizeof(buf));
+      r.append(buf);
+      port = sa->sin_port;
+    } break;
+    case AF_INET6: {
+      const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      inet_ntop(AF_INET6, &sa->sin6_addr, buf, sizeof(buf));
+      r.push_back('[');
+      r.append(buf);
+      r.push_back(']');
+      port = sa->sin6_port;
+    } break;
+    default: assert(false); break;
   }
   sprintf(buf, ":%d", be16toh(port));
   r.append(buf);
@@ -103,7 +143,7 @@ Ptr<DgramChannel> UdpFaceFactory::Channel(const NetworkAddress& local_addr) {
     close(fd);
     return nullptr;
   }
-  Ptr<DgramChannel> channel = this->New<DgramChannel>(fd, this->av_, this->wp());
+  Ptr<DgramChannel> channel = this->New<DgramChannel>(fd, local_addr, this->av_, this->wp());
   return channel;
 }
 

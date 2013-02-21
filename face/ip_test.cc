@@ -12,11 +12,13 @@ TEST(FaceTest, IpAddressParse) {
   EXPECT_TRUE(ok);
   EXPECT_EQ(22, be16toh(reinterpret_cast<sockaddr_in*>(&addr.who)->sin_port));
   EXPECT_EQ(std::string("192.0.2.1:22"), av->ToString(addr));
+  EXPECT_FALSE(av->IsLocal(addr));
   
   std::tie(ok, addr) = av->Parse("::1:80");
   EXPECT_TRUE(ok);
   EXPECT_EQ(80, be16toh(reinterpret_cast<sockaddr_in*>(&addr.who)->sin_port));
   EXPECT_EQ(std::string("[::1]:80"), av->ToString(addr));
+  EXPECT_TRUE(av->IsLocal(addr));
 }
 
 TEST(FaceTest, Udp) {

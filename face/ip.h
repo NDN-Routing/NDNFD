@@ -13,6 +13,8 @@ class IpAddressVerifier : public AddressVerifier {
   virtual ~IpAddressVerifier(void) {}
   virtual bool Check(const NetworkAddress& addr);
   virtual NetworkAddress Normalize(const NetworkAddress& addr);
+  virtual bool IsLocal(const NetworkAddress& addr);
+  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
   virtual std::string ToString(const NetworkAddress& addr);
   std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:

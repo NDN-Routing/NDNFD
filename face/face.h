@@ -41,7 +41,7 @@ class Face : public Element {
   virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
-  void set_kind(FaceKind value) { this->kind_ = value; }
+  void set_kind(FaceKind value);
   FaceStatus status(void) const { return this->status_; }
   face* ccnd_face(void) const { return const_cast<face*>(&this->ccnd_face_); }
 
@@ -67,10 +67,8 @@ class Face : public Element {
  protected:
   Face(void);
   void set_id(FaceId value);
-  void set_status(FaceStatus value);//should notify FaceMgr
-  
-  // update ccnd_face->flags
-  void UpdateCcndFlags(void);
+  void set_status(FaceStatus value);
+  void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
 
  private:
   FaceId id_;

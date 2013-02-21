@@ -6,6 +6,7 @@ DgramFace::DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer) {
   this->channel_ = channel;
   this->peer_ = peer;
   this->set_status(FaceStatus::kUndecided);
+  this->set_ccnd_flags(CCN_FACE_DGRAM | CCN_FACE_INET, CCN_FACE_DGRAM | CCN_FACE_INET | CCN_FACE_INET6);//INET or INET6 doesn't matter
 }
 
 void DgramFace::Send(Ptr<Message> message) {
@@ -27,13 +28,16 @@ void DgramFace::Close(void) {
 }
 
 DgramFallbackFace::DgramFallbackFace(Ptr<DgramChannel> channel)
-  : DgramFace(channel, NetworkAddress()) {}
+  : DgramFace(channel, NetworkAddress()) {
+  this->set_kind(FaceKind::kMulticast);
+}
 
-DgramChannel::DgramChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
+DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
   assert(fd >= 0);
   assert(av != nullptr);
   assert(wp != nullptr);
   this->fd_ = fd;
+  this->local_addr_ = local_addr;
   this->av_ = av;
   this->wp_ = wp;
   this->recvbuf_ = new Buffer(0);
@@ -41,11 +45,23 @@ DgramChannel::DgramChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp
 
 void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
+  this->fallback_face_->set_kind(FaceKind::kMulticast);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
 }
 
 DgramChannel::~DgramChannel(void) {
   this->global()->pollmgr()->RemoveAll(this);
+}
+
+Ptr<DgramFace> DgramChannel::CreateFace(const NetworkAddress& peer) {
+  Ptr<DgramFace> face = this->New<DgramFace>(this, peer);
+  bool is_local = this->av()->IsLocal(peer) || this->av()->AreSameHost(this->local_addr(), peer);
+  if (is_local) {
+    face->set_kind(FaceKind::kApp);
+  } else {
+    face->set_kind(FaceKind::kUnicast);
+  }
+  return face;
 }
 
 DgramChannel::PeerEntry DgramChannel::GetOrCreatePeer(const NetworkAddress& peer, bool create_face) {
@@ -54,7 +70,7 @@ DgramChannel::PeerEntry DgramChannel::GetOrCreatePeer(const NetworkAddress& peer
   if (it != this->peers_.end()) {
     std::tie(face, wps) = it->second;
     if (create_face && face == nullptr) {
-      face = this->New<DgramFace>(this, peer);
+      face = this->CreateFace(peer);
       return this->peers_[peer] = std::make_tuple(face, wps);
     }
     return it->second;

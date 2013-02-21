@@ -49,7 +49,7 @@ class DgramFallbackFace : public DgramFace {
 class DgramChannel : public Element, public IPollClient {
  public:
   // fd: fd of the socket, after bind(local_addr)
-  DgramChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
   virtual void Init(void);
   virtual ~DgramChannel(void);
   
@@ -82,6 +82,10 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
+  NetworkAddress local_addr(void) const { return this->local_addr_; }
+  
+  // CreateFace makes a face for a peer.
+  virtual Ptr<DgramFace> CreateFace(const NetworkAddress& peer);
   
   // GetOrCreatePeer ensures PeerEntry exists for peer.
   // DgramFace is created if create_face is true.
@@ -106,6 +110,7 @@ class DgramChannel : public Element, public IPollClient {
   std::unordered_map<NetworkAddress,PeerEntry> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
   Ptr<Buffer> recvbuf_;
+  NetworkAddress local_addr_;
   
   DISALLOW_COPY_AND_ASSIGN(DgramChannel);
 };
