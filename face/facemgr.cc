@@ -13,8 +13,10 @@ Ptr<Face> FaceMgr::GetFace(FaceId id) {
 }
 
 void FaceMgr::AddFace(Ptr<Face> face) {
-  face->Enroll(++this->next_id_, this);
-  this->table_[face->id()] = face;
+  FaceId id = 0;
+  if (face->kind() != FaceKind::kInternal) id = ++this->next_id_;
+  face->Enroll(id, this);
+  this->table_[id] = face;
 }
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {

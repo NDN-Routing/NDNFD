@@ -121,7 +121,11 @@ static void ccn_append_link_stuff(struct ccnd_handle *h,
 static int process_incoming_link_message(struct ccnd_handle *h,
                                          struct face *face, enum ccn_dtag dtag,
                                          unsigned char *msg, size_t size);
+#ifdef NDNFD
+void process_internal_client_buffer(struct ccnd_handle *h);
+#else
 static void process_internal_client_buffer(struct ccnd_handle *h);
+#endif
 static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
             struct pit_face_item *p);
@@ -4970,8 +4974,13 @@ process_input(struct ccnd_handle *h, int fd)
  *
  * The internal client's output is input to us.
  */
+#ifdef NDNFD
+void
+process_internal_client_buffer(struct ccnd_handle *h)
+#else
 static void
 process_internal_client_buffer(struct ccnd_handle *h)
+#endif
 {
     struct face *face = h->face0;
     if (face == NULL)
