@@ -55,7 +55,7 @@ void DgramChannel::Init(void) {
 }
 
 DgramChannel::~DgramChannel(void) {
-  this->global()->pollmgr()->RemoveAll(this);
+  this->Close();
 }
 
 Ptr<DgramFace> DgramChannel::CreateFace(const NetworkAddress& peer) {
@@ -150,10 +150,14 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
 void DgramChannel::Close() {
   for (auto p : this->peers()) {
     Ptr<DgramFace> face = std::get<0>(p.second);
-    if (face != nullptr) face->Close();
+    if (face != nullptr) {
+      face->Close();
+    }
   }
   this->peers().clear();
+  this->GetFallbackFace()->Close();
   close(this->fd());
+  this->global()->pollmgr()->RemoveAll(this);
 }
 
 

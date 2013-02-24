@@ -99,9 +99,10 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
 }
 
 void PollMgr::PollSuccess(void) {
+  ccnd_handle* h = this->global()->ccndh();
+  if (h->ticktock.gettime == nullptr) return;//in unittest
   // refresh ccnd time
   ccn_timeval dummy;
-  ccnd_handle* h = this->global()->ccndh();
   h->ticktock.gettime(&h->ticktock, &dummy);
 }
 

@@ -33,7 +33,7 @@ namespace ndnfd {
 // Object is the based class for objects that needs smart pointer support.
 class Object {
  public:
-  Object(void) { this->refcount_ = 0; }
+  Object(void) : finalized_(ATOMIC_FLAG_INIT) { this->refcount_ = 0; }
   virtual ~Object(void) {}
   
   // Ref increments the reference counter.
@@ -41,9 +41,14 @@ class Object {
   
   // Unref decrements the reference counter,
   // and deletes the object if no longer needed.
-  void Unref(void) const { if (--(const_cast<Object*>(this)->refcount_) == 0) delete this; }
+  void Unref(void) const {
+    if (--(const_cast<Object*>(this)->refcount_) == 0) {
+      if (!const_cast<Object*>(this)->finalized_.test_and_set()) delete this;
+    }
+  }
 
  private:
+  std::atomic_flag finalized_;
   std::atomic_size_t refcount_;
   DISALLOW_COPY_AND_ASSIGN(Object);
 };
