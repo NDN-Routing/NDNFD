@@ -4,7 +4,7 @@
 namespace ndnfd {
 
 bool UnixAddressVerifier::Check(const NetworkAddress& addr) {
-  return addr.wholen == sizeof(sockaddr_un) && addr.family() == AF_UNIX;
+  return addr.family() == AF_UNIX;
 }
 
 NetworkAddress UnixAddressVerifier::Normalize(const NetworkAddress& addr) {
@@ -61,6 +61,7 @@ Ptr<StreamListener> UnixFaceFactory::Listen(const std::string& local_socket) {
     return nullptr;
   }
   Ptr<StreamListener> face = this->New<StreamListener>(fd, this->av_, this->wp());
+  face->set_accepted_kind(FaceKind::kApp);
   return face;
 }
 

@@ -25,8 +25,7 @@ void StreamFace::Init(void) {
 }
 
 StreamFace::~StreamFace(void) {
-  this->global()->pollmgr()->RemoveAll(this);
-  ::close(this->fd());
+  this->Disconnect();
 }
 
 void StreamFace::Send(Ptr<Message> message) {
@@ -49,8 +48,7 @@ void StreamFace::Send(Ptr<Message> message) {
 void StreamFace::PollCallback(int fd, short revents) {
   assert(fd == this->fd());
   if ((revents & PollMgr::kErrors) != 0) {
-    close(this->fd());
-    this->set_status(FaceStatus::kDisconnect);
+    this->Disconnect();
     return;
   }
   if ((revents & POLLOUT) != 0) {
@@ -66,8 +64,7 @@ void StreamFace::SetClosing(void) {
     this->set_status(FaceStatus::kClosing);
   }
   if (this->status() == FaceStatus::kClosing && !this->SendBlocked()) {
-    close(this->fd());
-    this->set_status(FaceStatus::kClosed);
+    this->Disconnect(FaceStatus::kClosed);
   }
 }
 
@@ -81,8 +78,7 @@ void StreamFace::Write(void) {
     ssize_t res = write(this->fd(), pkt->data(), pkt->length());
     if (res < 0) {
       if (errno != EAGAIN && errno != EWOULDBLOCK) {
-        close(this->fd());
-        this->set_status(FaceStatus::kDisconnect);
+        this->Disconnect();
         return;
       }
       break;
@@ -105,8 +101,7 @@ void StreamFace::Write(void) {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
     this->set_ccnd_flags(0, CCN_FACE_NOSEND);
     if (this->status() == FaceStatus::kClosing) {
-      close(this->fd());
-      this->set_status(FaceStatus::kClosed);
+      this->Disconnect(FaceStatus::kClosed);
     }
   }
 }
@@ -124,8 +119,8 @@ Ptr<Buffer> StreamFace::GetReceiveBuffer(void) {
 void StreamFace::Read(void) {
   int sockerr = Socket_ClearError(this->fd());
   if (sockerr == ETIMEDOUT && this->status() == FaceStatus::kConnecting) {
-    close(this->fd());
-    this->set_status(FaceStatus::kConnectError);
+    this->Disconnect(FaceStatus::kConnectError);
+    return;
   }
 
   Ptr<Buffer> pkt = this->GetReceiveBuffer();
@@ -133,8 +128,7 @@ void StreamFace::Read(void) {
   ssize_t res = read(this->fd(), pkt->Reserve(bufsize), bufsize);
   if (res < 0) {
     if (errno != EAGAIN && errno != EWOULDBLOCK) {
-      close(this->fd());
-      this->set_status(FaceStatus::kDisconnect);
+      this->Disconnect();
     }
     return;
   }
@@ -149,8 +143,15 @@ void StreamFace::Read(void) {
 
   if (!msgs.empty()) this->set_status(FaceStatus::kEstablished);
   for (Ptr<Message> msg : msgs) {
-    this->Receive(msg);
+    this->ReceiveMessage(msg);
   }
+}
+
+void StreamFace::Disconnect(FaceStatus status) {
+  this->global()->pollmgr()->RemoveAll(this);
+  //close(this->fd());
+  this->set_fd(-1);
+  this->set_status(status);
 }
 
 StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
@@ -169,8 +170,7 @@ void StreamListener::Init(void) {
 }
 
 StreamListener::~StreamListener(void) {
-  this->global()->pollmgr()->RemoveAll(this);
-  ::close(this->fd());
+  this->Close();
 }
 
 void StreamListener::PollCallback(int fd, short revents) {
@@ -201,16 +201,19 @@ void StreamListener::AcceptConnection(void) {
 
 Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
   if (!Socket_SetNonBlock(fd)) {
-    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d O_NONBLOCK %s", this, fd, Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d SetNonBlock %s", this, fd, Logging::ErrorString().c_str());
   }
   
   NetworkAddress normalized = this->av()->Normalize(peer);
   Ptr<StreamFace> face = this->New<StreamFace>(fd, false, normalized, this->wp());
+  face->set_kind(this->accepted_kind());
   return face;
 }
 
 void StreamListener::Close(void) {
+  this->global()->pollmgr()->RemoveAll(this);
   close(this->fd());
+  this->set_fd(-1);
   this->set_status(FaceStatus::kClosed);
 }
 

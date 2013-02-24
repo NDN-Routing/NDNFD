@@ -2,6 +2,7 @@
 #include "face/facemgr.h"
 #include "message/ccnb.h"
 extern "C" {
+void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
 }
 using ndnfd::Global;
@@ -25,6 +26,7 @@ namespace ndnfd {
 
 void CcndFaceInterface::BindFace(Ptr<Face> face) {
   face->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
+  register_new_face(this->global()->ccndh(), face->ccnd_face());
 }
 
 void CcndFaceInterface::Receive(Ptr<Message> message) {

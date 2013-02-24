@@ -111,7 +111,11 @@ static int nameprefix_seek(struct ccnd_handle *h,
                            const unsigned char *msg,
                            struct ccn_indexbuf *comps,
                            int ncomps);
+#ifdef NDNFD
+void register_new_face(struct ccnd_handle *h, struct face *face);
+#else
 static void register_new_face(struct ccnd_handle *h, struct face *face);
+#endif
 static void update_forward_to(struct ccnd_handle *h,
                               struct nameprefix_entry *npe);
 static void stuff_and_send(struct ccnd_handle *h, struct face *face,
@@ -222,6 +226,9 @@ unlink_at_exit(const char *path)
 static int
 comm_file_ok(void)
 {
+#ifdef NDNFD
+    return 1;
+#else
     struct stat statbuf;
     int res;
     if (unlink_this_at_exit == NULL)
@@ -230,6 +237,7 @@ comm_file_ok(void)
     if (res == -1)
         return(0);
     return(1);
+#endif
 }
 
 /**
@@ -2118,6 +2126,7 @@ process_incoming_link_message(struct ccnd_handle *h,
     return(0);
 }
 
+#ifndef NDNFD
 /**
  * Checks for inactivity on datagram faces.
  * @returns number of faces that have gone away.
@@ -2159,6 +2168,7 @@ check_dgram_faces(struct ccnd_handle *h)
     }
     return(count);
 }
+#endif
 
 /**
  * Destroys the face identified by faceid.
@@ -2280,7 +2290,9 @@ reap(
         h->reaper = NULL;
         return(0);
     }
+#ifndef NDNFD
     check_dgram_faces(h);
+#endif
     check_nameprefix_entries(h);
     check_comm_file(h);
     return(2 * CCN_INTEREST_LIFETIME_MICROSEC);
@@ -2669,8 +2681,13 @@ ccnd_reg_uri_list(struct ccnd_handle *h,
  * Called when a face is first created, and (perhaps) a second time in the case
  * that a face transitions from the undecided state.
  */
+#ifdef NDNFD
+void
+register_new_face(struct ccnd_handle *h, struct face *face)
+#else
 static void
 register_new_face(struct ccnd_handle *h, struct face *face)
+#endif
 {
     if (face->faceid != 0 && (face->flags & (CCN_FACE_UNDECIDED | CCN_FACE_PASSIVE)) == 0) {
         ccnd_face_status_change(h, face->faceid);
@@ -5708,6 +5725,7 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
     h->debug = -1;
     h->skiplinks = ccn_indexbuf_create();
     param.finalize_data = h;
+#ifndef NDNFD
     h->face_limit = 1024; /* soft limit */
     h->faces_by_faceid = calloc(h->face_limit, sizeof(h->faces_by_faceid[0]));
     param.finalize = &finalize_face;
@@ -5715,6 +5733,7 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
     h->dgram_faces = hashtb_create(sizeof(struct face), &param);
     param.finalize = 0;
     h->faceid_by_guid = hashtb_create(sizeof(unsigned), &param);
+#endif
     param.finalize = &finalize_content;
     h->content_tab = hashtb_create(sizeof(struct content_entry), &param);
     param.finalize = &finalize_nameprefix;
@@ -5812,6 +5831,7 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
     /* Do keystore setup early, it takes a while the first time */
     ccnd_init_internal_keystore(h);
     ccnd_reseed(h);
+#ifndef NDNFD
     if (h->face0 == NULL) {
         struct face *face;
         face = calloc(1, sizeof(*face));
@@ -5826,12 +5846,17 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
         ccnd_msg(h, "%s: %s", sockname, strerror(errno));
     else
         ccnd_msg(h, "listening on %s", sockname);
+#endif
     h->flood = (h->autoreg != NULL);
     h->ipv4_faceid = h->ipv6_faceid = CCN_NOFACEID;
+#ifndef NDNFD
     ccnd_listen_on(h, listen_on);
+#endif
     reap_needed(h, 55000);
     age_forwarding_needed(h);
+#ifndef NDNFD
     ccnd_internal_client_start(h);
+#endif
     free(sockname);
     sockname = NULL;
     return(h);

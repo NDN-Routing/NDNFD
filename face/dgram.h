@@ -12,6 +12,7 @@ class DgramChannel;
 class DgramFace : public Face {
  public:
   DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer);
+  virtual void Init(void);
   virtual ~DgramFace(void) {}
 
   const NetworkAddress& peer(void) const { return this->peer_; }

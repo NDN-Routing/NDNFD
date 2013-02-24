@@ -85,9 +85,6 @@ TEST(FaceTest, Tcp) {
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
   
-  TestGlobal()->set_pollmgr(NewTestElement<PollMgr>());
-  TestGlobal()->set_facemgr(NewTestElement<FaceMgr>());
-
   uint8_t buf[5];
   memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);

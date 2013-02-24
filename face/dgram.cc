@@ -1,4 +1,5 @@
 #include "dgram.h"
+#include "face/facemgr.h"
 namespace ndnfd {
 
 DgramFace::DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer) {
@@ -7,6 +8,10 @@ DgramFace::DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer) {
   this->peer_ = peer;
   this->set_status(FaceStatus::kUndecided);
   this->set_ccnd_flags(CCN_FACE_DGRAM | CCN_FACE_INET, CCN_FACE_DGRAM | CCN_FACE_INET | CCN_FACE_INET6);//INET or INET6 doesn't matter
+}
+
+void DgramFace::Init(void) {
+  this->global()->facemgr()->AddFace(this);
 }
 
 void DgramFace::Send(Ptr<Message> message) {
@@ -19,7 +24,7 @@ void DgramFace::Send(Ptr<Message> message) {
 
 void DgramFace::Deliver(Ptr<Message> msg) {
   if (this->status() == FaceStatus::kUndecided) this->set_status(FaceStatus::kEstablished);
-  this->Receive(msg);
+  this->ReceiveMessage(msg);
 }
 
 void DgramFace::Close(void) {

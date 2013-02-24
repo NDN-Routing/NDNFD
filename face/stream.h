@@ -40,7 +40,6 @@ class StreamFace : public Face, public IPollClient {
   void SetClosing(void);
 
  protected:
-
   int fd(void) const { return this->fd_; }
   void set_fd(int value) { this->fd_ = value; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
@@ -64,6 +63,9 @@ class StreamFace : public Face, public IPollClient {
   // Read reads octets from socket, calls WireProtocol to decode as messages,
   // and writes them to Receive port.
   virtual void Read(void);
+  
+  // Disconnect closes fd and unregisters from pollmgr.
+  void Disconnect(FaceStatus status = FaceStatus::kDisconnect);
 
  private:
   int fd_;
@@ -79,6 +81,9 @@ class StreamFace : public Face, public IPollClient {
 // A StreamListener listens for new connections on a stream socket.
 class StreamListener : public Face, public IPollClient {
  public:
+  FaceKind accepted_kind(void) const { return this->accepted_kind_; }
+  void set_accepted_kind(FaceKind value) { this->accepted_kind_ = value; }
+
   // fd: fd of the socket, after bind() and listen()
   StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
   virtual void Init(void);
@@ -110,6 +115,7 @@ class StreamListener : public Face, public IPollClient {
   int fd_;
   Ptr<AddressVerifier> av_;
   Ptr<WireProtocol> wp_;
+  FaceKind accepted_kind_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };

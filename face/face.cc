@@ -69,6 +69,7 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 
 void Face::set_id(FaceId value) {
   this->id_ = value;
+  this->Log(kLLInfo, kLCFace, "Face(%"PRIxPTR")::set_id(%"PRI_FaceId")", this, this->id());
   this->ccnd_face()->faceid = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value);
 }
 
@@ -79,7 +80,7 @@ void Face::set_kind(FaceKind value) {
   int ccnd_flags = 0;
   switch (value) {
     case FaceKind::kInternal:  ccnd_flags = CCN_FACE_GG | CCN_FACE_LOCAL; break;
-    case FaceKind::kApp:       ccnd_flags = CCN_FACE_LOOPBACK;            break;
+    case FaceKind::kApp:       ccnd_flags = CCN_FACE_GG;                  break;
     case FaceKind::kMulticast: ccnd_flags = CCN_FACE_MCAST;               break;
     default: break;
   }
@@ -91,11 +92,13 @@ void Face::set_status(FaceStatus value) {
   if (old_status == value) return;
   this->status_ = value;
 
-  const int ccnd_flags_mask = CCN_FACE_CONNECTING | CCN_FACE_UNDECIDED | CCN_FACE_CLOSING;
+  // let process_input_message unset UNDECIDED and call register_new_face
+  int ccnd_flags_mask = CCN_FACE_CONNECTING | CCN_FACE_CLOSING;
   int ccnd_flags = 0;
   switch (value) {
     case FaceStatus::kConnecting: ccnd_flags = CCN_FACE_CONNECTING; break;
-    case FaceStatus::kUndecided:  ccnd_flags = CCN_FACE_UNDECIDED;  break;
+    case FaceStatus::kUndecided:  ccnd_flags = CCN_FACE_UNDECIDED; 
+                             ccnd_flags_mask |= CCN_FACE_UNDECIDED; break;
     case FaceStatus::kClosing:    ccnd_flags = CCN_FACE_CLOSING;    break;
     default: break;
   }
@@ -110,6 +113,12 @@ void Face::set_status(FaceStatus value) {
       this->global()->facemgr()->RemoveFace(this);
     }
   }
+}
+
+void Face::ReceiveMessage(Ptr<Message> msg) {
+  assert(msg != nullptr);
+  msg->set_incoming_face(this->id());
+  this->Receive(msg);
 }
 
 /*

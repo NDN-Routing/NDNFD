@@ -61,8 +61,7 @@ def build(bld):
         )
     
     bld.program(target='ndnfd',
-        source=['ccnd/ccnd_main.c'],
-        features='c cxxprogram',
+        source=['command/ndnfd.cc'],
         includes='.',
         use='ccnd/ccndcore ndnfdcommon',
         )

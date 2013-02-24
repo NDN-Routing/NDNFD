@@ -6,8 +6,9 @@ void process_internal_client_buffer(struct ccnd_handle* h);
 namespace ndnfd {
 
 void InternalClientFace::Init(void) {
-  this->global()->ccndh()->face0 = this->ccnd_face();
   this->set_kind(FaceKind::kInternal);
+  this->global()->facemgr()->AddFace(this);
+  this->global()->ccndh()->face0 = this->ccnd_face();
   int res = ccnd_internal_client_start(this->global()->ccndh());
   if (res < 0) {
     this->Log(kLLError, kLCFace, "InternalClientFace::Init ccnd_internal_client_start fails");

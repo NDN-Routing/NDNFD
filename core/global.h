@@ -25,7 +25,7 @@ class Global {
 
   Logging* logging(void) { return &this->logging_; }
   ccnd_handle* ccndh(void) const { return this->ccndh_; }
-  void set_ccndh(ccnd_handle* value) { this->ccndh_ = value; }
+  void set_ccndh(ccnd_handle* value);
   PollMgr* pollmgr(void) const { return this->pollmgr_; }
   void set_pollmgr(Ptr<PollMgr> value);
   Scheduler* scheduler(void) const { return this->scheduler_; }

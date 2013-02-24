@@ -60,6 +60,10 @@ class PollMgr : public Element {
   // UpdateRegEvents updates Reg.events_ according to Reg.clients_.
   void UpdateRegEvents(Reg* reg);
   
+  // PollSuccess is called after poll() syscall returns,
+  // but before dispatching events.
+  void PollSuccess(void);
+  
   DISALLOW_COPY_AND_ASSIGN(PollMgr);
 };
 

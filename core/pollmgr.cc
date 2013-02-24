@@ -1,4 +1,7 @@
 #include "core/pollmgr.h"
+extern "C" {
+#include "ccnd/ccnd_private.h"
+}
 namespace ndnfd {
 
 PollMgr::PollMgr(void) {
@@ -74,9 +77,11 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
   int r = poll(this->pfds_, this->nfds_, timeout_ms);
   if (r == -1) return false;
   if (r == 0) return true;
+  
+  this->PollSuccess();
 
   auto it = this->regs_.cbegin();
-  for (::nfds_t i = 0; i < this->nfds_; ++i) {
+  for (nfds_t i = 0; i < this->nfds_; ++i) {
     const pollfd& pfd = this->pfds_[i];
     int fd = pfd.fd; short revents = pfd.revents;
     if (revents == 0) continue;
@@ -91,6 +96,13 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
     }
   }
   return true;
+}
+
+void PollMgr::PollSuccess(void) {
+  // refresh ccnd time
+  ccn_timeval dummy;
+  ccnd_handle* h = this->global()->ccndh();
+  h->ticktock.gettime(&h->ticktock, &dummy);
 }
 
 };//namespace ndnfd

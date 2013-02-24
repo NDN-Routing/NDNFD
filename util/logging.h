@@ -15,6 +15,7 @@ const LoggingComponent kLCPollMgr = 0x0001;
 const LoggingComponent kLCScheduler = 0x0002;
 const LoggingComponent kLCWireProto = 0x0010;
 const LoggingComponent kLCFace = 0x0020;
+const LoggingComponent kLCCcndCore = 0x0100;
 
 class Logging {
   public:

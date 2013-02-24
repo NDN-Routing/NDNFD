@@ -15,16 +15,27 @@ Global::Global(void) {
 }
 
 void Global::Init(void) {
+  Ptr<Element> first = Element::MakeFirstElement(this);
   this->set_ccndh(new ccnd_handle());
-  this->set_pollmgr(new PollMgr());
-  //this->set_scheduler(new Scheduler());
-  this->set_facemgr(new FaceMgr());
+  this->set_pollmgr(first->New<PollMgr>());
+  this->set_scheduler(first->New<Scheduler>());
+  this->set_facemgr(first->New<FaceMgr>());
 }
 
 Global::~Global(void) {
+  this->set_ccndh(nullptr);
   this->set_pollmgr(nullptr);
   this->set_scheduler(nullptr);
   this->set_facemgr(nullptr);
+}
+
+void Global::set_ccndh(ccnd_handle* value) {
+  if (this->ccndh_ != nullptr) {
+    this->ccndh_->ndnfd_global = nullptr;
+    delete this->ccndh_;
+  }
+  if (value != nullptr) value->ndnfd_global = this;
+  this->ccndh_ = value;
 }
 
 void Global::set_pollmgr(Ptr<PollMgr> value) {

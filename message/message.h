@@ -21,7 +21,7 @@ class Message : public MessageBase {
   void set_incoming_sender(const NetworkAddress& value) { this->incoming_sender_ = value; }  
 
  protected:
-  Message(void) {}
+  Message(void) { this->incoming_face_ = FaceId_none; }
 
  private:
   FaceId incoming_face_;

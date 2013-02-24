@@ -69,6 +69,9 @@ class Face : public Element {
   void set_id(FaceId value);
   void set_status(FaceStatus value);
   void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
+  
+  // ReceiveMessage sets msg->incoming_face, then push to Receive port.
+  void ReceiveMessage(Ptr<Message> msg);
 
  private:
   FaceId id_;
