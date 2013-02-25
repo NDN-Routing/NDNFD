@@ -17,6 +17,9 @@ class NdnfdProgram : public Element {
   Ptr<InternalClientFace> internal_client_;
   Ptr<UnixFaceFactory> unix_face_factory_;
   Ptr<StreamListener> unix_listener_;
+  Ptr<TcpFaceFactory> tcp_face_factory_;
+  
+  void ccndc_add(FaceId faceid, std::string prefix);
   
   DISALLOW_COPY_AND_ASSIGN(NdnfdProgram);
 };

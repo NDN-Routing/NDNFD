@@ -21,7 +21,7 @@ void StreamFace::Init(void) {
   this->inbuf_ = nullptr;
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR")::StreamFace fd=%d status=%s", this, this->fd(), FaceStatus_ToString(this->status()).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::StreamFace fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
 StreamFace::~StreamFace(void) {
@@ -30,7 +30,7 @@ StreamFace::~StreamFace(void) {
 
 void StreamFace::Send(Ptr<Message> message) {
   if (!FaceStatus_IsUsable(this->status())) {
-    this->Log(kLLError, kLCFace, "StreamFace(%"PRIxPTR")::Send but status is %s", this, FaceStatus_ToString(this->status()).c_str());
+    this->Log(kLLError, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
     return;
   }
   
@@ -104,6 +104,9 @@ void StreamFace::Write(void) {
   } else {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
     this->set_ccnd_flags(0, CCN_FACE_NOSEND);
+    if (this->status() == FaceStatus::kConnecting) {
+      this->Disconnect(FaceStatus::kUndecided);
+    }
     if (this->status() == FaceStatus::kClosing) {
       this->Disconnect(FaceStatus::kClosed);
     }

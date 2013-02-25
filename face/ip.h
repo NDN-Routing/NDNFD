@@ -16,7 +16,7 @@ class IpAddressVerifier : public AddressVerifier {
   virtual bool IsLocal(const NetworkAddress& addr);
   virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
   virtual std::string ToString(const NetworkAddress& addr);
-  std::tuple<bool,NetworkAddress> Parse(std::string s);
+  static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
 };
