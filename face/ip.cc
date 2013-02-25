@@ -9,26 +9,22 @@ bool IpAddressVerifier::Check(const NetworkAddress& addr) {
          || (addr.wholen == sizeof(sockaddr_in6) && addr.family() == AF_INET6);
 }
 
-NetworkAddress IpAddressVerifier::Normalize(const NetworkAddress& addr) {
-  NetworkAddress n; n.wholen = addr.wholen;
+AddressHashKey IpAddressVerifier::GetHashKey(const NetworkAddress& addr) {
   switch (addr.family()) {
     case AF_INET: {
-      const sockaddr_in* src = reinterpret_cast<const sockaddr_in*>(&addr.who);
-      sockaddr_in* dst = reinterpret_cast<sockaddr_in*>(&n.who);
-      dst->sin_family = AF_INET;
-      dst->sin_port = src->sin_port;
-      dst->sin_addr.s_addr = src->sin_addr.s_addr;
-      } break;
+      const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      AddressHashKey h(reinterpret_cast<const char*>(&sa->sin_port), sizeof(sa->sin_port));
+      h.append(reinterpret_cast<const char*>(&sa->sin_addr.s_addr), sizeof(sa->sin_addr.s_addr));
+      return h;
+    } break;
     case AF_INET6: {
-      const sockaddr_in6* src = reinterpret_cast<const sockaddr_in6*>(&addr.who);
-      sockaddr_in6* dst = reinterpret_cast<sockaddr_in6*>(&n.who);
-      dst->sin6_family = AF_INET6;
-      dst->sin6_port = src->sin6_port;
-      memcpy(dst->sin6_addr.s6_addr, src->sin6_addr.s6_addr, sizeof(dst->sin6_addr.s6_addr));
-      } break;
+      const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      AddressHashKey h(reinterpret_cast<const char*>(&sa->sin6_port), sizeof(sa->sin6_port));
+      h.append(reinterpret_cast<const char*>(&sa->sin6_addr.s6_addr), sizeof(sa->sin6_addr.s6_addr));
+      return h;
+    } break;
     default: assert(false); break;
   }
-  return n;
 }
 
 bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) {

@@ -7,15 +7,6 @@ bool UnixAddressVerifier::Check(const NetworkAddress& addr) {
   return addr.family() == AF_UNIX;
 }
 
-NetworkAddress UnixAddressVerifier::Normalize(const NetworkAddress& addr) {
-  NetworkAddress n; n.wholen = addr.wholen;
-  const sockaddr_un* src = reinterpret_cast<const sockaddr_un*>(&addr.who);
-  sockaddr_un* dst = reinterpret_cast<sockaddr_un*>(&n.who);
-  dst->sun_family = AF_UNIX;
-  strncpy(dst->sun_path, src->sun_path, sizeof(dst->sun_path));
-  return n;
-}
-
 std::string UnixAddressVerifier::ToString(const NetworkAddress& addr) {
   const sockaddr_un* sa = reinterpret_cast<const sockaddr_un*>(&addr.who);
   return std::string(sa->sun_path);

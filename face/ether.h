@@ -23,9 +23,9 @@ class BpfChannel : DgramChannel {
 class EtherAddressVerifier : public AddressVerifier {
  public:
   virtual ~EtherAddressVerifier(void) {}
-  virtual bool CheckAddress(const NetworkAddress& addr);
-  virtual void NormalizeAddress(NetworkAddress* addr);
-  virtual std::string AddressToString(const NetworkAddress& addr);
+  virtual bool Check(const NetworkAddress& addr);
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
+  virtual std::string ToString(const NetworkAddress& addr);
  private:
   DISALLOW_COPY_AND_ASSIGN(EtherAddressVerifier);
 };

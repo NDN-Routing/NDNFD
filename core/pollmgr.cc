@@ -90,7 +90,7 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
     const pollfd& pfd = this->pfds_[i];
     int fd = pfd.fd; short revents = pfd.revents;
     if (revents == 0) continue;
-    //this->Log(kLLDebug, kLCPollMgr, "PollMgr::pollfd[] = %d,%d,%d", fd, pfd.events, revents);
+    this->Log(kLLDebug, kLCPollMgr, "PollMgr::pollfd[] = %d,%x,%x", fd, pfd.events, revents);
     while (it != this->regs_.cend() && it->first < fd) ++it;
     if (it == this->regs_.cend()) break;
     if (it->first != fd) continue;

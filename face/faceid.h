@@ -26,19 +26,4 @@ struct NetworkAddress {
 };
 
 };//namespace ndnfd
-namespace std {
-
-template<> struct hash<ndnfd::NetworkAddress> {
-  size_t operator()(const ndnfd::NetworkAddress& addr) const {
-    size_t h = 0;
-    const size_t* p = reinterpret_cast<const size_t*>(&addr.who);
-    const size_t* end = reinterpret_cast<const size_t*>(reinterpret_cast<const uint8_t*>(&addr.who) + addr.wholen);
-    for (; p < end; ++p) {
-      h = h ^ *p;
-    }
-    return h;
-  }
-};
-
-};//namespace std
 #endif//NDNFD_FACE_FACEID_H

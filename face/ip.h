@@ -12,7 +12,7 @@ class IpAddressVerifier : public AddressVerifier {
   IpAddressVerifier(void) {}
   virtual ~IpAddressVerifier(void) {}
   virtual bool Check(const NetworkAddress& addr);
-  virtual NetworkAddress Normalize(const NetworkAddress& addr);
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
   virtual bool IsLocal(const NetworkAddress& addr);
   virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
   virtual std::string ToString(const NetworkAddress& addr);

@@ -3,6 +3,8 @@
 #include "face/faceid.h"
 namespace ndnfd {
 
+typedef std::string AddressHashKey;
+
 // An AddressVerifier subclass knows about the address format of a lower protocol,
 // such as IPv4 or Ethernet.
 class AddressVerifier : public Object {
@@ -12,8 +14,8 @@ class AddressVerifier : public Object {
   // Check checks whether addr is valid in lower protocol.
   virtual bool Check(const NetworkAddress& addr) =0;
   
-  // Normalize returns an address that is suitable to use as a hash key.
-  virtual NetworkAddress Normalize(const NetworkAddress& addr) { return addr; }
+  // GetHashKey returns a binary string that can be used as hash key.
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr) { assert(false); return AddressHashKey(); }
   
   // IsLocal returns true if addr represents localhost.
   virtual bool IsLocal(const NetworkAddress& addr) { return false; };

@@ -81,12 +81,12 @@ class DgramChannel : public Element, public IPollClient {
   int fd(void) const { return this->fd_; }
   Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
-  std::unordered_map<NetworkAddress,PeerEntry>& peers(void) { return this->peers_; }
+  std::unordered_map<AddressHashKey,PeerEntry>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
   NetworkAddress local_addr(void) const { return this->local_addr_; }
   
   // CreateFace makes a face for a peer.
-  virtual Ptr<DgramFace> CreateFace(const NetworkAddress& peer);
+  virtual Ptr<DgramFace> CreateFace(const AddressHashKey& hashkey, const NetworkAddress& peer);
   
   // GetOrCreatePeer ensures PeerEntry exists for peer.
   // DgramFace is created if create_face is true.
@@ -108,7 +108,7 @@ class DgramChannel : public Element, public IPollClient {
   int fd_;
   Ptr<AddressVerifier> av_;
   Ptr<WireProtocol> wp_;
-  std::unordered_map<NetworkAddress,PeerEntry> peers_;
+  std::unordered_map<AddressHashKey,PeerEntry> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
   Ptr<Buffer> recvbuf_;
   NetworkAddress local_addr_;

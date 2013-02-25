@@ -12,7 +12,6 @@ class UnixAddressVerifier : public AddressVerifier {
   UnixAddressVerifier(void) {}
   virtual ~UnixAddressVerifier(void) {}
   virtual bool Check(const NetworkAddress& addr);
-  virtual NetworkAddress Normalize(const NetworkAddress& addr);
   virtual std::string ToString(const NetworkAddress& addr);
  private:
   DISALLOW_COPY_AND_ASSIGN(UnixAddressVerifier);

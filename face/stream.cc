@@ -22,7 +22,7 @@ void StreamFace::Init(void) {
   this->inbuf_ = nullptr;
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::StreamFace fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
 StreamFace::~StreamFace(void) {
@@ -182,7 +182,7 @@ StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol
 void StreamListener::Init(void) {
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::StreamListener fd=%d", this, this->fd());
+  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::Init fd=%d", this, this->fd());
 }
 
 StreamListener::~StreamListener(void) {
@@ -219,8 +219,7 @@ Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
     this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d SetNonBlock %s", this, fd, Logging::ErrorString().c_str());
   }
   
-  NetworkAddress normalized = this->av()->Normalize(peer);
-  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, normalized, this->wp());
+  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, peer, this->wp());
   face->set_kind(this->accepted_kind());
   return face;
 }

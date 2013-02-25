@@ -18,6 +18,8 @@ class NdnfdProgram : public Element {
   Ptr<UnixFaceFactory> unix_face_factory_;
   Ptr<StreamListener> unix_listener_;
   Ptr<TcpFaceFactory> tcp_face_factory_;
+  Ptr<UdpFaceFactory> udp_face_factory_;
+  Ptr<DgramChannel> udp_channel_;
   
   void ccndc_add(FaceId faceid, std::string prefix);
   

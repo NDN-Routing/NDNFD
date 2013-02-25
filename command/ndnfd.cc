@@ -16,12 +16,23 @@ void NdnfdProgram::Init(void) {
   this->unix_face_factory_ = this->New<UnixFaceFactory>(this->New<CcnbWireProtocol>(true));
   this->unix_listener_ = this->unix_face_factory_->Listen("/tmp/.ccnd.sock");
   this->tcp_face_factory_ = this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true));
+  this->udp_face_factory_ = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
   
   bool ok; NetworkAddress addr;
+
   std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
   assert(ok);
   Ptr<Face> tcp_Bhub = this->tcp_face_factory_->Connect(addr);
   this->ccndc_add(tcp_Bhub->id(), "/");
+
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
+  assert(ok);
+  this->udp_channel_ = this->udp_face_factory_->Channel(addr);
+
+  std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
+  assert(ok);
+  Ptr<Face> udp_2 = this->udp_channel_->GetFace(addr);
+  this->ccndc_add(udp_2->id(), "/example");
 }
 
 void NdnfdProgram::Run(void) {
@@ -35,7 +46,7 @@ void NdnfdProgram::Run(void) {
 
 void NdnfdProgram::ccndc_add(FaceId faceid, std::string prefix) {
   char buf[256];
-  snprintf(buf, sizeof(buf), "bash -c 'ccndc add %s face %"PRI_FaceId"' &", prefix.c_str(), faceid);
+  snprintf(buf, sizeof(buf), "bash -c 'sleep 1 && ccndc add %s face %"PRI_FaceId"' &", prefix.c_str(), faceid);
   system(buf);
 }
 

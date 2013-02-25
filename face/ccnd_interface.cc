@@ -36,10 +36,11 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
     return;
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
+    this->Log(kLLError, kLCFace, "CcndFaceInterface::Receive face %"PRI_FaceId" is fallback face", in_face->id());
     // this is a fallback face
     // TODO create an unicast face for message->incoming_send(),
     //      and set message->incoming_face() to the new face
-    assert(false);//not implemented
+    return;//not implemented
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
