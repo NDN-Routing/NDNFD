@@ -16,8 +16,23 @@ CcnbWireProtocol::State::State() {
   this->Clear();
 }
 
+Ptr<Buffer> CcnbWireProtocol::State::GetReceiveBuffer(void) {
+  Ptr<Buffer> b = WireProtocolState::GetReceiveBuffer();
+  ccn_skeleton_decoder* d = &this->d_;
+  if (this->msgstart_ < b->length()) { 
+    b->Pull(this->msgstart_);
+    b->Rebase();
+    d->index -= this->msgstart_;
+  } else {
+    b->Reset();
+    d->index = 0;
+  }
+  return b;
+}
+
 void CcnbWireProtocol::State::Clear() {
   memset(&this->d_, 0, sizeof(this->d_));
+  this->msgstart_ = 0;
 }
 
 std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
@@ -44,32 +59,21 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
   std::list<Ptr<Message>> results;
   
   assert(d->index <= static_cast<ssize_t>(packet->length()));
-  size_t msgstart = 0;
+  s->msgstart_ = 0;
   ccn_skeleton_decode(d, packet->data() + d->index, packet->length() - d->index);
   while (d->state == 0) {
-    if (d->index > static_cast<ssize_t>(msgstart)) {
-      results.emplace_back(new CcnbMessage(const_cast<uint8_t*>(packet->data() + msgstart), d->index - msgstart));
+    if (d->index > static_cast<ssize_t>(s->msgstart_)) {
+      results.emplace_back(new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_));
+      assert(static_cast<CcnbMessage*>(PeekPointer(results.back()))->Verify());
     }
-    msgstart = d->index;
-    if (msgstart == packet->length()) {
+    s->msgstart_ = d->index;
+    if (s->msgstart_ == packet->length()) {
       break;
     }
-    ccn_skeleton_decode(d, packet->data() + msgstart, packet->length() - msgstart);
+    ccn_skeleton_decode(d, packet->data() + s->msgstart_, packet->length() - s->msgstart_);
   }
   if (d->state < 0) {
     ok = false;
-  }
-  if (this->stream_mode_) {
-    Ptr<Buffer> rbuf = packet->AsBuffer(false);
-    assert(rbuf == state->GetReceiveBuffer());
-    if (msgstart < packet->length()) { 
-      memmove(rbuf->mutable_data(), rbuf->data() + msgstart, rbuf->length() - msgstart);
-      rbuf->Take(msgstart);
-      d->index -= msgstart;
-    } else {
-      rbuf->Reset();
-      d->index = 0;
-    }
   }
   return std::forward_as_tuple(ok, results);
 }

@@ -43,6 +43,7 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
+  assert(msg->Verify());
   process_input_message(this->global()->ccndh(), in_face->ccnd_face(), static_cast<unsigned char*>(msg->msg()), msg->length(), 0);
 }
 

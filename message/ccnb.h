@@ -36,7 +36,9 @@ class CcnbWireProtocol : public WireProtocol {
   // This is only used in stream mode.
   struct State : public WireProtocolState {
     State();
+    virtual Ptr<Buffer> GetReceiveBuffer(void);
     void Clear();
+    size_t msgstart_;//start position of first undelivered message in receive buffer
     ccn_skeleton_decoder d_;//skeleton decoder state
   };
   

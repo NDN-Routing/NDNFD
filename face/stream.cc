@@ -1,6 +1,7 @@
 #include "stream.h"
 #include <unistd.h>
 #include "util/socket_helper.h"
+#include "message/ccnb.h"
 namespace ndnfd {
 
 StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp) {
@@ -155,6 +156,8 @@ void StreamFace::Read(void) {
 
   if (!msgs.empty()) this->set_status(FaceStatus::kEstablished);
   for (Ptr<Message> msg : msgs) {
+    CcnbMessage* m = static_cast<CcnbMessage*>(PeekPointer(msg));
+    assert(m->Verify());
     this->ReceiveMessage(msg);
   }
 }
