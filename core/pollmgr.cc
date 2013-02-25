@@ -48,12 +48,17 @@ void PollMgr::UpdatePfds(void) {
     this->pfds_limit_ = 1;
     while (this->pfds_limit_ < nfds) this->pfds_limit_ = this->pfds_limit_ << 1;
     if (this->pfds_ != nullptr) free(this->pfds_);
-    this->pfds_ = static_cast<pollfd*>(::malloc(this->pfds_limit_ * sizeof(pollfd)));
+    this->pfds_ = static_cast<pollfd*>(malloc(this->pfds_limit_ * sizeof(pollfd)));
   }
   nfds = 0;
-  for (auto it = this->regs_.cbegin(); it != this->regs_.cend(); ++it) {
-    this->pfds_[nfds].fd = it->first;
-    this->pfds_[nfds].events = it->second.events_;
+  for (auto it = this->regs_.cbegin(); it != this->regs_.cend();) {
+    auto me = it; ++it;
+    if (me->second.clients_.size() == 0) {
+      this->regs_.erase(me);
+      continue;
+    }
+    this->pfds_[nfds].fd = me->first;
+    this->pfds_[nfds].events = me->second.events_;
     ++nfds;
   }
   this->nfds_ = nfds;
@@ -66,7 +71,7 @@ void PollMgr::UpdateRegEvents(Reg* reg) {
     if (me->second == 0) {
       reg->clients_.erase(me);
     } else {
-      events = events | me->second;
+      events |= me->second;
     }
   }
   reg->events_ = events;
@@ -85,6 +90,7 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
     const pollfd& pfd = this->pfds_[i];
     int fd = pfd.fd; short revents = pfd.revents;
     if (revents == 0) continue;
+    //this->Log(kLLDebug, kLCPollMgr, "PollMgr::pollfd[] = %d,%d,%d", fd, pfd.events, revents);
     while (it != this->regs_.cend() && it->first < fd) ++it;
     if (it == this->regs_.cend()) break;
     if (it->first != fd) continue;

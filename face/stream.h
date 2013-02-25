@@ -96,7 +96,7 @@ class StreamListener : public Face, public IPollClient {
   virtual void PollCallback(int fd, short revents);
 
   // Close closes the socket.
-  void Close(void);
+  void Close(void) { this->Disconnect(FaceStatus::kClosed); }
 
  protected:
   int fd(void) const { return this->fd_; }
@@ -110,6 +110,9 @@ class StreamListener : public Face, public IPollClient {
   void AcceptConnection(void);
   // MakeFace makes a StreamFace from an accepted connection.
   virtual Ptr<StreamFace> MakeFace(int fd, const NetworkAddress& peer);
+  
+  // Disconnect closes fd and unregisters from pollmgr.
+  void Disconnect(FaceStatus status = FaceStatus::kDisconnect);
 
  private:
   int fd_;
