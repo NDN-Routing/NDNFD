@@ -12,6 +12,11 @@ std::string UnixAddressVerifier::ToString(const NetworkAddress& addr) {
   return std::string(sa->sun_path);
 }
 
+void UnixListener::Close(void) {
+  StreamListener::Close();
+  unlink(this->local_socket_.c_str());
+}
+
 UnixFaceFactory::UnixFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
   this->av_ = new UnixAddressVerifier();
 }
@@ -51,7 +56,7 @@ Ptr<StreamListener> UnixFaceFactory::Listen(const std::string& local_socket) {
     close(fd);
     return nullptr;
   }
-  Ptr<StreamListener> face = this->New<StreamListener>(fd, this->av_, this->wp());
+  Ptr<UnixListener> face = this->New<UnixListener>(fd, this->av_, this->wp(), local_socket);
   face->set_accepted_kind(FaceKind::kApp);
   return face;
 }

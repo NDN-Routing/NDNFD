@@ -24,7 +24,11 @@ class DgramFace : public Face {
   virtual void Send(Ptr<Message> message);
   
   void Deliver(Ptr<Message> msg);
-  void Close(void);
+  virtual void Close(void);
+  
+  // CloseInternal closes the face immediately,
+  // but does not notify DgramChannel.
+  void CloseInternal(void);
   
  private:
   NetworkAddress peer_;
@@ -41,6 +45,9 @@ class DgramFallbackFace : public DgramFace {
   virtual ~DgramFallbackFace(void) {}
   
   virtual bool CanSend(void) const { return false; }
+  
+  // Close closes the fallback face, and the DgramChannel.
+  virtual void Close(void);
   
  private:
   DISALLOW_COPY_AND_ASSIGN(DgramFallbackFace);
@@ -66,6 +73,10 @@ class DgramChannel : public Element, public IPollClient {
   // This is called by DgramFace.
   virtual void FaceSend(Ptr<DgramFace> face, Ptr<Message> message);
   
+  // FaceClose removes a face.
+  // It does not remove the PeerEntry.
+  void FaceClose(Ptr<DgramFace> face);
+  
   // PollCallback is invoked with POLLIN when there are packets
   // on the socket to read.
   virtual void PollCallback(int fd, short revents);
@@ -77,7 +88,15 @@ class DgramChannel : public Element, public IPollClient {
   // A PeerEntry represents per-peer information.
   // If .wp()->IsStateful() is false, Ptr<WireProtocolState> is NULL.
   typedef std::tuple<Ptr<DgramFace>,Ptr<WireProtocolState>> PeerEntry;
+  
+  // MakePeerFaceOp specifies what to do with Face in MakePeer
+  enum class MakePeerFaceOp {
+    kNone   = 0,//no operation
+    kCreate = 1,//create if not exist
+    kDelete = 2 //delete if exist
+  };
 
+  bool closed_;
   int fd(void) const { return this->fd_; }
   Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
@@ -88,10 +107,9 @@ class DgramChannel : public Element, public IPollClient {
   // CreateFace makes a face for a peer.
   virtual Ptr<DgramFace> CreateFace(const AddressHashKey& hashkey, const NetworkAddress& peer);
   
-  // GetOrCreatePeer ensures PeerEntry exists for peer.
-  // DgramFace is created if create_face is true.
+  // MakePeer ensures PeerEntry exists for peer.
   // WireProtocolState is created if WireProtocol is stateful.
-  PeerEntry GetOrCreatePeer(const NetworkAddress& peer, bool create_face);
+  PeerEntry MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op);
   
   // SendTo calls sendto() syscall to send one packet to the socket.
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);

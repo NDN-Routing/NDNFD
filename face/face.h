@@ -32,7 +32,7 @@ enum class FaceStatus {
 std::string FaceStatus_ToString(FaceStatus status);
 // FaceStatus_IsError returns true if status represents an error condition.
 bool FaceStatus_IsError(FaceStatus status);
-// FaceStatus_WillBeUsable returns true if status is or may become Established.
+// FaceStatus_IsUsable returns true if status is or may become Established.
 bool FaceStatus_IsUsable(FaceStatus status);
 
 // A Face is a logical connection to a local entity, or one or more remote peers.
@@ -63,6 +63,9 @@ class Face : public Element {
   // Enroll verifies mgr is the FaceMgr of this router,
   // and records the assigned FaceId.
   virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
+  
+  // Close closes the face immediately.
+  virtual void Close(void) {}
   
  protected:
   Face(void);

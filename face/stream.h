@@ -38,6 +38,8 @@ class StreamFace : public Face, public IPollClient {
   // SetClosing sets FaceStatus to kClosing,
   // so that face is closed after queued messages are sent.
   void SetClosing(void);
+  
+  virtual void Close(void) { this->Disconnect(FaceStatus::kClosed); }
 
  protected:
   int fd(void) const { return this->fd_; }
@@ -95,8 +97,7 @@ class StreamListener : public Face, public IPollClient {
   // connection requests on the socket to accept.
   virtual void PollCallback(int fd, short revents);
 
-  // Close closes the socket.
-  void Close(void) { this->Disconnect(FaceStatus::kClosed); }
+  virtual void Close(void) { this->Disconnect(FaceStatus::kClosed); }
 
  protected:
   int fd(void) const { return this->fd_; }

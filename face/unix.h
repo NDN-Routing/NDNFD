@@ -17,6 +17,20 @@ class UnixAddressVerifier : public AddressVerifier {
   DISALLOW_COPY_AND_ASSIGN(UnixAddressVerifier);
 };
 
+// A UnixListener is a stream listener for UNIX socket,
+// that unlinks local socket when closing.
+class UnixListener : public StreamListener {
+ public:
+  UnixListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp, const std::string& local_socket)
+    : StreamListener(fd, av, wp), local_socket_(local_socket) {}
+  
+  virtual void Close(void);
+  
+ private:
+  std::string local_socket_;
+  DISALLOW_COPY_AND_ASSIGN(UnixListener);
+};
+
 // A UnixFaceFactory creates Face objects for UNIX sockets.
 class UnixFaceFactory : public FaceFactory {
  public:

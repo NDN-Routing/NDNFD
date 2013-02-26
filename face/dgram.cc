@@ -28,6 +28,11 @@ void DgramFace::Deliver(Ptr<Message> msg) {
 }
 
 void DgramFace::Close(void) {
+  this->channel()->FaceClose(this);
+  this->CloseInternal();
+}
+
+void DgramFace::CloseInternal(void) {
   this->set_status(FaceStatus::kClosed);
   this->channel_ = nullptr;
 }
@@ -35,6 +40,10 @@ void DgramFace::Close(void) {
 DgramFallbackFace::DgramFallbackFace(Ptr<DgramChannel> channel)
   : DgramFace(channel, NetworkAddress()) {
   this->set_kind(FaceKind::kMulticast);
+}
+
+void DgramFallbackFace::Close(void) {
+  this->channel()->Close();
 }
 
 DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
@@ -46,6 +55,7 @@ DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<Address
   this->av_ = av;
   this->wp_ = wp;
   this->recvbuf_ = new Buffer(0);
+  this->closed_ = false;
 }
 
 void DgramChannel::Init(void) {
@@ -71,20 +81,23 @@ Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const Net
   return face;
 }
 
-DgramChannel::PeerEntry DgramChannel::GetOrCreatePeer(const NetworkAddress& peer, bool create_face) {
+DgramChannel::PeerEntry DgramChannel::MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op) {
   AddressHashKey hashkey = this->av()->GetHashKey(peer);
   Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
   auto it = this->peers_.find(hashkey);
   if (it != this->peers_.end()) {
     std::tie(face, wps) = it->second;
-    if (create_face && face == nullptr) {
+    if (face_op == MakePeerFaceOp::kCreate && face == nullptr) {
       face = this->CreateFace(hashkey, peer);
+      return this->peers_[hashkey] = std::make_tuple(face, wps);
+    } else if (face_op == MakePeerFaceOp::kDelete && face != nullptr) {
+      face = nullptr;
       return this->peers_[hashkey] = std::make_tuple(face, wps);
     }
     return it->second;
   }
 
-  face = create_face ? this->CreateFace(hashkey, peer) : nullptr;
+  face = face_op == MakePeerFaceOp::kCreate ? this->CreateFace(hashkey, peer) : nullptr;
   wps = this->wp()->IsStateful() ? this->wp()->CreateState(peer) : nullptr;
   PeerEntry entry = std::make_tuple(face, wps);
   this->peers_.insert(std::make_pair(hashkey, entry));
@@ -93,13 +106,13 @@ DgramChannel::PeerEntry DgramChannel::GetOrCreatePeer(const NetworkAddress& peer
 
 Ptr<DgramFace> DgramChannel::GetFace(const NetworkAddress& peer) {
   Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
-  std::tie(face, wps) = this->GetOrCreatePeer(peer, true);
+  std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kCreate);
   return face;
 }
 
 void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
   Ptr<DgramFace> oface; Ptr<WireProtocolState> wps;
-  std::tie(oface, wps) = this->GetOrCreatePeer(face->peer(), false);
+  std::tie(oface, wps) = this->MakePeer(face->peer(), MakePeerFaceOp::kNone);
   assert(oface == face);
   
   bool ok; std::list<Ptr<Buffer>> pkts;
@@ -135,7 +148,7 @@ void DgramChannel::ReceiveFrom(void) {
 
 void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
   Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
-  std::tie(face, wps) = this->GetOrCreatePeer(peer, false);
+  std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kNone);
   //this->Log(kLLDebug, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::DeliverPacket(%s) face=%"PRI_FaceId"", this, this->fd(), this->av()->ToString(peer).c_str(), face==nullptr ? FaceId_none : face->id());
   
   bool ok; std::list<Ptr<Message>> msgs;
@@ -151,15 +164,22 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
   }
 }
 
+void DgramChannel::FaceClose(Ptr<DgramFace> face) {
+  this->MakePeer(face->peer(), MakePeerFaceOp::kDelete);
+}
+
 void DgramChannel::Close() {
+  if (this->closed_) return;
+  this->closed_ = true;
+  
   for (auto p : this->peers()) {
     Ptr<DgramFace> face = std::get<0>(p.second);
     if (face != nullptr) {
-      face->Close();
+      face->CloseInternal();
     }
   }
   this->peers().clear();
-  this->GetFallbackFace()->Close();
+  this->GetFallbackFace()->CloseInternal();
   close(this->fd());
   this->global()->pollmgr()->RemoveAll(this);
 }
