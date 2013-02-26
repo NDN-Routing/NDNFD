@@ -4,6 +4,9 @@ extern "C" {
 }
 namespace ndnfd {
 
+constexpr std::chrono::milliseconds PollMgr::kZeroTimeout;
+constexpr std::chrono::milliseconds PollMgr::kNoTimeout;
+
 PollMgr::PollMgr(void) {
   this->pfds_ = nullptr;
   this->nfds_ = this->pfds_limit_ = 0;

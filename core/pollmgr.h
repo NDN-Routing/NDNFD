@@ -23,6 +23,11 @@ class PollMgr : public Element {
   // error events that are always delivered
   static const short kErrors = POLLERR | POLLHUP | POLLNVAL;
   
+  // kZeroTimeout specifies Poll() should return immediately.
+  static constexpr std::chrono::milliseconds kZeroTimeout = std::chrono::milliseconds(0);
+  // kNoTimeout specifies Poll() should wait forever.
+  static constexpr std::chrono::milliseconds kNoTimeout = std::chrono::milliseconds(-1);
+ 
   PollMgr(void);
   virtual ~PollMgr(void);
   
