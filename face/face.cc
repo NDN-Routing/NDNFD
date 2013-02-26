@@ -69,7 +69,7 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 
 void Face::set_id(FaceId value) {
   this->id_ = value;
-  this->Log(kLLInfo, kLCFace, "Face(%"PRIxPTR")::set_id(%"PRI_FaceId")", this, this->id());
+  //this->Log(kLLInfo, kLCFace, "Face(%"PRIxPTR")::set_id(%"PRI_FaceId")", this, this->id());
   this->ccnd_face()->faceid = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value);
 }
 

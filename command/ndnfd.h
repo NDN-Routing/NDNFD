@@ -18,6 +18,7 @@ class NdnfdProgram : public Element {
   Ptr<UnixFaceFactory> unix_face_factory_;
   Ptr<StreamListener> unix_listener_;
   Ptr<TcpFaceFactory> tcp_face_factory_;
+  Ptr<StreamListener> tcp_listener_;
   Ptr<UdpFaceFactory> udp_face_factory_;
   Ptr<DgramChannel> udp_channel_;
   

@@ -14,25 +14,30 @@ void NdnfdProgram::Init(void) {
   
   this->internal_client_ = this->New<InternalClientFace>();
   this->unix_face_factory_ = this->New<UnixFaceFactory>(this->New<CcnbWireProtocol>(true));
-  this->unix_listener_ = this->unix_face_factory_->Listen("/tmp/.ccnd.sock");
   this->tcp_face_factory_ = this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true));
   this->udp_face_factory_ = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
   
   bool ok; NetworkAddress addr;
 
+  this->unix_listener_ = this->unix_face_factory_->Listen("/tmp/.ccnd.sock");
+
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
+  assert(ok);
+  this->tcp_listener_ = this->tcp_face_factory_->Listen(addr);
+
   std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
   assert(ok);
   Ptr<Face> tcp_Bhub = this->tcp_face_factory_->Connect(addr);
-  this->ccndc_add(tcp_Bhub->id(), "/");
+  this->ccndc_add(tcp_Bhub->id(), "/ndn/ucla.edu");
 
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
   assert(ok);
   this->udp_channel_ = this->udp_face_factory_->Channel(addr);
 
-  std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
-  assert(ok);
-  Ptr<Face> udp_2 = this->udp_channel_->GetFace(addr);
-  this->ccndc_add(udp_2->id(), "/example");
+  //std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
+  //assert(ok);
+  //Ptr<Face> udp_2 = this->udp_channel_->GetFace(addr);
+  //this->ccndc_add(udp_2->id(), "/example");
 }
 
 void NdnfdProgram::Run(void) {

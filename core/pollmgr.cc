@@ -84,22 +84,33 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
   if (r == 0) return true;
   
   this->PollSuccess();
+  //this->Log(kLLDebug, kLCPollMgr, "PollMgr::poll -> %d", r);
 
+  std::vector<std::tuple<IPollClient*,int,short>> calls;
+  
   auto it = this->regs_.cbegin();
   for (nfds_t i = 0; i < this->nfds_; ++i) {
     const pollfd& pfd = this->pfds_[i];
     int fd = pfd.fd; short revents = pfd.revents;
+    //this->Log(kLLDebug, kLCPollMgr, "PollMgr::pollfd[] = %d,%x,%x", fd, pfd.events, revents);
     if (revents == 0) continue;
-    this->Log(kLLDebug, kLCPollMgr, "PollMgr::pollfd[] = %d,%x,%x", fd, pfd.events, revents);
     while (it != this->regs_.cend() && it->first < fd) ++it;
     if (it == this->regs_.cend()) break;
     if (it->first != fd) continue;
 
     for (auto itc = it->second.clients_.cbegin(); itc != it->second.clients_.cend(); ++itc) {
       if (0 != (revents & (itc->second | PollMgr::kErrors))) {
-        itc->first->PollCallback(fd, revents);
+        calls.push_back(std::make_tuple(itc->first, fd, revents));
+        // don't call PollCallback here - it may modify pfd and regs
       }
     }
+  }
+  
+  for (auto call : calls) {
+    IPollClient* client = std::get<0>(call);
+    int fd = std::get<1>(call);
+    short revents = std::get<2>(call);
+    client->PollCallback(fd, revents);
   }
   return true;
 }

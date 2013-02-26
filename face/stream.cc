@@ -182,7 +182,7 @@ StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol
 void StreamListener::Init(void) {
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::Init fd=%d", this, this->fd());
+  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::Init fd=%d", this, this->id(), this->fd());
 }
 
 StreamListener::~StreamListener(void) {
@@ -205,18 +205,18 @@ void StreamListener::AcceptConnection(void) {
   int fd = accept(this->fd(), (struct sockaddr*)&peer.who, &peer.wholen);
   if (fd < 0) return;
   if (!this->av()->Check(peer)) {
-    this->Log(kLLError, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection peer address not valid", this);
+    this->Log(kLLError, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::AcceptConnection peer address not valid", this, this->id());
     close(fd);
     return;
   }
   Ptr<StreamFace> face = this->MakeFace(fd, peer);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR")::AcceptConnection fd=%d face=%"PRIxPTR" peer=%s", this, fd, PeekPointer(face), this->av()->ToString(peer).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::AcceptConnection fd=%d face=%"PRI_FaceId" peer=%s", this, this->id(), fd, face->id(), this->av()->ToString(peer).c_str());
   this->Accept(face);
 }
 
 Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
   if (!Socket_SetNonBlock(fd)) {
-    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR")::MakeFace fd=%d SetNonBlock %s", this, fd, Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::MakeFace fd=%d SetNonBlock %s", this, this->id(), fd, Logging::ErrorString().c_str());
   }
   
   Ptr<StreamFace> face = this->New<StreamFace>(fd, false, peer, this->wp());
