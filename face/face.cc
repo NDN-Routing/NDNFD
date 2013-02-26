@@ -109,7 +109,7 @@ void Face::set_status(FaceStatus value) {
   }
   if (this->id() != FaceId_none) {
     this->global()->facemgr()->NotifyStatusChange(this);
-    if (value == FaceStatus::kClosed) {
+    if (value == FaceStatus::kClosed || FaceStatus_IsError(value)) {
       this->global()->facemgr()->RemoveFace(this);
     }
   }
