@@ -28,7 +28,7 @@ void NdnfdProgram::Init(void) {
   std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
   assert(ok);
   Ptr<Face> tcp_Bhub = this->tcp_face_factory_->Connect(addr);
-  this->ccndc_add(tcp_Bhub->id(), "/ndn/ucla.edu");
+  this->ccndc_add(tcp_Bhub->id(), "/");
 
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
   assert(ok);
@@ -52,7 +52,8 @@ void NdnfdProgram::Run(void) {
 void NdnfdProgram::ccndc_add(FaceId faceid, std::string prefix) {
   char buf[256];
   snprintf(buf, sizeof(buf), "bash -c 'sleep 1 && ccndc add %s face %"PRI_FaceId"' &", prefix.c_str(), faceid);
-  system(buf);
+  int res = system(buf);
+  if (res == 0) {}
 }
 
 int CcndLogger(void* loggerdata, const char* format, va_list ap) {
