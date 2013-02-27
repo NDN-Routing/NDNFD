@@ -45,7 +45,8 @@ class BufferView : public Object {
 // A Buffer represents a writable and resizable block of octets.
 class Buffer : public BufferView {
  public:
-  Buffer(size_t size, size_t headroom = 0, size_t tailroom = 0);
+  Buffer(size_t length, size_t headroom = 0, size_t tailroom = 0);
+  Buffer(uint8_t* data, size_t length);
   virtual ~Buffer(void);
   
   // pointer to data
@@ -53,7 +54,7 @@ class Buffer : public BufferView {
   virtual const uint8_t* data() const { return this->mutable_data(); }
   // length of data
   virtual size_t length() const { return this->c_->length - this->headroom_; }
-
+  
   // Reserve makes n octets space after the end of data,
   // and returns a pointer to the start of new space,
   // but does not increase length,
@@ -78,6 +79,9 @@ class Buffer : public BufferView {
   
   // AsBuffer returns or clones self.
   virtual Ptr<Buffer> AsBuffer(bool clone);
+  // Detach detaches the octets from Buffer.
+  // After this operation, this Buffer becomes empty.
+  std::tuple<uint8_t*,size_t> Detach(void);
   
  private:
   ccn_charbuf* c_;

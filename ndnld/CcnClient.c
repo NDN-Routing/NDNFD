@@ -6,16 +6,26 @@
 #include <ccn/uri.h>
 #include <ccn/reg_mgmt.h>
 #include "ndnld.h"
+#ifdef NDNFD
+#include <assert.h>
+#endif
 
 CcnbMsg CcnbMsg_ctor(size_t size) {
 	CcnbMsg self = (CcnbMsg)ccn_charbuf_create();
+#ifdef NDNFD
+	ccn_charbuf_reserve(self, size);
+	self->length = size;
+#else
 	CcnbMsg_setupEncap(self, size + CCN_EMPTY_PDU_LENGTH);
+#endif
 	return self;
 }
 
 CcnbMsg CcnbMsg_fromEncap(struct ccn_charbuf* encap) {
 	CcnbMsg self = (CcnbMsg)encap;
+#ifndef NDNFD
 	CcnbMsg_setupEncap(self, encap->length);
+#endif
 	return self;
 }
 
@@ -33,6 +43,9 @@ void* CcnbMsg_detachBuf(CcnbMsg self, size_t* size) {
 }
 
 void CcnbMsg_setupEncap(CcnbMsg self, size_t size) {
+#ifdef NDNFD
+	assert(false);
+#endif
 	ccn_charbuf_reset(self);
 	ccn_charbuf_reserve(self, size);
 	self->length = size;
@@ -41,13 +54,24 @@ void CcnbMsg_setupEncap(CcnbMsg self, size_t size) {
 }
 
 size_t CcnbMsg_getSize(CcnbMsg self) {
+#ifdef NDNFD
+	return self->length;
+#else
 	return self->length - CCN_EMPTY_PDU_LENGTH;
+#endif
 }
 
 void CcnbMsg_resize(CcnbMsg self, size_t size) {
+#ifdef NDNFD
+	if (size > self->length) {
+		ccn_charbuf_reserve(self, size - self->length);
+	}
+	self->length = size;
+#else
 	size_t oldsize = self->length + CCN_EMPTY_PDU_LENGTH;
 	if (size == oldsize) return;
 	CcnbMsg_setupEncap(self, size + CCN_EMPTY_PDU_LENGTH);
+#endif
 }
 
 void* CcnbMsg_getBody(CcnbMsg self) {
@@ -56,7 +80,11 @@ void* CcnbMsg_getBody(CcnbMsg self) {
 
 void* CcnbMsg_getBodyPart(CcnbMsg self, size_t start) {
 	if (start < 0 || start >= CcnbMsg_getSize(self)) return NULL;
+#ifdef NDNFD
+	return self->buf + start;
+#else
 	return self->buf + (CCN_EMPTY_PDU_LENGTH - 1) + start;
+#endif
 }
 
 size_t CcnbMsg_getEncapSize(CcnbMsg self) {

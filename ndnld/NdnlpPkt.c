@@ -39,7 +39,6 @@ int CcnbH_readBlockHdr(uint8_t* buf, size_t len, uint64_t* pnumber, enum ccn_tt*
 	if (len < 0) len = 10;
 	for (i = 0; i < len; ++i) {
 		uint8_t ch = buf[i];
-		if (ch == 0) return 0;
 		if (ch & 0x80) {
 			number <<= 4;
 			number |= (ch & 0x78) >> 3;

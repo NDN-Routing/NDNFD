@@ -45,11 +45,9 @@ class CcnbWireProtocol : public WireProtocol {
   CcnbWireProtocol(bool stream_mode);
   
   virtual bool IsStateful(void) const { return this->stream_mode_; }
-  
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
   
   virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
-  
   virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
 
  private:

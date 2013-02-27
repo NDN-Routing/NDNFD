@@ -1,12 +1,20 @@
 #include "util/buffer.h"
 namespace ndnfd {
 
-Buffer::Buffer(size_t size, size_t headroom, size_t tailroom) {
+Buffer::Buffer(size_t length, size_t headroom, size_t tailroom) {
   this->initial_headroom_ = headroom;
   this->initial_tailroom_ = tailroom;
   this->headroom_ = headroom;
-  this->c_ = ccn_charbuf_create_n(headroom + size + tailroom);
-  this->c_->length = headroom + size;
+  this->c_ = ccn_charbuf_create_n(headroom + length + tailroom);
+  this->c_->length = headroom + length;
+}
+
+Buffer::Buffer(uint8_t* data, size_t length) {
+  this->initial_headroom_ = this->headroom_ = this->initial_tailroom_ = 0;
+  this->c_ = ccn_charbuf_create();
+  this->c_->buf = data;
+  this->c_->length = length;
+  this->c_->limit = length;
 }
 
 Buffer::~Buffer(void) {
@@ -72,6 +80,19 @@ Ptr<Buffer> Buffer::AsBuffer(bool clone) {
   }
 }
 
+std::tuple<uint8_t*,size_t> Buffer::Detach(void) {
+  uint8_t* buf = this->c_->buf;
+  size_t length = this->length();
+  if (this->headroom_ != 0) {
+    memmove(buf, buf + this->headroom_, length);
+  }
+
+  this->c_->buf = nullptr;
+  this->c_->length = this->c_->limit = 0;
+  this->initial_headroom_ = this->headroom_ = this->initial_tailroom_ = 0;
+
+  return std::forward_as_tuple(buf, length);
+}
 
 BufferView::BufferView(Ptr<Buffer> buffer, size_t start, size_t length) {
   assert(buffer != nullptr);

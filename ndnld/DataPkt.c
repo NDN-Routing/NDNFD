@@ -5,14 +5,13 @@
 
 DataPkt DataPkt_ctor(bool hasFragFields, size_t payloadLength) {
 	int hdrlen = hasFragFields ? DataPkt_hdrlen2 : DataPkt_hdrlen1;
-	int len = hdrlen + DataPkt_payloadhdrlen1
-		+ CcnbH_sizeBlockHdr(payloadLength)
-		+ payloadLength + DataPkt_trailerlen;
+	int blockhdrlen = CcnbH_sizeBlockHdr(payloadLength);
+	int len = hdrlen + DataPkt_payloadhdrlen1 + blockhdrlen + payloadLength + DataPkt_trailerlen;
 
 	DataPkt self = ccn_charbuf_create_n(len);
 	ccn_charbuf_append(self, DataPkt_hdr, hdrlen);
 	ccn_charbuf_append(self, DataPkt_payloadhdr, DataPkt_payloadhdrlen1);
-	ccn_charbuf_append_string(self, CcnbH_getBlockHdr(payloadLength, CCN_BLOB));
+	ccn_charbuf_append(self, CcnbH_getBlockHdr(payloadLength, CCN_BLOB), blockhdrlen);
 	self->length += payloadLength;
 	ccn_charbuf_append(self, DataPkt_trailer, DataPkt_trailerlen);
 

@@ -1,3 +1,6 @@
+#ifndef NDNFD
+#define NDNFD 1
+#endif
 #ifndef NDNLD_H
 #define NDNLD_H
 
@@ -37,10 +40,12 @@
 #define ALLOCSELF (calloc(1, sizeof(*self)))
 
 
+#ifndef __cplusplus
 //valuetype bool
 typedef int bool;
 #define true -1
 #define false 0
+#endif//__cplusplus
 
 
 //class ByteArray
@@ -215,6 +220,9 @@ int CapsH_createPacketSock(int socket_type, int protocol);//create a AF_PACKET s
 
 
 //class CcnbMessage
+#ifdef NDNFD
+// NDNFD does not use ProtocolDataUnit, so that getSize() == getEncapSize()
+#endif
 typedef struct ccn_charbuf* CcnbMsg;
 CcnbMsg CcnbMsg_ctor(size_t size);//size without encap
 CcnbMsg CcnbMsg_fromEncap(struct ccn_charbuf* encap);//create from encap; encap will be owned by CcnbMsg

@@ -50,20 +50,24 @@ def build(bld):
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL ccnd/ccndcore',
+        use='CCNX SSL ccnd/ccndcore ndnld/ndnldcore',
         )
         
     bld.objects(target='ccnd/ccndcore',
         source=['ccnd/ccnd.c','ccnd/ccnd_internal_client.c','ccnd/ccnd_stats.c','ccnd/ccnd_msg.c'],
-        features='c cxxstlib',
         includes='.',
         use='CCNX SSL pthread',
+        )
+    
+    bld.objects(target='ndnld/ndnldcore',
+        source=bld.path.ant_glob(['ndnld/*.c']),
+        use='CCNX',
         )
     
     bld.program(target='ndnfd',
         source=['command/ndnfd.cc'],
         includes='.',
-        use='ccnd/ccndcore ndnfdcommon',
+        use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
         )
     
     if bld.env.GTEST:

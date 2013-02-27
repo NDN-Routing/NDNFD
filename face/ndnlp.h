@@ -16,25 +16,26 @@ class NdnlpWireProtocol : public WireProtocol {
    public:
     State();
     virtual ~State();
-    SeqGen* seqgen;
-    MsgSlicer* slicer;
-    PartialMsgs* pms;
+    PartialMsgs pms_;
 
    private:
     DISALLOW_COPY_AND_ASSIGN(State);
   };
   
-  virtual ~NdnlpWireProtocol(void) {}
+  explicit NdnlpWireProtocol(uint16_t mtu);
+  virtual ~NdnlpWireProtocol(void);
   
   virtual bool IsStateful(void) const { return true; }
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
   
-  virtual void Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message, std::vector<Ptr<Buffer>>& result_packets);
-  
-  virtual void Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet, std::vector<Ptr<Message>>& result_messages);
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
 
  private:
   Ptr<CcnbWireProtocol> ccnb_wp_;
+  SeqGen seqgen_;
+  MsgSlicer slicer_;
+  
   DISALLOW_COPY_AND_ASSIGN(NdnlpWireProtocol);
 };
 
