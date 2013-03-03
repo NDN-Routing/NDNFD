@@ -5,7 +5,7 @@ extern "C" {
 #include "face/facemgr.h"
 #include "core/pollmgr.h"
 #include "core/scheduler.h"
-#include "message/ccnb.h"
+#include "face/ip.h"
 namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
@@ -13,26 +13,15 @@ void NdnfdProgram::Init(void) {
   this->global()->set_ccndh(h);
   
   this->internal_client_ = this->New<InternalClientFace>();
-  this->unix_face_factory_ = this->New<UnixFaceFactory>(this->New<CcnbWireProtocol>(true));
-  this->tcp_face_factory_ = this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true));
-  this->udp_face_factory_ = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
+  this->global()->facemgr()->MakeFactories();
+  this->global()->facemgr()->StartDefaultListeners();
   
   bool ok; NetworkAddress addr;
 
-  this->unix_listener_ = this->unix_face_factory_->Listen("/tmp/.ccnd.sock");
-
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
-  assert(ok);
-  this->tcp_listener_ = this->tcp_face_factory_->Listen(addr);
-
   std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
   assert(ok);
-  Ptr<Face> tcp_Bhub = this->tcp_face_factory_->Connect(addr);
+  Ptr<Face> tcp_Bhub = this->global()->facemgr()->tcp_factory()->Connect(addr);
   this->ccndc_add(tcp_Bhub->id(), "/");
-
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
-  assert(ok);
-  this->udp_channel_ = this->udp_face_factory_->Channel(addr);
 
   //std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
   //assert(ok);

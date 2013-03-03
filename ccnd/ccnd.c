@@ -2768,6 +2768,7 @@ check_forwarding_entry_ccndid(struct ccnd_handle *h,
  * A newly created face will have no registered prefixes, and so will not
  * receive any traffic.
  */
+#ifndef NDNFD
 int
 ccnd_req_newface(struct ccnd_handle *h,
                  const unsigned char *msg, size_t size,
@@ -2901,6 +2902,7 @@ Finish:
         freeaddrinfo(addrinfo);
     return((nackallowed || res <= 0) ? res : -1);
 }
+#endif
 
 /**
  * @brief Process a destroyface request for the ccnd internal client.
@@ -2915,6 +2917,7 @@ Finish:
  *
  * Is is an error if the face does not exist.
  */
+#ifndef NDNFD
 int
 ccnd_req_destroyface(struct ccnd_handle *h,
                      const unsigned char *msg, size_t size,
@@ -2969,6 +2972,7 @@ Finish:
     ccn_face_instance_destroy(&face_instance);
     return((nackallowed || res <= 0) ? res : -1);
 }
+#endif
 
 /**
  * Worker bee for two very similar public functions.

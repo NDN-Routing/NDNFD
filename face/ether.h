@@ -12,6 +12,7 @@ class BpfChannel : DgramChannel {
   virtual ~BpfChannel(void) {}
 
  protected:
+  virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   virtual void ReceiveFrom(void);
 
  private:
@@ -22,6 +23,7 @@ class BpfChannel : DgramChannel {
 // Address is uint8_t[6] MAC address.
 class EtherAddressVerifier : public AddressVerifier {
  public:
+  EtherAddressVerifier(void) {}
   virtual ~EtherAddressVerifier(void) {}
   virtual bool Check(const NetworkAddress& addr);
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
@@ -36,8 +38,8 @@ class EtherFaceFactory : public FaceFactory {
   EtherFaceFactory(Ptr<WireProtocol> wp);
   virtual ~EtherFaceFactory(void) {}
   
-  // MakeChannel creates a DgramChannel (BpfChannel) for Ethernet.
-  Ptr<DgramChannel> MakeChannel(std::string ifname);
+  // Channel creates a DgramChannel for Ethernet.
+  Ptr<DgramChannel> Channel(std::string ifname);
 
  private:
   Ptr<WireProtocol> wp_;

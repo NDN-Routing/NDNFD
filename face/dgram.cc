@@ -160,6 +160,7 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
 
   if (face == nullptr) face = this->GetFallbackFace();
   for (Ptr<Message> msg : msgs) {
+    msg->set_incoming_sender(peer);
     face->Deliver(msg);
   }
 }

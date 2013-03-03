@@ -9,6 +9,7 @@ using ndnfd::Global;
 using ndnfd::Face;
 using ndnfd::FaceId;
 using ndnfd::FaceMgr;
+using ndnfd::kLCFace;
 
 struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
   Global* global = ccnd_ndnfdGlobal(h);
@@ -20,6 +21,22 @@ struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
 void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_t size) {
   Global* global = ccnd_ndnfdGlobal(h);
   global->facemgr()->ccnd_face_interface()->Send(static_cast<FaceId>(face->faceid), const_cast<uint8_t*>(static_cast<const uint8_t*>(data)), size);
+}
+
+int ccnd_req_newface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
+  using ndnfd::kLLError;
+  Global* global = ccnd_ndnfdGlobal(h);
+  global->logging()->Log(kLLError, kLCFace, "ccnd_req_newface not implemented");
+  //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
+  return -1;
+}
+
+int ccnd_req_destroyface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
+  using ndnfd::kLLError;
+  Global* global = ccnd_ndnfdGlobal(h);
+  global->logging()->Log(kLLError, kLCFace, "ccnd_req_destroyface not implemented");
+  //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
+  return -1;
 }
 
 namespace ndnfd {
@@ -36,11 +53,9 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
     return;
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Receive face %"PRI_FaceId" is fallback face", in_face->id());
-    // this is a fallback face
-    // TODO create an unicast face for message->incoming_send(),
-    //      and set message->incoming_face() to the new face
-    return;//not implemented
+    Ptr<Face> uface = this->global()->facemgr()->MakeUnicastFace(in_face, message->incoming_sender());
+    message->set_incoming_face(uface->id());
+    this->Log(kLLInfo, kLCFace, "CcndFaceInterface::Receive fallback face %"PRI_FaceId", creating unicast face %"PRI_FaceId"", in_face->id(), uface->id());
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
