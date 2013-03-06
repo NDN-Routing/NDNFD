@@ -64,6 +64,7 @@
 #ifdef NDNFD
 #include "face/ccnd_interface.h"
 #endif
+#define NDNFD_SELFLEARNING
 
 /** Ops for strategy callout */
 enum ccn_strategy_op {
@@ -1863,6 +1864,10 @@ note_content_from(struct ccnd_handle *h,
                  from_faceid, prefix_comps, npe->osrc, npe->src, npe->usec);
 }
 
+#ifdef NDNFD_SELFLEARNING
+#define WANT_MATCH_INTERESTS
+#include "self_learning.h"
+#else
 /**
  * Find and consume interests that match given content.
  *
@@ -1907,6 +1912,7 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     }
     return(n_matched);
 }
+#endif
 
 /**
  * Send a message in a PDU, possibly stuffing other interest messages into it.
@@ -3485,6 +3491,10 @@ strategy_settimer(struct ccnd_handle *h, struct interest_entry *ie,
     s->ev = ccn_schedule_event(h->sched, usec, strategy_timer, ie, op);
 }
 
+#ifdef NDNFD_SELFLEARNING
+#define WANT_STRATEGY_CALLOUT
+#include "self_learning.h"
+#else
 /**
  * This implements the default strategy.
  *
@@ -3585,7 +3595,12 @@ strategy_callout(struct ccnd_handle *h,
             break;
     }
 }
+#endif
 
+#ifdef NDNFD_SELFLEARNING
+#define WANT_DO_PROPAGATE
+#include "self_learning.h"
+#else
 /**
  * Execute the next timed action on a propagating interest.
  */
@@ -3700,6 +3715,7 @@ do_propagate(struct ccn_schedule *sched,
     ie->ev = ev;
     return(next_delay);
 }
+#endif
 
 /**
  * Append an interest Nonce value that is useful for debugging.
