@@ -45,7 +45,7 @@ def configure(conf):
 
 
 def build(bld):
-    source_subdirs = ['core','util','face','message']
+    source_subdirs = ['core','util','face','message','strategy']
     bld.objects(target='ndnfdcommon',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
