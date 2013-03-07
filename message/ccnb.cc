@@ -63,8 +63,10 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
   ccn_skeleton_decode(d, packet->data() + d->index, packet->length() - d->index);
   while (d->state == 0) {
     if (d->index > static_cast<ssize_t>(s->msgstart_)) {
-      results.emplace_back(new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_));
-      assert(static_cast<CcnbMessage*>(PeekPointer(results.back()))->Verify());
+      Ptr<CcnbMessage> msg = new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_);
+      assert(msg->Verify());
+      msg->source_buffer_ = packet;
+      results.push_back(msg);
     }
     s->msgstart_ = d->index;
     if (s->msgstart_ == packet->length()) {

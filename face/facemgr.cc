@@ -2,16 +2,16 @@
 #include "face/unix.h"
 #include "face/ip.h"
 #include "message/ccnb.h"
+#include "face/ndnlp.h"
 namespace ndnfd {
 
 FaceMgr::FaceMgr(void) {
   this->next_id_ = 0;
-  this->unix_factory_ = nullptr;
   this->unix_listener_ = nullptr;
   this->tcp_factory_ = nullptr;
   this->tcp_listener_ = nullptr;
-  this->udp_factory_ = nullptr;
   this->udp_channel_ = nullptr;
+  this->udp_ndnlp_channel_ = nullptr;
 }
 
 void FaceMgr::Init(void) {
@@ -19,12 +19,11 @@ void FaceMgr::Init(void) {
 }
 
 FaceMgr::~FaceMgr(void) {
-  this->set_unix_factory(nullptr);
   this->set_unix_listener(nullptr);
   this->set_tcp_factory(nullptr);
   this->set_tcp_listener(nullptr);
-  this->set_udp_factory(nullptr);
   this->set_udp_channel(nullptr);
+  this->set_udp_ndnlp_channel(nullptr);
 }
 
 Ptr<Face> FaceMgr::GetFace(FaceId id) {
@@ -48,31 +47,27 @@ void FaceMgr::RemoveFace(Ptr<Face> face) {
 void FaceMgr::NotifyStatusChange(Ptr<Face> face) {
 }
 
-void FaceMgr::MakeFactories(void) {
-  this->set_unix_factory(this->New<UnixFaceFactory>(this->New<CcnbWireProtocol>(true)));
-  this->set_tcp_factory(this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true)));
-  this->set_udp_factory(this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false)));
-}
-
 void FaceMgr::StartDefaultListeners(void) {
   bool ok; NetworkAddress addr;
 
-  this->set_unix_listener(this->unix_factory()->Listen("/tmp/.ccnd.sock"));
+  Ptr<UnixFaceFactory> unix_factory = this->New<UnixFaceFactory>(this->New<CcnbWireProtocol>(true));
+  this->set_unix_listener(unix_factory->Listen("/tmp/.ccnd.sock"));
 
+  Ptr<TcpFaceFactory> tcp_factory = this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true));
+  this->set_tcp_factory(tcp_factory);
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
   assert(ok);
   this->set_tcp_listener(this->tcp_factory()->Listen(addr));
-
+  
+  Ptr<UdpFaceFactory> udp_factory = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
   assert(ok);
-  this->set_udp_channel(this->udp_factory()->Channel(addr));
-}
-
-void FaceMgr::set_unix_factory(Ptr<UnixFaceFactory> value) {
-  if (this->unix_factory_ != nullptr) {
-    this->unix_factory_->Unref();
-  }
-  this->unix_factory_ = GetPointer(value);
+  this->set_udp_channel(udp_factory->Channel(addr));
+  
+  Ptr<UdpFaceFactory> udp_ndnlp_factory = this->New<UdpFaceFactory>(this->New<NdnlpWireProtocol>(1460));
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695");
+  assert(ok);
+  this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
 }
 
 void FaceMgr::set_unix_listener(Ptr<StreamListener> value) {
@@ -96,18 +91,18 @@ void FaceMgr::set_tcp_listener(Ptr<StreamListener> value) {
   this->tcp_listener_ = GetPointer(value);
 }
 
-void FaceMgr::set_udp_factory(Ptr<UdpFaceFactory> value) {
-  if (this->udp_factory_ != nullptr) {
-    this->udp_factory_->Unref();
-  }
-  this->udp_factory_ = GetPointer(value);
-}
-
 void FaceMgr::set_udp_channel(Ptr<DgramChannel> value) {
   if (this->udp_channel_ != nullptr) {
     this->udp_channel_->Unref();
   }
   this->udp_channel_ = GetPointer(value);
+}
+
+void FaceMgr::set_udp_ndnlp_channel(Ptr<DgramChannel> value) {
+  if (this->udp_ndnlp_channel_ != nullptr) {
+    this->udp_ndnlp_channel_->Unref();
+  }
+  this->udp_ndnlp_channel_ = GetPointer(value);
 }
 
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {

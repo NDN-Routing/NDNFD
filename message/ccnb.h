@@ -22,6 +22,9 @@ class CcnbMessage : public Message {
   
   // Verify checks whether CcnbMessage has correct CCNB format
   bool Verify(void) const;
+  
+  // a BufferView that should not be released
+  Ptr<BufferView> source_buffer_;
 
  private:
   uint8_t* msg_;

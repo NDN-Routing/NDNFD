@@ -13,7 +13,6 @@ void NdnfdProgram::Init(void) {
   this->global()->set_ccndh(h);
   
   this->internal_client_ = this->New<InternalClientFace>();
-  this->global()->facemgr()->MakeFactories();
   this->global()->facemgr()->StartDefaultListeners();
   
   bool ok; NetworkAddress addr;

@@ -35,17 +35,14 @@ class FaceMgr : public Element {
   // NotifyStatusChange is called by Face when status is changed.
   void NotifyStatusChange(Ptr<Face> face);
 
-  // MakeFactories creates FaceFactory objects.
-  void MakeFactories(void);
   // StartDefaultListeners creates default listeners.
   void StartDefaultListeners(void);
 
-  UnixFaceFactory* unix_factory(void) const { return this->unix_factory_; }
   StreamListener* unix_listener(void) const { return this->unix_listener_; }
   TcpFaceFactory* tcp_factory(void) const { return this->tcp_factory_; }
   StreamListener* tcp_listener(void) const { return this->tcp_listener_; }
-  UdpFaceFactory* udp_factory(void) const { return this->udp_factory_; }
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
+  DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
 
   // MakeUnicastFace finds or creates a unicast Face
   // from a message received on a multicast Face.
@@ -60,20 +57,18 @@ class FaceMgr : public Element {
   std::map<FaceId,Ptr<Face>> table_;
   Ptr<CcndFaceInterface> ccnd_face_interface_;
   
-  UnixFaceFactory* unix_factory_;
   StreamListener* unix_listener_;
   TcpFaceFactory* tcp_factory_;
   StreamListener* tcp_listener_;
-  UdpFaceFactory* udp_factory_;
   DgramChannel* udp_channel_;
+  DgramChannel* udp_ndnlp_channel_;
   // TODO add Ethernet factory and channel(s)
 
-  void set_unix_factory(Ptr<UnixFaceFactory> value);
   void set_unix_listener(Ptr<StreamListener> value);
   void set_tcp_factory(Ptr<TcpFaceFactory> value);
   void set_tcp_listener(Ptr<StreamListener> value);
-  void set_udp_factory(Ptr<UdpFaceFactory> value);
   void set_udp_channel(Ptr<DgramChannel> value);
+  void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
 
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };

@@ -75,7 +75,6 @@ std::tuple<bool,std::list<Ptr<Message>>> NdnlpWireProtocol::Decode(const Network
       results.splice(results.end(), ccnb_msgs);
     }
   }
-
   return std::forward_as_tuple(true, results);
 }
 
