@@ -14,6 +14,7 @@ def options(opt):
 
 
 def configure(conf):
+    gcclibpath = None
     if waflib.Utils.unversioned_sys_platform() == 'freebsd':
         if not conf.env.CC:
             try:
@@ -25,11 +26,11 @@ def configure(conf):
         if not conf.env.CXX:
             try:
                 conf.find_program('g++48', var='CXX')
-                conf.env.GCCLIBPATH = '/usr/local/lib/gcc48'
+                gcclibpath = '/usr/local/lib/gcc48'
             except:
                 try:
                     conf.find_program('g++47', var='CXX')
-                    conf.env.GCCLIBPATH = '/usr/local/lib/gcc47'
+                    gcclibpath = '/usr/local/lib/gcc47'
                 except: pass
     
     conf.load('compiler_c compiler_cxx')
@@ -43,8 +44,8 @@ def configure(conf):
     conf.env.append_unique('CFLAGS', ['-Wall', '-Wpointer-arith', '-Wstrict-prototypes', '-std=c99'])#sadly, ccnd won't compile with -Werror
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-fno-rtti', '-std=c++0x'])
     conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
-    if conf.env.GCCLIBPATH is not None:
-        conf.env.append_unique('LIBPATH', [conf.env.GCCLIBPATH])
+    if gcclibpath is not None:
+        conf.env.append_unique('LIBPATH', [gcclibpath])
 
     if conf.options.optimize:
         conf.env.append_unique('CFLAGS', ['-O3', '-g1'])
@@ -62,8 +63,8 @@ def configure(conf):
         conf.env.MARKDOWN = 1
         conf.find_program('pandoc', var='PANDOC')
 
-    if conf.env.GCCLIBPATH is not None:
-        print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % conf.env.GCCLIBPATH
+    if gcclibpath is not None:
+        print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % gcclibpath
 
 
 def build(bld):
