@@ -14,18 +14,37 @@ def options(opt):
 
 
 def configure(conf):
+    if waflib.Utils.unversioned_sys_platform() == 'freebsd':
+        if not conf.env.CC:
+            try:
+                conf.find_program('gcc48', var='CC')
+            except:
+                try:
+                    conf.find_program('gcc47', var='CC')
+                except: pass
+        if not conf.env.CXX:
+            try:
+                conf.find_program('g++48', var='CXX')
+                conf.env.GCCLIBPATH = '/usr/local/lib/gcc48'
+            except:
+                try:
+                    conf.find_program('g++47', var='CXX')
+                    conf.env.GCCLIBPATH = '/usr/local/lib/gcc47'
+                except: pass
+    
     conf.load('compiler_c compiler_cxx')
     conf.load('ssl ccnx', tooldir='.')
-
+    
     conf.check_ssl()
     conf.check_ccnx(path=conf.options.ccnx_dir)
 
-    conf.define('_BSD_SOURCE', 1)
-    conf.define('_POSIX_SOURCE', 1)
+    conf.define('_GNU_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
     conf.env.append_unique('CFLAGS', ['-Wall', '-Wpointer-arith', '-Wstrict-prototypes', '-std=c99'])#sadly, ccnd won't compile with -Werror
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-fno-rtti', '-std=c++0x'])
     conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
+    if conf.env.GCCLIBPATH is not None:
+        conf.env.append_unique('LIBPATH', [conf.env.GCCLIBPATH])
 
     if conf.options.optimize:
         conf.env.append_unique('CFLAGS', ['-O3', '-g1'])
@@ -36,12 +55,15 @@ def configure(conf):
 
     if conf.options.gtest:
         conf.env.GTEST = 1
-        if not conf.env.LIB_PTHREAD:
+        if waflib.Utils.unversioned_sys_platform() == 'linux' and not conf.env.LIB_PTHREAD:
             conf.check_cxx(lib='pthread')
     
     if conf.options.markdown:
         conf.env.MARKDOWN = 1
         conf.find_program('pandoc', var='PANDOC')
+
+    if conf.env.GCCLIBPATH is not None:
+        print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % conf.env.GCCLIBPATH
 
 
 def build(bld):
@@ -105,5 +127,4 @@ def check(ctx):
     else:
         import subprocess
         subprocess.call(unittest_node.abspath())
-
 

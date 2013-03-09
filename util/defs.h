@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <cstddef>
+#include <cstdlib>
 #include <cinttypes>
 #include <cstring>
 #include <string>

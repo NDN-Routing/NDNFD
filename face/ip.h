@@ -1,5 +1,13 @@
 #ifndef NDNFD_FACE_IP_H_
 #define NDNFD_FACE_IP_H_
+
+#ifdef __FreeBSD__
+// FreeBSD's netinet/ip.h depends on these
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/endian.h>
+#endif
+
 #include <netinet/ip.h>
 #include "face/dgram.h"
 #include "face/stream.h"

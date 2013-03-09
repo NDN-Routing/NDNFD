@@ -1,6 +1,8 @@
 #include "ip.h"
+#include <unistd.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <cstdio>
 #include "util/socket_helper.h"
 namespace ndnfd {
 

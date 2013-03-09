@@ -1,6 +1,8 @@
 #ifndef NDNFD_UTIL_LOGGING_H_
 #define NDNFD_UTIL_LOGGING_H_
 #include "util/defs.h"
+#include <errno.h>
+#include <cstdarg>
 namespace ndnfd {
 
 enum LoggingLevel {

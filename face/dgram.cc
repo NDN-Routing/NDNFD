@@ -1,4 +1,5 @@
 #include "dgram.h"
+#include <unistd.h>
 #include "face/facemgr.h"
 namespace ndnfd {
 
@@ -16,7 +17,7 @@ void DgramFace::Init(void) {
 
 void DgramFace::Send(Ptr<Message> message) {
   if (!this->CanSend()) {
-    this->Log(kLLError, kLCFace, "DgramFace(%"PRI_FaceId")::Send !CanSend", this->id());
+    this->Log(kLLError, kLCFace, "DgramFace(%" PRI_FaceId ")::Send !CanSend", this->id());
     return;
   }
   this->channel()->FaceSend(this, message);
@@ -62,7 +63,7 @@ void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::Init local=%s fallback=%"PRI_FaceId"", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
+  this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }
 
 DgramChannel::~DgramChannel(void) {
@@ -77,7 +78,7 @@ Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const Net
   } else {
     face->set_kind(FaceKind::kUnicast);
   }
-  this->Log(kLLInfo, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::CreateFace id=%"PRI_FaceId" peer=%s", this, this->fd(), face->id(), this->av()->ToString(peer).c_str());
+  this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::CreateFace id=%" PRI_FaceId " peer=%s", this, this->fd(), face->id(), this->av()->ToString(peer).c_str());
   return face;
 }
 
@@ -118,7 +119,7 @@ void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
   bool ok; std::list<Ptr<Buffer>> pkts;
   std::tie(ok, pkts) = this->wp()->Encode(face->peer(), wps, message);
   if (!ok) {
-    this->Log(kLLWarn, kLCFace, "DgramChannel::FaceSend(%"PRI_FaceId") protocol error", face->id());
+    this->Log(kLLWarn, kLCFace, "DgramChannel::FaceSend(%" PRI_FaceId ") protocol error", face->id());
     return;
   }
   for (Ptr<Buffer> pkt : pkts) {
@@ -154,7 +155,7 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
   bool ok; std::list<Ptr<Message>> msgs;
   std::tie(ok, msgs) = this->wp()->Decode(peer, wps, pkt);
   if (!ok) {
-    this->Log(kLLWarn, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::DeliverPacket(%s) protocol error", this, this->fd(), this->av()->ToString(peer).c_str());
+    this->Log(kLLWarn, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DeliverPacket(%s) protocol error", this, this->fd(), this->av()->ToString(peer).c_str());
     return;
   }
 

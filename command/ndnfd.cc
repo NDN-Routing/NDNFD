@@ -1,4 +1,5 @@
 #include "ndnfd.h"
+#include <cstdio>
 extern "C" {
 #include "ccnd/ccnd_private.h"
 }
@@ -40,7 +41,7 @@ void NdnfdProgram::Run(void) {
 
 void NdnfdProgram::ccndc_add(FaceId faceid, std::string prefix) {
   char buf[256];
-  snprintf(buf, sizeof(buf), "bash -c 'sleep 1 && ccndc add %s face %"PRI_FaceId"' &", prefix.c_str(), faceid);
+  snprintf(buf, sizeof(buf), "bash -c 'sleep 1 && ccndc add %s face %" PRI_FaceId "' &", prefix.c_str(), faceid);
   int res = system(buf);
   if (res == 0) {}
 }

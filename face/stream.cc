@@ -22,7 +22,7 @@ void StreamFace::Init(void) {
   this->inbuf_ = nullptr;
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
 StreamFace::~StreamFace(void) {
@@ -31,7 +31,7 @@ StreamFace::~StreamFace(void) {
 
 void StreamFace::Send(Ptr<Message> message) {
   if (!FaceStatus_IsUsable(this->status())) {
-    this->Log(kLLError, kLCFace, "StreamFace(%"PRIxPTR",%"PRI_FaceId")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
+    this->Log(kLLError, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
     return;
   }
   
@@ -134,7 +134,6 @@ void StreamFace::Read(void) {
   Ptr<Buffer> pkt = this->GetReceiveBuffer();
   const size_t bufsize = 1<<20;
   ssize_t res = read(this->fd(), pkt->Reserve(bufsize), bufsize);
-  //this->Log(kLLDebug, kLCFace, "StreamFace(%"PRIxPTR")::Read %"PRIdMAX"", this, (intmax_t)res);
   if (res < 0) {
     if (errno != EAGAIN && errno != EWOULDBLOCK) {
       this->Disconnect();
@@ -182,7 +181,7 @@ StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol
 void StreamListener::Init(void) {
   this->global()->facemgr()->AddFace(this);
   this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::Init fd=%d", this, this->id(), this->fd());
+  this->Log(kLLInfo, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d", this, this->id(), this->fd());
 }
 
 StreamListener::~StreamListener(void) {
@@ -205,18 +204,18 @@ void StreamListener::AcceptConnection(void) {
   int fd = accept(this->fd(), (struct sockaddr*)&peer.who, &peer.wholen);
   if (fd < 0) return;
   if (!this->av()->Check(peer)) {
-    this->Log(kLLError, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::AcceptConnection peer address not valid", this, this->id());
+    this->Log(kLLError, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::AcceptConnection peer address not valid", this, this->id());
     close(fd);
     return;
   }
   Ptr<StreamFace> face = this->MakeFace(fd, peer);
-  this->Log(kLLInfo, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::AcceptConnection fd=%d face=%"PRI_FaceId" peer=%s", this, this->id(), fd, face->id(), this->av()->ToString(peer).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::AcceptConnection fd=%d face=%" PRI_FaceId " peer=%s", this, this->id(), fd, face->id(), this->av()->ToString(peer).c_str());
   this->Accept(face);
 }
 
 Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
   if (!Socket_SetNonBlock(fd)) {
-    this->Log(kLLWarn, kLCFace, "StreamListener(%"PRIxPTR",%"PRI_FaceId")::MakeFace fd=%d SetNonBlock %s", this, this->id(), fd, Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::MakeFace fd=%d SetNonBlock %s", this, this->id(), fd, Logging::ErrorString().c_str());
   }
   
   Ptr<StreamFace> face = this->New<StreamFace>(fd, false, peer, this->wp());

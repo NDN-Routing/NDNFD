@@ -105,7 +105,7 @@ void Face::set_status(FaceStatus value) {
   this->set_ccnd_flags(ccnd_flags, ccnd_flags_mask);
   
   if (old_status != FaceStatus::kNone) {
-    this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%"PRIxPTR",%"PRI_FaceId")::set_status %s=>%s", this, this->id(), FaceStatus_ToString(old_status).c_str(), FaceStatus_ToString(value).c_str());
+    this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%" PRIxPTR ",%" PRI_FaceId ")::set_status %s=>%s", this, this->id(), FaceStatus_ToString(old_status).c_str(), FaceStatus_ToString(value).c_str());
   }
   if (this->id() != FaceId_none) {
     this->global()->facemgr()->NotifyStatusChange(this);

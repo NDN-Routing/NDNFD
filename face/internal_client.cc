@@ -24,7 +24,6 @@ InternalClientFace::~InternalClientFace(void) {
 
 void InternalClientFace::Send(Ptr<Message> message) {
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
-  //this->Log(kLLDebug, kLCFace, "InternalClientFace::Send(len=%"PRIuMAX")", static_cast<uintmax_t>(msg->length()));
   ccn_dispatch_message(this->internal_client(), msg->msg(), msg->length());
 }
 

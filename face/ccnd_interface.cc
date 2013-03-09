@@ -49,13 +49,13 @@ void CcndFaceInterface::BindFace(Ptr<Face> face) {
 void CcndFaceInterface::Receive(Ptr<Message> message) {
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(message->incoming_face());
   if (in_face == nullptr) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Receive face %"PRI_FaceId" does not exist", message->incoming_face());
+    this->Log(kLLError, kLCFace, "CcndFaceInterface::Receive face %" PRI_FaceId " does not exist", message->incoming_face());
     return;
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
     Ptr<Face> uface = this->global()->facemgr()->MakeUnicastFace(in_face, message->incoming_sender());
     message->set_incoming_face(uface->id());
-    this->Log(kLLInfo, kLCFace, "CcndFaceInterface::Receive fallback face %"PRI_FaceId", creating unicast face %"PRI_FaceId"", in_face->id(), uface->id());
+    this->Log(kLLInfo, kLCFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
@@ -66,11 +66,11 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
   Ptr<Face> out_face = this->global()->facemgr()->GetFace(faceid);
   if (out_face == nullptr) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send face %"PRI_FaceId" does not exist", faceid);
+    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send face %" PRI_FaceId " does not exist", faceid);
     return;
   }
   if (!out_face->CanSend()) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send Face(%"PRI_FaceId")::CanSend is false", out_face->id());
+    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send Face(%" PRI_FaceId ")::CanSend is false", out_face->id());
     return;
   }
   
