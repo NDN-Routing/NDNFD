@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <cstdio>
+#include "util/endian.h"
 #include "util/socket_helper.h"
 namespace ndnfd {
 

@@ -5,7 +5,7 @@
 // FreeBSD's netinet/ip.h depends on these
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <sys/endian.h>
+//#include <sys/endian.h>
 #endif
 
 #include <netinet/ip.h>

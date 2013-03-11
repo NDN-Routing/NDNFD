@@ -1,26 +1,41 @@
 #ifndef NDNFD_FACE_ETHER_H_
 #define NDNFD_FACE_ETHER_H_
+#include <pcap.h>
 #include "face/dgram.h"
 #include "face/factory.h"
 namespace ndnfd {
 
-// A BpfChannel represents a socket using Berkeley Packet Filter
+// A PcapChannel represents a socket using libpcap
 // to send and receive Ethernet frames.
-class BpfChannel : DgramChannel {
+class PcapChannel : public DgramChannel {
  public:
-  BpfChannel(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
-  virtual ~BpfChannel(void) {}
+  PcapChannel(std::string ifname, uint16_t ether_type, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual void Init(void);
+  virtual ~PcapChannel(void) {}
 
  protected:
+  virtual void RegisterPoll(void) {}
+  virtual void CloseFd(void);
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   virtual void ReceiveFrom(void);
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(BpfChannel);
+  std::string ifname_;
+  uint16_t ether_type_;
+  pcap_t* p_;
+  bpf_program filter_;
+  char errbuf_[PCAP_ERRBUF_SIZE];
+  
+  void ClearPcapError(void) { this->errbuf_[0] = '\0'; }
+  bool HasPcapError(void) const { return this->errbuf_[0] != '\0'; }
+  
+  void PcapHandler(u_char* user, const pcap_pkthdr* h, const u_char* bytes);
+  
+  DISALLOW_COPY_AND_ASSIGN(PcapChannel);
 };
 
 // A EtherAddressVerifier verifies Ethernet addresses.
-// Address is uint8_t[6] MAC address.
+// Address is struct ether_addr.
 class EtherAddressVerifier : public AddressVerifier {
  public:
   EtherAddressVerifier(void) {}
@@ -28,6 +43,7 @@ class EtherAddressVerifier : public AddressVerifier {
   virtual bool Check(const NetworkAddress& addr);
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
   virtual std::string ToString(const NetworkAddress& addr);
+  static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
   DISALLOW_COPY_AND_ASSIGN(EtherAddressVerifier);
 };
@@ -39,12 +55,10 @@ class EtherFaceFactory : public FaceFactory {
   virtual ~EtherFaceFactory(void) {}
   
   // Channel creates a DgramChannel for Ethernet.
-  Ptr<DgramChannel> Channel(std::string ifname);
+  Ptr<DgramChannel> Channel(std::string ifname, uint16_t ether_type);
 
  private:
-  Ptr<WireProtocol> wp_;
-  Ptr<WireProtocol> wp(void) const { return this->wp_; }
-
+  Ptr<EtherAddressVerifier> av_;
   DISALLOW_COPY_AND_ASSIGN(EtherFaceFactory);
 };
 

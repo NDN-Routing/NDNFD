@@ -43,6 +43,7 @@ class FaceMgr : public Element {
   StreamListener* tcp_listener(void) const { return this->tcp_listener_; }
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
   DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
+  DgramChannel* ether_channel(void) const { return this->ether_channel_; }
 
   // MakeUnicastFace finds or creates a unicast Face
   // from a message received on a multicast Face.
@@ -62,13 +63,14 @@ class FaceMgr : public Element {
   StreamListener* tcp_listener_;
   DgramChannel* udp_channel_;
   DgramChannel* udp_ndnlp_channel_;
-  // TODO add Ethernet factory and channel(s)
+  DgramChannel* ether_channel_;
 
   void set_unix_listener(Ptr<StreamListener> value);
   void set_tcp_factory(Ptr<TcpFaceFactory> value);
   void set_tcp_listener(Ptr<StreamListener> value);
   void set_udp_channel(Ptr<DgramChannel> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
+  void set_ether_channel(Ptr<DgramChannel> value);
 
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };

@@ -48,7 +48,7 @@ void DgramFallbackFace::Close(void) {
 }
 
 DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
-  assert(fd >= 0);
+  assert(fd >= -1);
   assert(av != nullptr);
   assert(wp != nullptr);
   this->fd_ = fd;
@@ -62,8 +62,11 @@ DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<Address
 void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
-  this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
+}
+
+void DgramChannel::RegisterPoll(void) {
+  this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
 }
 
 DgramChannel::~DgramChannel(void) {
@@ -170,6 +173,10 @@ void DgramChannel::FaceClose(Ptr<DgramFace> face) {
   this->MakePeer(face->peer(), MakePeerFaceOp::kDelete);
 }
 
+void DgramChannel::CloseFd() {
+  close(this->fd());
+}
+
 void DgramChannel::Close() {
   if (this->closed_) return;
   this->closed_ = true;
@@ -182,7 +189,7 @@ void DgramChannel::Close() {
   }
   this->peers().clear();
   this->GetFallbackFace()->CloseInternal();
-  close(this->fd());
+  this->CloseFd();
   this->global()->pollmgr()->RemoveAll(this);
 }
 

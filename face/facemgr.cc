@@ -1,6 +1,7 @@
 #include "facemgr.h"
 #include "face/unix.h"
 #include "face/ip.h"
+#include "face/ether.h"
 #include "message/ccnb.h"
 #include "face/ndnlp.h"
 namespace ndnfd {
@@ -12,6 +13,7 @@ FaceMgr::FaceMgr(void) {
   this->tcp_listener_ = nullptr;
   this->udp_channel_ = nullptr;
   this->udp_ndnlp_channel_ = nullptr;
+  this->ether_channel_ = nullptr;
 }
 
 void FaceMgr::Init(void) {
@@ -24,6 +26,7 @@ FaceMgr::~FaceMgr(void) {
   this->set_tcp_listener(nullptr);
   this->set_udp_channel(nullptr);
   this->set_udp_ndnlp_channel(nullptr);
+  this->set_ether_channel(nullptr);
 }
 
 Ptr<Face> FaceMgr::GetFace(FaceId id) {
@@ -68,6 +71,9 @@ void FaceMgr::StartDefaultListeners(void) {
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695");
   assert(ok);
   this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
+  
+  Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>(this->New<NdnlpWireProtocol>(1500));
+  this->set_ether_channel(ether_factory->Channel("eth1", 0x8624));
 }
 
 void FaceMgr::set_unix_listener(Ptr<StreamListener> value) {
@@ -103,6 +109,13 @@ void FaceMgr::set_udp_ndnlp_channel(Ptr<DgramChannel> value) {
     this->udp_ndnlp_channel_->Unref();
   }
   this->udp_ndnlp_channel_ = GetPointer(value);
+}
+
+void FaceMgr::set_ether_channel(Ptr<DgramChannel> value) {
+  if (this->ether_channel_ != nullptr) {
+    this->ether_channel_->Unref();
+  }
+  this->ether_channel_ = GetPointer(value);
 }
 
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {

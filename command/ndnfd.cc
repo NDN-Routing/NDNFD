@@ -7,6 +7,7 @@ extern "C" {
 #include "core/pollmgr.h"
 #include "core/scheduler.h"
 #include "face/ip.h"
+#include "face/ether.h"
 namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
@@ -27,6 +28,11 @@ void NdnfdProgram::Init(void) {
   //assert(ok);
   //Ptr<Face> udp_2 = this->udp_channel_->GetFace(addr);
   //this->ccndc_add(udp_2->id(), "/example");
+  
+  //std::tie(ok, addr) = EtherAddressVerifier::Parse("08:00:27:39:18:1a");
+  //assert(ok);
+  //Ptr<Face> ether_vm102 = this->global()->facemgr()->ether_channel()->GetFace(addr);
+  //this->ccndc_add(ether_vm102->id(), "/vm102");
 }
 
 void NdnfdProgram::Run(void) {

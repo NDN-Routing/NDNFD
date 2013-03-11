@@ -38,6 +38,7 @@ def configure(conf):
     
     conf.check_ssl()
     conf.check_ccnx(path=conf.options.ccnx_dir)
+    conf.check_cc(lib='pcap', header_name='pcap.h', define_name='HAVE_PCAP', uselib_store='PCAP')
 
     conf.define('_GNU_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
@@ -73,7 +74,7 @@ def build(bld):
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL ccnd/ccndcore ndnld/ndnldcore',
+        use='CCNX SSL PCAP ccnd/ccndcore ndnld/ndnldcore',
         )
         
     bld.objects(target='ccnd/ccndcore',
