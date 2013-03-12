@@ -46,7 +46,7 @@ usage(const char *progname)
             "       -v increase logging level\n"
             "\n"
             "   COMMAND can be one of following:\n"
-            "       (add|del) <uri> (udp|tcp) <host> [<port> [<flags> [<mcastttl> [<mcastif>]]]])\n"
+            "       (add|del) <uri> (udp|tcp|ether) <host> [<port>|<localif> [<flags> [<mcastttl> [<mcastif>]]]])\n"
             "           to add prefix to or delete prefix from face identified by parameters\n"
             "       (add|del) <uri> face <faceid>\n"
             "           to add prefix to or delete prefix from face identified by number\n"

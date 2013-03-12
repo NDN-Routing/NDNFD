@@ -220,12 +220,13 @@ ccndc_add(struct ccndc_data *self,
         goto Cleanup;
     
     
-    printf("face->action: %s\nface->ccnd_id: %s\nface->descr->address: %s\nface->host: %s\nface->multicastInterface: %s\n", face->action, face->ccnd_id, face->descr.address, face->host, face->multicastInterface);
+    printf("face->action: %s\nface->descr->address: %s\nface->descr.source_addr: %s\n", face->action, face->descr.address, face->descr.source_address);
     
     
     if (!check_only) {
         if (0 != strcasecmp(cmd_proto, "face")) {
             newface = ccndc_do_face_action(self, "newface", face);
+            printf("newface: %p\n", newface);
             if (newface == NULL) {
                 ccndc_warn(__LINE__, "Cannot create/lookup face");
                 goto Cleanup;
@@ -801,7 +802,8 @@ parse_ccn_face_instance(struct ccndc_data *self,
         return (entry);
     } else if (strcasecmp(cmd_proto, "ether") == 0) {
     	// TODO need ask what the socktype should be
-    	entry->ipproto = 97;
+    	socktype = SOCK_DGRAM;
+    	entry->descr.ipproto = 97;
     } else {
         ccndc_warn(__LINE__, "command error, unrecognized address type '%s'\n", cmd_proto);
         goto ExitOnError;
@@ -854,13 +856,15 @@ parse_ccn_face_instance(struct ccndc_data *self,
 		goto ExitOnError;
     	    }
     	    off_port = entry->store->length;
-    	    res = ccn_charbuf_append(entry->store, cmd_port, strlen(cmd_port)+1); // if using ethernet, port is local interface
+    	    char pref[] = "localif=";
+    	    res = ccn_charbuf_append(entry->store, pref, 8);
+    	    res = ccn_charbuf_append(entry->store, cmd_port, strlen(cmd_port)+1); // if using ethernet, position of port for tcp/udp is holding local interface
     	    if (res != 0) {
     	    	ccndc_warn(__LINE__, "Cannot append to charbuf");
 		goto ExitOnError;
     	    }
-    	    entry->host = (const char *)(entry->store->buf + off_address);
-    	    entry->multicastInterface = (const char *)(entry->store->buf + off_port);
+    	    entry->descr.address = (const char *)(entry->store->buf + off_address);
+    	    entry->descr.source_address = (const char *)(entry->store->buf + off_port);
     }
     
     entry->descr.mcast_ttl = -1;
@@ -1069,7 +1073,9 @@ ccndc_do_face_action(struct ccndc_data *self,
     ON_ERROR_CLEANUP(res);
     
     ON_ERROR_CLEANUP(ccn_content_get_value(resultbuf->buf, resultbuf->length, &pcobuf, &ptr, &length));
+    printf("ptr: %p\nlength: %u\n", ptr, length);
     new_face_instance = ccn_face_instance_parse(ptr, length);
+    printf("new_face_instance: %p\n", new_face_instance);
     ON_NULL_CLEANUP(new_face_instance);
     ccn_charbuf_destroy(&newface);
     ccn_charbuf_destroy(&signed_info);
