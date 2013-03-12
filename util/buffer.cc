@@ -114,7 +114,7 @@ void BufferView::Pull(size_t n) {
 }
 
 Ptr<Buffer> BufferView::AsBuffer(bool clone) {
-  if (!clone && this->start_ == 0U && this->length() == this->buffer_->length()) {
+  if (!clone && this->buffer_ != nullptr && this->start_ == 0U && this->length() == this->buffer_->length()) {
     return this->buffer_;
   }
   Ptr<Buffer> buffer = new Buffer(this->length());

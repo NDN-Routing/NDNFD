@@ -1,6 +1,6 @@
 #ifndef NDNFD_FACE_ETHER_H_
 #define NDNFD_FACE_ETHER_H_
-#include <pcap.h>
+#include <pcap/pcap.h>
 #include "face/dgram.h"
 #include "face/factory.h"
 namespace ndnfd {
@@ -9,27 +9,37 @@ namespace ndnfd {
 // to send and receive Ethernet frames.
 class PcapChannel : public DgramChannel {
  public:
-  PcapChannel(std::string ifname, uint16_t ether_type, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  PcapChannel(const std::string& ifname, uint16_t ether_type, pcap_t* p, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
   virtual void Init(void);
   virtual ~PcapChannel(void) {}
 
  protected:
-  virtual void RegisterPoll(void) {}
   virtual void CloseFd(void);
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   virtual void ReceiveFrom(void);
 
  private:
+  class EtherPkt : public BufferView {
+   public:
+    EtherPkt(const uint8_t* pkt, size_t length);
+    virtual const uint8_t* data() const { return this->pkt_; }
+    virtual size_t length(void) const { return this->length_; }
+    virtual void Take(size_t n) { assert(false); }
+    virtual void Pull(size_t n) { assert(false); }
+    NetworkAddress peer(void) const;
+   private:
+    const uint8_t* pkt_;
+    size_t length_;
+  };
+  
   std::string ifname_;
   uint16_t ether_type_;
   pcap_t* p_;
   bpf_program filter_;
-  char errbuf_[PCAP_ERRBUF_SIZE];
   
-  void ClearPcapError(void) { this->errbuf_[0] = '\0'; }
-  bool HasPcapError(void) const { return this->errbuf_[0] != '\0'; }
-  
-  void PcapHandler(u_char* user, const pcap_pkthdr* h, const u_char* bytes);
+  // DispatchHandler is called by libpcap when a packet is captured.
+  // user is PcapChannel*.
+  static void DispatchHandler(u_char* user, const pcap_pkthdr* h, const u_char* bytes);
   
   DISALLOW_COPY_AND_ASSIGN(PcapChannel);
 };
@@ -49,16 +59,26 @@ class EtherAddressVerifier : public AddressVerifier {
 };
 
 // A EtherFaceFactory creates Face objects for Ethernet.
+// Ethernet faces always use NdnlpWireProtocol.
 class EtherFaceFactory : public FaceFactory {
  public:
-  EtherFaceFactory(Ptr<WireProtocol> wp);
+  EtherFaceFactory(void);
   virtual ~EtherFaceFactory(void) {}
   
   // Channel creates a DgramChannel for Ethernet.
-  Ptr<DgramChannel> Channel(std::string ifname, uint16_t ether_type);
+  Ptr<DgramChannel> Channel(const std::string& ifname, uint16_t ether_type);
 
  private:
   Ptr<EtherAddressVerifier> av_;
+
+  // GetIfMtu returns MTU of the NIC
+  std::tuple<bool,int> GetIfMtu(const std::string& ifname);
+  // GetIfEtherAddr returns Ethernet address of the NIC
+  std::tuple<bool,NetworkAddress> GetIfEtherAddr(const std::string& ifname);
+  
+  // PcapOpen opens pcap handle for NIC, and set it to nonblock mode.
+  pcap_t* PcapOpen(const std::string& ifname);
+  
   DISALLOW_COPY_AND_ASSIGN(EtherFaceFactory);
 };
 

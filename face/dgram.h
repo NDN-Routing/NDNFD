@@ -102,10 +102,8 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<AddressHashKey,PeerEntry>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
-  NetworkAddress local_addr(void) const { return this->local_addr_; }
+  const NetworkAddress& local_addr(void) const { return this->local_addr_; }
 
-  // RegisterPoll registers fd with PollMgr
-  virtual void RegisterPoll(void);
   // CloseFd closes fd
   virtual void CloseFd(void);
   
@@ -125,7 +123,7 @@ class DgramChannel : public Element, public IPollClient {
   
   // DeliverPacket decodes pkt, delivers any result messages
   // to the Face associated with peer or the fallback face.
-  virtual void DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt);
+  virtual void DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt);
   
  private:
   int fd_;

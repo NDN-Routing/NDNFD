@@ -72,7 +72,7 @@ void FaceMgr::StartDefaultListeners(void) {
   assert(ok);
   this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
   
-  Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>(this->New<NdnlpWireProtocol>(1500));
+  Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>();
   this->set_ether_channel(ether_factory->Channel("eth1", 0x8624));
 }
 

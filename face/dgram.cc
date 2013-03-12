@@ -48,7 +48,6 @@ void DgramFallbackFace::Close(void) {
 }
 
 DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
-  assert(fd >= -1);
   assert(av != nullptr);
   assert(wp != nullptr);
   this->fd_ = fd;
@@ -62,11 +61,8 @@ DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<Address
 void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
+  if (this->fd() >= 0) this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
-}
-
-void DgramChannel::RegisterPoll(void) {
-  this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
 }
 
 DgramChannel::~DgramChannel(void) {
@@ -150,7 +146,7 @@ void DgramChannel::ReceiveFrom(void) {
   this->DeliverPacket(peer, pkt);
 }
 
-void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<Buffer> pkt) {
+void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt) {
   Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
   std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kNone);
   //this->Log(kLLDebug, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::DeliverPacket(%s) face=%"PRI_FaceId"", this, this->fd(), this->av()->ToString(peer).c_str(), face==nullptr ? FaceId_none : face->id());
@@ -174,7 +170,7 @@ void DgramChannel::FaceClose(Ptr<DgramFace> face) {
 }
 
 void DgramChannel::CloseFd() {
-  close(this->fd());
+  if (this->fd() >= 0) close(this->fd());
 }
 
 void DgramChannel::Close() {

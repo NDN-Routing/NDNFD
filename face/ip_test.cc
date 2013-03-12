@@ -1,4 +1,5 @@
 #include "ip.h"
+#include "util/endian.h"
 #include "message/ccnb.h"
 #include "core/element_testh.h"
 #include "gtest/gtest.h"

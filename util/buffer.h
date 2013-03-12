@@ -33,7 +33,7 @@ class BufferView : public Object {
   virtual Ptr<Buffer> AsBuffer(bool clone);
 
  protected:
-  BufferView(void) { this->start_ = this->length_ = 0; }
+  BufferView(void) { this->buffer_ = nullptr; this->start_ = this->length_ = 0; }
   
  private:
   Ptr<Buffer> buffer_;

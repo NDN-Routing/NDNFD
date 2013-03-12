@@ -9,6 +9,7 @@ class FaceFactory : public Element {
   virtual ~FaceFactory(void) {}
 
  protected:
+  FaceFactory(void) { this->wp_ = nullptr; }
   FaceFactory(Ptr<WireProtocol> wp) { assert(wp != nullptr); this->wp_ = wp; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
 
