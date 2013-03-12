@@ -65,7 +65,8 @@ def configure(conf):
         conf.find_program('pandoc', var='PANDOC')
 
     if gcclibpath is not None:
-        print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % gcclibpath
+        conf.env.append_unique('LINKFLAGS', ['-static-libstdc++'])
+        #print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % gcclibpath
 
 
 def build(bld):
