@@ -112,7 +112,14 @@ Ptr<DgramFace> DgramChannel::GetFace(const NetworkAddress& peer) {
 
 void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
   Ptr<DgramFace> oface; Ptr<WireProtocolState> wps;
-  std::tie(oface, wps) = this->MakePeer(face->peer(), MakePeerFaceOp::kNone);
+  if (face->kind() == FaceKind::kMulticast) {
+    Ptr<McastEntry> entry = this->FindMcastEntry(face->peer());
+    assert(entry != nullptr);
+    oface = entry->face_;
+    wps = entry->outstate_;
+  } else {
+    std::tie(oface, wps) = this->MakePeer(face->peer(), MakePeerFaceOp::kNone);
+  }
   assert(oface == face);
   
   bool ok; std::list<Ptr<Buffer>> pkts;
@@ -121,6 +128,7 @@ void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
     this->Log(kLLWarn, kLCFace, "DgramChannel::FaceSend(%" PRI_FaceId ") protocol error", face->id());
     return;
   }
+  //this->Log(kLLDebug, kLCFace, "DgramChannel::FaceSend(%"  PRI_FaceId") send %" PRIuMAX " packets", face->id(), static_cast<uintmax_t>(pkts.size()));
   for (Ptr<Buffer> pkt : pkts) {
     this->SendTo(face->peer(), pkt);
   }
@@ -151,18 +159,74 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt
   std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kNone);
   //this->Log(kLLDebug, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::DeliverPacket(%s) face=%"PRI_FaceId"", this, this->fd(), this->av()->ToString(peer).c_str(), face==nullptr ? FaceId_none : face->id());
   
+  if (face == nullptr) face = this->GetFallbackFace();
+  this->DecodeAndDeliver(peer, wps, pkt, face);
+}
+
+void DgramChannel::DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face) {
+  assert(pkt != nullptr);
+  assert(face != nullptr);
+
   bool ok; std::list<Ptr<Message>> msgs;
   std::tie(ok, msgs) = this->wp()->Decode(peer, wps, pkt);
   if (!ok) {
-    this->Log(kLLWarn, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DeliverPacket(%s) protocol error", this, this->fd(), this->av()->ToString(peer).c_str());
+    this->Log(kLLWarn, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DecodeAndDeliver(%s) protocol error", this, this->fd(), this->av()->ToString(peer).c_str());
     return;
   }
 
-  if (face == nullptr) face = this->GetFallbackFace();
+  //this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DecodeAndDeliver(%s) deliver %" PRIuMAX " messages to face %" PRI_FaceId, this, this->fd(), this->av()->ToString(peer).c_str(), static_cast<uintmax_t>(msgs.size()), face->id());
   for (Ptr<Message> msg : msgs) {
     msg->set_incoming_sender(peer);
     face->Deliver(msg);
   }
+}
+
+Ptr<DgramFace> DgramChannel::GetMcastFace(const NetworkAddress& group) {
+  Ptr<McastEntry> entry = this->MakeMcastEntry(group);
+  if (entry == nullptr) return nullptr;
+  return entry->face_;
+}
+
+Ptr<DgramChannel::McastEntry> DgramChannel::FindMcastEntryInternal(const NetworkAddress& group, bool create) {
+  AddressHashKey hashkey = this->av()->GetHashKey(group);
+  for (Ptr<McastEntry> entry : this->mcasts()) {
+    if (entry->group_ == hashkey) {
+      return entry;
+    }
+  }
+  if (!create) return nullptr;
+  Ptr<DgramFace> face = this->CreateMcastFace(hashkey, group);
+  if (face == nullptr) return nullptr;
+  Ptr<McastEntry> entry = new McastEntry(hashkey);
+  entry->face_ = face;
+  if (this->wp()->IsStateful()) entry->outstate_ = this->wp()->CreateState(group);
+  this->mcasts().push_back(entry);
+  return entry;
+}
+
+void DgramChannel::DeliverMcastPacket(const NetworkAddress& group, const NetworkAddress& peer, Ptr<BufferView> pkt) {
+  Ptr<McastEntry> entry = this->FindMcastEntry(group);
+  this->DeliverMcastPacket(entry, peer, pkt);
+}
+
+void DgramChannel::DeliverMcastPacket(Ptr<McastEntry> entry, const NetworkAddress& peer, Ptr<BufferView> pkt) {
+  if (entry == nullptr) return;//mcast face must be explicitly created
+
+  //this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DeliverMcastPacket(%s,%s) face=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(peer).c_str(), this->av()->ToString(entry->face_->peer()).c_str(), entry->face_->id());
+
+  Ptr<WireProtocolState> wps = nullptr;
+  if (this->wp()->IsStateful()) {
+    AddressHashKey hashkey = this->av()->GetHashKey(peer);
+    auto it = entry->instate_.find(hashkey);
+    if (it == entry->instate_.end()) {
+      wps = this->wp()->CreateState(peer);
+      entry->instate_[hashkey] = wps;
+    } else {
+      wps = it->second;
+    }
+  }
+  
+  this->DecodeAndDeliver(peer, wps, pkt, entry->face_);
 }
 
 void DgramChannel::FaceClose(Ptr<DgramFace> face) {

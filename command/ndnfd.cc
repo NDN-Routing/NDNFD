@@ -17,12 +17,12 @@ void NdnfdProgram::Init(void) {
   this->internal_client_ = this->New<InternalClientFace>();
   this->global()->facemgr()->StartDefaultListeners();
   
-  bool ok; NetworkAddress addr;
+  //bool ok; NetworkAddress addr;
 
-  std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
-  assert(ok);
-  Ptr<Face> tcp_Bhub = this->global()->facemgr()->tcp_factory()->Connect(addr);
-  this->ccndc_add(tcp_Bhub->id(), "/");
+  //std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
+  //assert(ok);
+  //Ptr<Face> tcp_Bhub = this->global()->facemgr()->tcp_factory()->Connect(addr);
+  //this->ccndc_add(tcp_Bhub->id(), "/");
 
   //std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
   //assert(ok);
@@ -33,6 +33,10 @@ void NdnfdProgram::Init(void) {
   //assert(ok);
   //Ptr<Face> ether_vm102 = this->global()->facemgr()->ether_channel()->GetFace(addr);
   //this->ccndc_add(ether_vm102->id(), "/vm102");
+  for (auto ether_tuple : this->global()->facemgr()->ether_channels()) {
+    Ptr<DgramFace> ether_mcast_face = std::get<2>(ether_tuple);
+    this->ccndc_add(ether_mcast_face->id(), "/");
+  }
 }
 
 void NdnfdProgram::Run(void) {
