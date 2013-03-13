@@ -14,6 +14,7 @@ class UdpFaceFactory;
 class EtherFaceFactory;
 class StreamListener;
 class DgramChannel;
+class DgramFace;
 
 // A FaceMgr manages all Faces of a router.
 class FaceMgr : public Element {
@@ -43,7 +44,7 @@ class FaceMgr : public Element {
   StreamListener* tcp_listener(void) const { return this->tcp_listener_; }
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
   DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
-  DgramChannel* ether_channel(void) const { return this->ether_channel_; }
+  std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>>& ether_channels(void) { return this->ether_channels_; }
 
   // MakeUnicastFace finds or creates a unicast Face
   // from a message received on a multicast Face.
@@ -63,14 +64,13 @@ class FaceMgr : public Element {
   StreamListener* tcp_listener_;
   DgramChannel* udp_channel_;
   DgramChannel* udp_ndnlp_channel_;
-  DgramChannel* ether_channel_;
+  std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>> ether_channels_;//Ethernet ifname,channel,mcast_face
 
   void set_unix_listener(Ptr<StreamListener> value);
   void set_tcp_factory(Ptr<TcpFaceFactory> value);
   void set_tcp_listener(Ptr<StreamListener> value);
   void set_udp_channel(Ptr<DgramChannel> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
-  void set_ether_channel(Ptr<DgramChannel> value);
 
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };

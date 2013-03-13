@@ -65,6 +65,10 @@ class DgramChannel : public Element, public IPollClient {
   // (from peers without a DgramFace) are received on this face.
   Ptr<DgramFallbackFace> GetFallbackFace(void) const { return this->fallback_face_; }
   
+  // GetMcastFace returns a multicast for a group.
+  // One is created if it does not exist.
+  Ptr<DgramFace> GetMcastFace(const NetworkAddress& group);
+  
   // GetFace returns a unicast face for a peer.
   // One is created if it does not exist.
   Ptr<DgramFace> GetFace(const NetworkAddress& peer);
@@ -86,7 +90,7 @@ class DgramChannel : public Element, public IPollClient {
   
  protected:
   // A PeerEntry represents per-peer information.
-  // If .wp()->IsStateful() is false, Ptr<WireProtocolState> is NULL.
+  // If .wp()->IsStateful() is false, Ptr<WireProtocolState> is null.
   typedef std::tuple<Ptr<DgramFace>,Ptr<WireProtocolState>> PeerEntry;
   
   // MakePeerFaceOp specifies what to do with Face in MakePeer
@@ -94,6 +98,17 @@ class DgramChannel : public Element, public IPollClient {
     kNone   = 0,//no operation
     kCreate = 1,//create if not exist
     kDelete = 2 //delete if exist
+  };
+
+  // A McastEntry represents per-multicast-group information.
+  struct McastEntry : public Object {
+    McastEntry(AddressHashKey group) { this->group_ = group; this->face_ = nullptr; this->outstate_ = nullptr; }
+    AddressHashKey group_;// group address
+    Ptr<DgramFace> face_;// face
+    Ptr<WireProtocolState> outstate_;// outgoing state, null if !.wp()->IsStateful()
+    std::unordered_map<AddressHashKey,Ptr<WireProtocolState>> instate_;// per-peer state, null if !.wp()->IsStateful()
+   private:
+    DISALLOW_COPY_AND_ASSIGN(McastEntry);
   };
 
   bool closed_;
@@ -114,16 +129,37 @@ class DgramChannel : public Element, public IPollClient {
   // WireProtocolState is created if WireProtocol is stateful.
   PeerEntry MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op);
   
+  // CreateMcastFace makes a face for a multicast group.
+  // It returns null if mcast is not supported.
+  virtual Ptr<DgramFace> CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group) { return nullptr; }
+  
+  // FindMcastEntry finds McastEntry for group,
+  // or returns null if it does not exist.
+  Ptr<McastEntry> FindMcastEntry(const NetworkAddress& group) { return this->FindMcastEntryInternal(group, false); }
+  
+  // MakeMcastEntry ensures McastEntry exists for group.
+  // Face is created with CreateMcastFace.
+  // outstate is created if WireProtocol is stateful.
+  Ptr<McastEntry> MakeMcastEntry(const NetworkAddress& group) { return this->FindMcastEntryInternal(group, true); }
+  
   // SendTo calls sendto() syscall to send one packet to the socket.
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   
   // ReceiveFrom calls recvfrom() syscall to read one or more packets
-  // from the socket, and call DeliverPacket for each packet.
+  // from the socket, and call DeliverPacket or DeliverMcastPacket for each packet.
   virtual void ReceiveFrom(void);
   
   // DeliverPacket decodes pkt, delivers any result messages
   // to the Face associated with peer or the fallback face.
   virtual void DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt);
+  
+  // DeliverMcastPacket does similar work as DeliverPacket
+  // for packet received on a multicast group address.
+  void DeliverMcastPacket(const NetworkAddress& group, const NetworkAddress& peer, Ptr<BufferView> pkt);
+  virtual void DeliverMcastPacket(Ptr<McastEntry> entry, const NetworkAddress& peer, Ptr<BufferView> pkt);
+  
+  // DecodeAndDeliver decodes pkt, and delivers any result messages to face.
+  virtual void DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face);
   
  private:
   int fd_;
@@ -131,47 +167,14 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<WireProtocol> wp_;
   std::unordered_map<AddressHashKey,PeerEntry> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
+  std::vector<Ptr<McastEntry>> mcasts_;//there's a small number of McastEntry, so vector would be faster than unordered_map
   Ptr<Buffer> recvbuf_;
   NetworkAddress local_addr_;
   
+  std::vector<Ptr<McastEntry>>& mcasts(void) { return this->mcasts_; }
+  Ptr<McastEntry> FindMcastEntryInternal(const NetworkAddress& group, bool create);
+  
   DISALLOW_COPY_AND_ASSIGN(DgramChannel);
-};
-
-// A McastFace sends and receives messages on a multicast group.
-class McastFace : public Face, public IPollClient {
- public:
-  // fd_recv: fd of the receiving socket, after bind(any) and joining multicast group
-  // fd_send: fd of the sending socket, after bind(local_addr)
-  McastFace(int fd_recv, int fd_send, const NetworkAddress& mcast_group, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
-  virtual ~McastFace(void) {}
-
-  virtual bool CanSend(void) const { return true; }
-  virtual bool CanReceive(void) const { return true; }
-
-  virtual void Send(Ptr<Message> message);
-  
-  // PollCallback is invoked with POLLIN when there are packets
-  // on the receiving socket to read.
-  virtual void PollCallback(int fd, short revents);
-  
- protected:
-  int fd_recv(void) const { return this->fd_recv_; }
-  int fd_send(void) const { return this->fd_send_; }
-  const NetworkAddress& mcast_group(void) const { return this->mcast_group_; }
-  Ptr<AddressVerifier> av(void) const { return this->av_; }
-  Ptr<WireProtocol> wp(void) const { return this->wp_; }
-  std::unordered_map<NetworkAddress,Ptr<WireProtocolState>>& peers(void) { return this->peers_; }
-  
- private:
-  int fd_recv_;
-  int fd_send_;
-  NetworkAddress mcast_group_;
-  Ptr<AddressVerifier> av_;
-  Ptr<WireProtocol> wp_;
-  std::unordered_map<NetworkAddress,Ptr<WireProtocolState>> peers_;
-  Ptr<DgramFallbackFace> fallback_face_;
-  
-  DISALLOW_COPY_AND_ASSIGN(McastFace);
 };
 
 };//namespace ndnfd

@@ -13,7 +13,6 @@ FaceMgr::FaceMgr(void) {
   this->tcp_listener_ = nullptr;
   this->udp_channel_ = nullptr;
   this->udp_ndnlp_channel_ = nullptr;
-  this->ether_channel_ = nullptr;
 }
 
 void FaceMgr::Init(void) {
@@ -26,7 +25,14 @@ FaceMgr::~FaceMgr(void) {
   this->set_tcp_listener(nullptr);
   this->set_udp_channel(nullptr);
   this->set_udp_ndnlp_channel(nullptr);
-  this->set_ether_channel(nullptr);
+
+  while (!this->ether_channels_.empty()) {
+    std::string ifname; DgramChannel* channel; DgramFace* face;
+    std::tie(ifname, channel, face) = this->ether_channels_.back();
+    if (face != nullptr) face->Unref();
+    if (channel != nullptr) channel->Unref();
+    this->ether_channels_.pop_back();
+  }
 }
 
 Ptr<Face> FaceMgr::GetFace(FaceId id) {
@@ -58,22 +64,26 @@ void FaceMgr::StartDefaultListeners(void) {
 
   Ptr<TcpFaceFactory> tcp_factory = this->New<TcpFaceFactory>(this->New<CcnbWireProtocol>(true));
   this->set_tcp_factory(tcp_factory);
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
-  assert(ok);
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695"); assert(ok);
   this->set_tcp_listener(this->tcp_factory()->Listen(addr));
   
   Ptr<UdpFaceFactory> udp_factory = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695");
-  assert(ok);
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695"); assert(ok);
   this->set_udp_channel(udp_factory->Channel(addr));
   
   Ptr<UdpFaceFactory> udp_ndnlp_factory = this->New<UdpFaceFactory>(this->New<NdnlpWireProtocol>(1460));
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695");
-  assert(ok);
+  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695"); assert(ok);
   this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
   
+  std::tie(ok, addr) = EtherAddressVerifier::Parse("01:00:5E:00:17:AA"); assert(ok);
   Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>();
-  this->set_ether_channel(ether_factory->Channel("eth1", 0x8624));
+  for (std::string ifname : ether_factory->ListNICs()) {
+    Ptr<DgramChannel> channel = ether_factory->Channel(ifname, 0x8624);
+    if (channel != nullptr) {
+      Ptr<DgramFace> mcast_face = channel->GetMcastFace(addr);
+      this->ether_channels().emplace_back(ifname, GetPointer(channel), GetPointer(mcast_face));
+    }
+  }
 }
 
 void FaceMgr::set_unix_listener(Ptr<StreamListener> value) {
@@ -111,15 +121,7 @@ void FaceMgr::set_udp_ndnlp_channel(Ptr<DgramChannel> value) {
   this->udp_ndnlp_channel_ = GetPointer(value);
 }
 
-void FaceMgr::set_ether_channel(Ptr<DgramChannel> value) {
-  if (this->ether_channel_ != nullptr) {
-    this->ether_channel_->Unref();
-  }
-  this->ether_channel_ = GetPointer(value);
-}
-
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {
-  // TODO don't assume mcast_face is DgramFace; it may be McastFace
   DgramFace* dface = static_cast<DgramFace*>(PeekPointer(mcast_face));
   Ptr<DgramChannel> channel = dface->channel();
   return channel->GetFace(peer);
