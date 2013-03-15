@@ -1073,7 +1073,7 @@ ccndc_do_face_action(struct ccndc_data *self,
     ON_ERROR_CLEANUP(res);
     
     ON_ERROR_CLEANUP(ccn_content_get_value(resultbuf->buf, resultbuf->length, &pcobuf, &ptr, &length));
-    printf("ptr: %p\nlength: %u\n", ptr, length);
+    printf("ptr: %p\nlength: %lu\n", ptr, length);
     new_face_instance = ccn_face_instance_parse(ptr, length);
     printf("new_face_instance: %p\n", new_face_instance);
     ON_NULL_CLEANUP(new_face_instance);
