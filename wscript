@@ -38,7 +38,11 @@ def configure(conf):
     
     conf.check_ccnx(path=conf.options.ccnx_dir)
     conf.check_cc(lib='pcap', header_name='pcap.h', define_name='HAVE_PCAP', uselib_store='PCAP')
-    conf.check_cc(lib='resolv', header_name='resolv.h', define_name='HAVE_RESOLV', uselib_store='RESOLV')
+    
+    libresolv = 'resolv'
+    if waflib.Utils.unversioned_sys_platform() == 'freebsd':
+        libresolv = [] #FreeBSD has resolver in libc
+    conf.check_cc(msg='Checking for resolv', lib=libresolv, fragment='#include <netinet/in.h>\n#include <arpa/nameser.h>\n#include <resolv.h>\nint main() { return 0; }', define_name='HAVE_RESOLV', uselib_store='RESOLV')
 
     conf.define('_GNU_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
