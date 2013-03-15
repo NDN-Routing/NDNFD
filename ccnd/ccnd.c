@@ -64,6 +64,7 @@
 #ifdef NDNFD
 #include "face/ccnd_interface.h"
 #endif
+#define NDNFD_FIXCCNDWARNINGS
 #define NDNFD_SELFLEARNING
 
 /** Ops for strategy callout */
@@ -75,9 +76,11 @@ enum ccn_strategy_op {
     CCNST_TIMEOUT,  /* all downstreams timed out, pit entry will go away */
 };
 
+#ifndef NDNFD
 static void cleanup_at_exit(void);
 static void unlink_at_exit(const char *path);
 static int create_local_listener(struct ccnd_handle *h, const char *sockname, int backlog);
+#endif
 static struct face *record_connection(struct ccnd_handle *h,
                                       int fd,
                                       struct sockaddr *who,
@@ -176,6 +179,7 @@ static void strategy_callout(struct ccnd_handle *h,
  */
 #define WTHZ 500U
 
+#ifndef NDNFD
 /**
  * Name of our unix-domain listener
  *
@@ -227,9 +231,6 @@ unlink_at_exit(const char *path)
 static int
 comm_file_ok(void)
 {
-#ifdef NDNFD
-    return 1;
-#else
     struct stat statbuf;
     int res;
     if (unlink_this_at_exit == NULL)
@@ -238,8 +239,8 @@ comm_file_ok(void)
     if (res == -1)
         return(0);
     return(1);
-#endif
 }
+#endif
 
 /**
  * Obtain a charbuf for short-term use
@@ -414,8 +415,13 @@ content_queue_create(struct ccnd_handle *h, struct face *face, enum cq_delay_cla
 /**
  * Destroy a queue.
  */
+#ifdef NDNFD
+void
+content_queue_destroy(struct ccnd_handle *h, struct content_queue **pq)
+#else
 static void
 content_queue_destroy(struct ccnd_handle *h, struct content_queue **pq)
+#endif
 {
     struct content_queue *q;
     if (*pq != NULL) {
@@ -442,6 +448,7 @@ close_fd(int *pfd)
     }
 }
 
+#ifndef NDNFD
 /**
  * Close an open file descriptor, and grumble about it.
  */
@@ -463,6 +470,7 @@ ccnd_close_fd(struct ccnd_handle *h, unsigned faceid, int *pfd)
         *pfd = -1;
     }
 }
+#endif
 
 /**
  * Associate a guid with a face.
@@ -637,6 +645,7 @@ ccnd_generate_face_guid(struct ccnd_handle *h, struct face *face, int size,
  * This is called when an entry is deleted from one of the hash tables that
  * keep track of faces.
  */
+#ifndef NDNFD
 static void
 finalize_face(struct hashtb_enumerator *e)
 {
@@ -674,6 +683,7 @@ finalize_face(struct hashtb_enumerator *e)
     for (m = 0; m < CCND_FACE_METER_N; m++)
         ccnd_meter_destroy(&face->meter[m]);
 }
+#endif
 
 /**
  * Convert an accession to its associated content handle.
@@ -1143,6 +1153,7 @@ finalize_guest(struct hashtb_enumerator *e)
     ccn_charbuf_destroy(&g->cob);
 }
 
+#ifndef NDNFD
 /**
  * Create a listener on a unix-domain socket.
  */
@@ -1206,6 +1217,7 @@ establish_min_recv_bufsize(struct ccnd_handle *h, int fd, int minsize)
     ccnd_msg(h, "SO_RCVBUF for fd %d is %d", fd, rcvbuf);
     return(rcvbuf);
 }
+#endif
 
 /**
  * Initialize the face flags based upon the addr information
@@ -1314,6 +1326,7 @@ accept_connection(struct ccnd_handle *h, int listener_fd)
     return(fd);
 }
 
+#ifndef NDNFD
 /**
  * Make an outbound stream connection.
  */
@@ -1433,9 +1446,11 @@ faceid_from_fd(struct ccnd_handle *h, int fd)
         return(face->faceid);
     return(CCN_NOFACEID);
 }
+#endif
 
 typedef void (*loggerproc)(void *, const char *, ...);
 
+#ifndef NDNFD
 /**
  * Set up a multicast face.
  */
@@ -1486,6 +1501,7 @@ setup_multicast(struct ccnd_handle *h, struct ccn_face_instance *face_instance,
              face->recv_fd, face->faceid, face->sendface);
     return(face);
 }
+#endif
 
 /**
  * Close a socket, destroying the associated face.
@@ -2272,11 +2288,13 @@ check_nameprefix_entries(struct ccnd_handle *h)
 static void
 check_comm_file(struct ccnd_handle *h)
 {
+#ifndef NDNFD
     if (!comm_file_ok()) {
         ccnd_msg(h, "stopping (%s gone)", unlink_this_at_exit);
         unlink_this_at_exit = NULL;
         h->running = 0;
     }
+#endif
 }
 
 /**
@@ -2738,6 +2756,7 @@ check_ccndid(struct ccnd_handle *h,
     return(0);
 }
 
+#ifndef NDNFD
 /**
  * Check ccndid, given a face instance.
  */
@@ -2747,6 +2766,7 @@ check_face_instance_ccndid(struct ccnd_handle *h,
 {
     return(check_ccndid(h, f->ccnd_id, f->ccnd_id_size, reply_body));
 }
+#endif
 
 /**
  * Check ccndid, given a parsed ForwardingEntry.
@@ -4197,7 +4217,9 @@ next_child_at_level(struct ccnd_handle *h,
     struct content_entry *next = NULL;
     struct ccn_charbuf *name;
     struct ccn_indexbuf *pred[CCN_SKIPLIST_MAX_DEPTH] = {NULL};
+#ifndef NDNFD_FIXCCNDWARNINGS
     int d;
+#endif
     int res;
     
     if (content == NULL)
@@ -4215,8 +4237,13 @@ next_child_at_level(struct ccnd_handle *h,
     if (h->debug & 8)
         ccnd_debug_ccnb(h, __LINE__, "child_successor", NULL,
                         name->buf, name->length);
+#ifdef NDNFD_FIXCCNDWARNINGS
+    content_skiplist_findbefore(h, name->buf, name->length,
+                                    NULL, pred);
+#else
     d = content_skiplist_findbefore(h, name->buf, name->length,
                                     NULL, pred);
+#endif
     next = content_from_accession(h, pred[0]->buf[0]);
     if (next == content) {
         // XXX - I think this case should not occur, but just in case, avoid a loop.
@@ -4268,7 +4295,9 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
     struct hashtb_enumerator *e = &ee;
     struct ccn_parsed_interest parsed_interest = {0};
     struct ccn_parsed_interest *pi = &parsed_interest;
+#ifndef NDNFD_FIXCCNDWARNINGS
     size_t namesize = 0;
+#endif
     int k;
     int res;
     int try;
@@ -4305,7 +4334,9 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
                          pi->magic);
             }
         }
+#ifndef NDNFD_FIXCCNDWARNINGS
         namesize = comps->buf[pi->prefix_comps] - comps->buf[0];
+#endif
         h->interests_accepted += 1;
         ie = hashtb_lookup(h->interest_tab, msg,
                            pi->offset[CCN_PI_B_InterestLifetime]);
@@ -4918,7 +4949,9 @@ process_input(struct ccnd_handle *h, int fd)
     struct face *face = NULL;
     struct face *source = NULL;
     ssize_t res;
+#ifndef NDNFD_FIXCCNDWARNINGS
     ssize_t dres;
+#endif
     ssize_t msgstart;
     unsigned char *buf;
     struct ccn_skeleton_decoder *d;
@@ -4978,7 +5011,11 @@ process_input(struct ccnd_handle *h, int fd)
             ccnd_stats_handle_http_connection(h, face);
             return;
         }
+#ifdef NDNFD_FIXCCNDWARNINGS
+        ccn_skeleton_decode(d, buf, res);
+#else
         dres = ccn_skeleton_decode(d, buf, res);
+#endif
         while (d->state == 0) {
             process_input_message(h, source,
                                   face->inbuf->buf + msgstart,
@@ -4989,9 +5026,15 @@ process_input(struct ccnd_handle *h, int fd)
                 face->inbuf->length = 0;
                 return;
             }
+#ifdef NDNFD_FIXCCNDWARNINGS
+            ccn_skeleton_decode(d,
+                    face->inbuf->buf + d->index, // XXX - msgstart and d->index are the same here - use msgstart
+                    res = face->inbuf->length - d->index);  // XXX - why is res set here?
+#else
             dres = ccn_skeleton_decode(d,
                     face->inbuf->buf + d->index, // XXX - msgstart and d->index are the same here - use msgstart
                     res = face->inbuf->length - d->index);  // XXX - why is res set here?
+#endif
         }
         if ((face->flags & CCN_FACE_DGRAM) != 0) {
             ccnd_msg(h, "protocol error on face %u, discarding %u bytes",
@@ -5070,6 +5113,7 @@ ccnd_internal_client_has_somthing_to_say(struct ccnd_handle *h)
     ccn_schedule_event(h->sched, 0, process_icb_action, NULL, 0);
 }
 
+#ifndef NDNFD
 /**
  * Handle errors after send() or sendto().
  * @returns -1 if error has been dealt with, or 0 to defer sending.
@@ -5135,7 +5179,6 @@ sending_fd(struct ccnd_handle *h, struct face *face)
     return(-1);
 }
 
-#ifndef NDNFD
 /**
  * Send data to the face.
  *
@@ -5444,6 +5487,7 @@ ccnd_setsockopt_v6only(struct ccnd_handle *h, int fd)
                  fd, strerror(errno));
 }
 
+#ifndef NDNFD
 /**
  * Translate an address family constant to a string.
  */
@@ -5659,6 +5703,7 @@ ccnd_listen_on(struct ccnd_handle *h, const char *addrs)
     ccn_charbuf_destroy(&addr);
     return(res);
 }
+#endif
 
 /**
  * Parse a list of ccnx URIs
@@ -5729,7 +5774,9 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
     const char *tts_limit;
     const char *autoreg;
     const char *listen_on;
+#ifndef NDNFD
     int fd;
+#endif
     struct ccnd_handle *h;
     struct hashtb_param param = {0};
     

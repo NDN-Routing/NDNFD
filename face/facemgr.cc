@@ -51,9 +51,11 @@ void FaceMgr::AddFace(Ptr<Face> face) {
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {
   this->table_.erase(face->id());
+  // TODO finalize_face, content_queue_destroy
 }
 
 void FaceMgr::NotifyStatusChange(Ptr<Face> face) {
+  // TODO call ccnd_face_status_change if necessary
 }
 
 void FaceMgr::StartDefaultListeners(void) {
