@@ -6,7 +6,7 @@ import waflib
 
 def options(opt):
     opt.load('compiler_c compiler_cxx')
-    opt.load('ssl ccnx', tooldir='.')
+    opt.load('ccnx', tooldir='.')
 
     opt.add_option('--optimize',action='store_true',default=False,dest='optimize',help='''optimize object code''')
     opt.add_option('--gtest', action='store_true',default=False,dest='gtest',help='''build unit tests''')
@@ -34,11 +34,11 @@ def configure(conf):
                 except: pass
     
     conf.load('compiler_c compiler_cxx')
-    conf.load('ssl ccnx', tooldir='.')
+    conf.load('ccnx', tooldir='.')
     
-    conf.check_ssl()
     conf.check_ccnx(path=conf.options.ccnx_dir)
     conf.check_cc(lib='pcap', header_name='pcap.h', define_name='HAVE_PCAP', uselib_store='PCAP')
+    conf.check_cc(lib='resolv', header_name='resolv.h', define_name='HAVE_RESOLV', uselib_store='RESOLV')
 
     conf.define('_GNU_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith']
@@ -65,32 +65,25 @@ def configure(conf):
         conf.find_program('pandoc', var='PANDOC')
 
     if gcclibpath is not None:
+        # static link libstdc++ if non-default version is used, so that no LD_LIBRARY_PATH is required
         conf.env.append_unique('LINKFLAGS', ['-static-libstdc++'])
-        #print "A non-default gcc version is used. Please run the following before invoking any NDNFD program or unittest:\nexport LD_LIBRARY_PATH=%s" % gcclibpath
 
 
 def build(bld):
-    source_subdirs = ['core','util','face','message','strategy','command/ndnfdc']
+    source_subdirs = ['core','util','face','message','strategy']
     bld.objects(target='ndnfdcommon',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
         export_includes='.',
-        use='CCNX SSL PCAP ccnd/ccndcore ndnld/ndnldcore',
+        use='CCNX PCAP ccnd/ccndcore ndnld/ndnldcore',
         )
         
     bld.objects(target='ccnd/ccndcore',
         source=['ccnd/ccnd.c','ccnd/ccnd_internal_client.c','ccnd/ccnd_stats.c','ccnd/ccnd_msg.c'],
         includes='.',
-        use='CCNX SSL pthread',
+        use='CCNX pthread',
         )
 
-    bld.objects(target='command/ndnfdc/ndnfdc',
-	source=['command/ndnfdc/ccndc-main.c','command/ndnfdc/ccndc-log.c','command/ndnfdc/ccndc.c','command/ndnfdc/ccndc-srv.c'],
-	includes='.',
-	use='CCNX',
-	)
-	
-    
     bld.objects(target='ndnld/ndnldcore',
         source=bld.path.ant_glob(['ndnld/*.c']),
         use='CCNX',
@@ -102,6 +95,12 @@ def build(bld):
         use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
         )
     
+    bld.program(target='ndnfdc',
+        source=bld.path.ant_glob(['command/ndnfdc/*.c']),
+        includes='.',
+        use='CCNX RESOLV',
+        )
+
     if bld.env.GTEST:
         try:
             bld.get_tgen_by_name('pthread')
