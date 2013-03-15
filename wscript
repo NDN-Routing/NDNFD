@@ -70,7 +70,7 @@ def configure(conf):
 
 
 def build(bld):
-    source_subdirs = ['core','util','face','message','strategy']
+    source_subdirs = ['core','util','face','message','strategy','command/ndnfdc']
     bld.objects(target='ndnfdcommon',
         source=bld.path.ant_glob([subdir+'/*.cc' for subdir in source_subdirs], excl=['**/*_test*.cc']),
         includes='.',
@@ -83,6 +83,13 @@ def build(bld):
         includes='.',
         use='CCNX SSL pthread',
         )
+
+    bld.objects(target='command/ndnfdc/ndnfdc',
+	source=['command/ndnfdc/ccndc-main.c','command/ndnfdc/ccndc-log.c','command/ndnfdc/ccndc.c','command/ndnfdc/ccndc-srv.c'],
+	includes='.',
+	use='CCNX',
+	)
+	
     
     bld.objects(target='ndnld/ndnldcore',
         source=bld.path.ant_glob(['ndnld/*.c']),
