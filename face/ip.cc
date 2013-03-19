@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <cstdio>
+#include <ccn/sockcreate.h>
 #include "util/endian.h"
 #include "util/socket_helper.h"
 namespace ndnfd {
@@ -64,6 +65,38 @@ bool IpAddressVerifier::AreSameHost(const NetworkAddress& a, const NetworkAddres
     default: assert(false); break;
   }
   return false;
+}
+
+std::string IpAddressVerifier::IpToString(const NetworkAddress& addr) {
+  char buf[INET6_ADDRSTRLEN];
+  switch (addr.family()) {
+    case AF_INET: {
+      const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      inet_ntop(AF_INET, &sa->sin_addr, buf, sizeof(buf));
+    } break;
+    case AF_INET6: {
+      const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      inet_ntop(AF_INET6, &sa->sin6_addr, buf, sizeof(buf));
+    } break;
+    default: assert(false); break;
+  }
+  return std::string(buf);
+}
+
+uint16_t IpAddressVerifier::GetPort(const NetworkAddress& addr) {
+  in_port_t port = 0;
+  switch (addr.family()) {
+    case AF_INET: {
+      const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
+      port = sa->sin_port;
+    } break;
+    case AF_INET6: {
+      const sockaddr_in6* sa = reinterpret_cast<const sockaddr_in6*>(&addr.who);
+      port = sa->sin6_port;
+    } break;
+    default: assert(false); break;
+  }
+  return be16toh(port);
 }
 
 std::string IpAddressVerifier::ToString(const NetworkAddress& addr) {
@@ -128,22 +161,80 @@ UdpFaceFactory::UdpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
   this->av_ = new IpAddressVerifier();
 }
 
-Ptr<DgramChannel> UdpFaceFactory::Channel(const NetworkAddress& local_addr) {
+std::tuple<bool,int> UdpFaceFactory::MakeBoundSocket(const NetworkAddress& local_addr) {
   int fd = Socket_CreateForListen(local_addr.family(), SOCK_DGRAM);
   if (fd < 0) {
-    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::Channel socket(): %s", Logging::ErrorString().c_str());
-    return nullptr;
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::MakeBoundSocket socket(): %s", Logging::ErrorString().c_str());
+    return std::forward_as_tuple(false, -1);
   }
   
   int res;
   res = bind(fd, reinterpret_cast<const sockaddr*>(&local_addr.who), local_addr.wholen);
   if (res != 0) {
-    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::Channel bind(): %s", Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::MakeBoundSocket bind(): %s", Logging::ErrorString().c_str());
     close(fd);
-    return nullptr;
+    return std::forward_as_tuple(false, -1);
   }
+
+  return std::forward_as_tuple(true, fd);
+}
+
+Ptr<DgramChannel> UdpFaceFactory::Channel(const NetworkAddress& local_addr) {
+  bool ok; int fd;
+  std::tie(ok, fd) = this->MakeBoundSocket(local_addr);
+  if (!ok) return nullptr;
+  
   Ptr<DgramChannel> channel = this->New<DgramChannel>(fd, local_addr, this->av_, this->wp());
   return channel;
+}
+
+Ptr<DgramFace> UdpFaceFactory::McastFace(const NetworkAddress& local_addr, const NetworkAddress& group_addr, uint8_t ttl) {
+  std::string local_address = this->av_->IpToString(local_addr);
+  uint16_t local_port = this->av_->GetPort(local_addr);
+  std::string group_address = this->av_->IpToString(group_addr);
+  uint16_t group_port = this->av_->GetPort(group_addr);
+  assert(local_port == group_port);
+  char port_buf[6]; snprintf(port_buf, sizeof(port_buf), "%" PRIu16 "", group_port);
+
+  ccn_sockdescr descr;
+  descr.ipproto = IPPROTO_UDP;
+  descr.address = group_address.c_str();
+  descr.port = port_buf;
+  descr.source_address = local_address.c_str();
+  descr.mcast_ttl = ttl;
+  ccn_sockets socks;
+  
+  char logbuf[200];
+  int res = ccn_setup_socket(&descr, reinterpret_cast<void (*)(void*, const char*, ...)>(&sprintf), logbuf, nullptr, nullptr, &socks);
+  if (res != 0) {
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::McastFace %s", logbuf);
+    return nullptr;
+  }
+  Ptr<DgramChannel> channel = this->New<UdpSingleMcastChannel>(socks.recving, socks.sending, local_addr, group_addr, this->av_, this->wp());
+  Ptr<DgramFace> face = channel->GetMcastFace(group_addr);
+  this->Log(kLLInfo, kLCFace, "UdpFaceFactory::McastFace(%s,%s) face=%" PRI_FaceId "", this->av_->ToString(local_addr).c_str(), this->av_->ToString(group_addr).c_str(), face->id());
+  return face;
+}
+
+UdpSingleMcastChannel::UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) : DgramChannel(recv_fd, local_addr, av, wp) {
+  this->send_fd_ = send_fd;
+  this->group_addr_ = group_addr;
+}
+
+Ptr<DgramFace> UdpSingleMcastChannel::CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group) {
+  assert(this->group_addr_ == group);
+  return this->New<UdpSingleMcastFace>(this, group);
+}
+
+void UdpSingleMcastChannel::DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt) {
+  if (this->group_entry_ == nullptr) {
+    this->group_entry_ = this->FindMcastEntry(this->group_addr_);
+  }
+  this->DeliverMcastPacket(this->group_entry_, peer, pkt);
+}
+
+void UdpSingleMcastChannel::SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt) {
+  sendto(this->send_fd_, pkt->data(), pkt->length(), 0, reinterpret_cast<const sockaddr*>(&peer.who), peer.wholen);
 }
 
 TcpFaceFactory::TcpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {

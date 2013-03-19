@@ -39,6 +39,7 @@ class PcapChannel : public DgramChannel {
    private:
     const uint8_t* pkt_;
     size_t length_;
+    DISALLOW_COPY_AND_ASSIGN(EtherPkt);
   };
   
   std::string ifname_;

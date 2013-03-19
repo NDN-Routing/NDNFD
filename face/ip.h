@@ -23,6 +23,8 @@ class IpAddressVerifier : public AddressVerifier {
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
   virtual bool IsLocal(const NetworkAddress& addr);
   virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
+  std::string IpToString(const NetworkAddress& addr);
+  uint16_t GetPort(const NetworkAddress& addr);
   virtual std::string ToString(const NetworkAddress& addr);
   static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
@@ -38,10 +40,47 @@ class UdpFaceFactory : public FaceFactory {
   
   // Channel creates a DgramChannel for UDP over IPv4 or IPv6.
   Ptr<DgramChannel> Channel(const NetworkAddress& local_addr);
+  
+  // McastFace joins a UDP multicast group.
+  // Each unique local_addr can only join one group,
+  // otherwise unexpected behavior may occur.
+  Ptr<DgramFace> McastFace(const NetworkAddress& local_addr, const NetworkAddress& group_addr, uint8_t ttl);
 
  private:
+  std::tuple<bool,int> MakeBoundSocket(const NetworkAddress& local_addr);
+  
   Ptr<IpAddressVerifier> av_;
   DISALLOW_COPY_AND_ASSIGN(UdpFaceFactory);
+};
+
+// A UdpSingleMcastChannel joins a UDP multicast group on local_addr.
+// Only one group_addr per local_addr is supported, and local_addr cannot be same as UDP unicast channel.
+// This implementation does not attempt to identify destination address of incoming packet,
+// and accounts every incoming packet to group_addr.
+class UdpSingleMcastChannel : public DgramChannel {
+ public:
+  UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  virtual ~UdpSingleMcastChannel(void) {}
+
+ protected:
+  class UdpSingleMcastFace : public DgramFace {
+   public:
+    UdpSingleMcastFace(Ptr<DgramChannel> channel, const NetworkAddress& peer) : DgramFace(channel, peer) { this->set_kind(FaceKind::kMulticast); }
+    virtual ~UdpSingleMcastFace(void) {}
+    virtual void Close(void) { this->channel()->Close(); }
+   private:
+    DISALLOW_COPY_AND_ASSIGN(UdpSingleMcastFace);
+  };
+
+  virtual Ptr<DgramFace> CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group);
+  virtual void DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt);
+  virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
+
+ private:
+  int send_fd_;
+  NetworkAddress group_addr_;
+  Ptr<McastEntry> group_entry_;
+  DISALLOW_COPY_AND_ASSIGN(UdpSingleMcastChannel);
 };
 
 // A TcpFaceFactory creates Face objects for TCP.

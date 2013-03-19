@@ -43,6 +43,7 @@ class FaceMgr : public Element {
   TcpFaceFactory* tcp_factory(void) const { return this->tcp_factory_; }
   StreamListener* tcp_listener(void) const { return this->tcp_listener_; }
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
+  DgramFace* udp_mcast_face(void) const { return this->udp_mcast_face_; }
   DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
   std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>>& ether_channels(void) { return this->ether_channels_; }
 
@@ -63,6 +64,7 @@ class FaceMgr : public Element {
   TcpFaceFactory* tcp_factory_;
   StreamListener* tcp_listener_;
   DgramChannel* udp_channel_;
+  DgramFace* udp_mcast_face_;
   DgramChannel* udp_ndnlp_channel_;
   std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>> ether_channels_;//Ethernet ifname,channel,mcast_face
 
@@ -70,6 +72,7 @@ class FaceMgr : public Element {
   void set_tcp_factory(Ptr<TcpFaceFactory> value);
   void set_tcp_listener(Ptr<StreamListener> value);
   void set_udp_channel(Ptr<DgramChannel> value);
+  void set_udp_mcast_face(Ptr<DgramFace> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
 
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);

@@ -72,6 +72,11 @@ void FaceMgr::StartDefaultListeners(void) {
   Ptr<UdpFaceFactory> udp_factory = this->New<UdpFaceFactory>(this->New<CcnbWireProtocol>(false));
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695"); assert(ok);
   this->set_udp_channel(udp_factory->Channel(addr));
+
+  std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.1:59695"); assert(ok);
+  NetworkAddress group_addr; std::tie(ok, group_addr) = IpAddressVerifier::Parse("224.0.23.170:59695"); assert(ok);
+  // TODO one mcast face per interface
+  this->set_udp_mcast_face(udp_factory->McastFace(addr, group_addr, 1));
   
   Ptr<UdpFaceFactory> udp_ndnlp_factory = this->New<UdpFaceFactory>(this->New<NdnlpWireProtocol>(1460));
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695"); assert(ok);
@@ -88,40 +93,19 @@ void FaceMgr::StartDefaultListeners(void) {
   }
 }
 
-void FaceMgr::set_unix_listener(Ptr<StreamListener> value) {
-  if (this->unix_listener_ != nullptr) {
-    this->unix_listener_->Unref();
-  }
-  this->unix_listener_ = GetPointer(value);
+#define FACEMGR_DEF_SETTER(field,type) \
+void FaceMgr::set_##field(Ptr<type> value) { \
+  if (this->field##_ != nullptr) { \
+    this->field##_->Unref(); \
+  } \
+  this->field##_ = GetPointer(value); \
 }
-
-void FaceMgr::set_tcp_factory(Ptr<TcpFaceFactory> value) {
-  if (this->tcp_factory_ != nullptr) {
-    this->tcp_factory_->Unref();
-  }
-  this->tcp_factory_ = GetPointer(value);
-}
-
-void FaceMgr::set_tcp_listener(Ptr<StreamListener> value) {
-  if (this->tcp_listener_ != nullptr) {
-    this->tcp_listener_->Unref();
-  }
-  this->tcp_listener_ = GetPointer(value);
-}
-
-void FaceMgr::set_udp_channel(Ptr<DgramChannel> value) {
-  if (this->udp_channel_ != nullptr) {
-    this->udp_channel_->Unref();
-  }
-  this->udp_channel_ = GetPointer(value);
-}
-
-void FaceMgr::set_udp_ndnlp_channel(Ptr<DgramChannel> value) {
-  if (this->udp_ndnlp_channel_ != nullptr) {
-    this->udp_ndnlp_channel_->Unref();
-  }
-  this->udp_ndnlp_channel_ = GetPointer(value);
-}
+FACEMGR_DEF_SETTER(unix_listener, StreamListener);
+FACEMGR_DEF_SETTER(tcp_factory, TcpFaceFactory);
+FACEMGR_DEF_SETTER(tcp_listener, StreamListener);
+FACEMGR_DEF_SETTER(udp_channel, DgramChannel);
+FACEMGR_DEF_SETTER(udp_mcast_face, DgramFace);
+FACEMGR_DEF_SETTER(udp_ndnlp_channel, DgramChannel);
 
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {
   DgramFace* dface = static_cast<DgramFace*>(PeekPointer(mcast_face));
