@@ -11,6 +11,8 @@ void SchedulerTestGetTime(const ccn_gettime* self, ccn_timeval* result) {
 }
 
 TEST(CoreTest, Scheduler) {
+  ccn_schedule* oldsched = TestGlobal()->ccndh()->sched;
+
   ccn_gettime gt = { "", &SchedulerTestGetTime, 1000000, nullptr };
   TestGlobal()->ccndh()->sched = ccn_schedule_create(nullptr, &gt);
   Ptr<Scheduler> s = TestGlobal()->scheduler();
@@ -33,6 +35,8 @@ TEST(CoreTest, Scheduler) {
   } while (next_evt != Scheduler::kNoMore);
   EXPECT_EQ(2, r1);
   EXPECT_EQ(0, r2);
+  
+  TestGlobal()->ccndh()->sched = oldsched;
 }
 
 };//namespace ndnfd

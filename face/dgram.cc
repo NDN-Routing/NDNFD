@@ -30,7 +30,6 @@ void DgramFace::Deliver(Ptr<Message> msg) {
 
 void DgramFace::Close(void) {
   this->channel()->FaceClose(this);
-  this->CloseInternal();
 }
 
 void DgramFace::CloseInternal(void) {
@@ -62,11 +61,14 @@ void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
   if (this->fd() >= 0) this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
+  this->reap_evt_ = this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this));
+
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }
 
 DgramChannel::~DgramChannel(void) {
   this->Close();
+  this->global()->scheduler()->Cancel(this->reap_evt_);
 }
 
 Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const NetworkAddress& peer) {
@@ -81,33 +83,42 @@ Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const Net
   return face;
 }
 
-DgramChannel::PeerEntry DgramChannel::MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op) {
+Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op) {
   AddressHashKey hashkey = this->av()->GetHashKey(peer);
-  Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
+  Ptr<PeerEntry> pe;
   auto it = this->peers_.find(hashkey);
   if (it != this->peers_.end()) {
-    std::tie(face, wps) = it->second;
-    if (face_op == MakePeerFaceOp::kCreate && face == nullptr) {
-      face = this->CreateFace(hashkey, peer);
-      return this->peers_[hashkey] = std::make_tuple(face, wps);
-    } else if (face_op == MakePeerFaceOp::kDelete && face != nullptr) {
-      face = nullptr;
-      return this->peers_[hashkey] = std::make_tuple(face, wps);
+    pe = it->second;
+    if (face_op == MakePeerFaceOp::kCreate && pe->face_ == nullptr) {
+      pe->face_ = this->CreateFace(hashkey, peer);
+    } else if (face_op == MakePeerFaceOp::kDelete && pe->face_ != nullptr) {
+      pe->face_->CloseInternal();
+      pe->face_ = nullptr;
     }
-    return it->second;
+    return pe;
   }
 
-  face = face_op == MakePeerFaceOp::kCreate ? this->CreateFace(hashkey, peer) : nullptr;
-  wps = this->wp()->IsStateful() ? this->wp()->CreateState(peer) : nullptr;
-  PeerEntry entry = std::make_tuple(face, wps);
-  this->peers_.insert(std::make_pair(hashkey, entry));
-  return entry;
+  pe = new PeerEntry();
+  if (face_op == MakePeerFaceOp::kCreate) pe->face_ = this->CreateFace(hashkey, peer);
+  if (this->wp()->IsStateful()) pe->wps_ = this->wp()->CreateState(peer);
+  this->peers_.insert(std::make_pair(hashkey, pe));
+  return pe;
 }
 
-Ptr<DgramFace> DgramChannel::GetFace(const NetworkAddress& peer) {
-  Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
-  std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kCreate);
-  return face;
+constexpr std::chrono::microseconds DgramChannel::kReapInterval;
+
+std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
+  this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
+  for (auto it = this->peers().begin(); it != this->peers().end();) {
+    auto current = it++;
+    Ptr<PeerEntry> pe = current->second;
+    if (pe->recv_count_ == 0) {
+      if (pe->face_ != nullptr) pe->face_->CloseInternal();
+      this->peers().erase(current);
+    }
+    pe->recv_count_ = 0;
+  }
+  return DgramChannel::kReapInterval;
 }
 
 void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
@@ -118,7 +129,9 @@ void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
     oface = entry->face_;
     wps = entry->outstate_;
   } else {
-    std::tie(oface, wps) = this->MakePeer(face->peer(), MakePeerFaceOp::kNone);
+    Ptr<PeerEntry> pe = this->MakePeer(face->peer(), MakePeerFaceOp::kNone);
+    oface = pe->face_;
+    wps = pe->wps_;
   }
   assert(oface == face);
   
@@ -156,12 +169,13 @@ void DgramChannel::ReceiveFrom(void) {
 }
 
 void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt) {
-  Ptr<DgramFace> face; Ptr<WireProtocolState> wps;
-  std::tie(face, wps) = this->MakePeer(peer, MakePeerFaceOp::kNone);
+  Ptr<PeerEntry> pe = this->MakePeer(peer, MakePeerFaceOp::kNone);
+  ++pe->recv_count_;
+  Ptr<DgramFace> face = pe->face_;
   //this->Log(kLLDebug, kLCFace, "DgramChannel(%"PRIxPTR",fd=%d)::DeliverPacket(%s) face=%"PRI_FaceId"", this, this->fd(), this->av()->ToString(peer).c_str(), face==nullptr ? FaceId_none : face->id());
   
   if (face == nullptr) face = this->GetFallbackFace();
-  this->DecodeAndDeliver(peer, wps, pkt, face);
+  this->DecodeAndDeliver(peer, pe->wps_, pkt, face);
 }
 
 void DgramChannel::DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face) {
@@ -244,7 +258,7 @@ void DgramChannel::Close() {
   this->closed_ = true;
   
   for (auto p : this->peers()) {
-    Ptr<DgramFace> face = std::get<0>(p.second);
+    Ptr<DgramFace> face = p.second->face_;
     if (face != nullptr) {
       face->CloseInternal();
     }

@@ -38,25 +38,15 @@ void Global::set_ccndh(ccnd_handle* value) {
   this->ccndh_ = value;
 }
 
-void Global::set_pollmgr(Ptr<PollMgr> value) {
-  if (this->pollmgr_ != nullptr) {
-    this->pollmgr_->Unref();
-  }
-  this->pollmgr_ = GetPointer(value);
+#define GLOBAL_DEF_SETTER(field,type) \
+void Global::set_##field(Ptr<type> value) { \
+  if (this->field##_ != nullptr) { \
+    this->field##_->Unref(); \
+  } \
+  this->field##_ = GetPointer(value); \
 }
-
-void Global::set_scheduler(Ptr<Scheduler> value) {
-  if (this->scheduler_ != nullptr) {
-    this->scheduler_->Unref();
-  }
-  this->scheduler_ = GetPointer(value);
-}
-
-void Global::set_facemgr(Ptr<FaceMgr> value) {
-  if (this->facemgr_ != nullptr) {
-    this->facemgr_->Unref();
-  }
-  this->facemgr_ = GetPointer(value);
-}
+GLOBAL_DEF_SETTER(pollmgr,PollMgr);
+GLOBAL_DEF_SETTER(scheduler,Scheduler);
+GLOBAL_DEF_SETTER(facemgr,FaceMgr);
 
 };//namespace ndnfd

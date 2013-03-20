@@ -1,7 +1,6 @@
 #ifndef NDNFD_CORE_POLLMGR_H_
 #define NDNFD_CORE_POLLMGR_H_
 #include "core/element.h"
-#include <chrono>
 #include <poll.h>
 namespace ndnfd {
 

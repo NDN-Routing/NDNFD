@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <atomic>
 #include <functional>
+#include <chrono>
 #include "ptr.h"
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \

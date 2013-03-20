@@ -1,6 +1,5 @@
 #ifndef NDNFD_CORE_SCHEDULER_H_
 #define NDNFD_CORE_SCHEDULER_H_
-#include <chrono>
 extern "C" {
 #include "ccnd/ccnd_private.h"
 }

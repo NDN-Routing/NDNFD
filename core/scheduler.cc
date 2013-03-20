@@ -1,10 +1,17 @@
 #include "scheduler.h"
+extern "C" {
+void ccnd_gettime(const struct ccn_gettime *self, struct ccn_timeval *result);
+}
 namespace ndnfd {
 
 constexpr std::chrono::microseconds Scheduler::kNoMore;
 
 SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb) {
   assert(cb != nullptr);
+  if (this->sched() == nullptr) {
+    this->Log(kLLError, kLCScheduler, "Scheduler::Schedule sched is null");
+    return nullptr;
+  }
   EvData* evdata = new EvData();
   evdata->scheduler = this;
   evdata->cb = cb;
@@ -12,11 +19,12 @@ SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb)
 }
 
 void Scheduler::Cancel(SchedulerEvent evt) {
+  if (evt == nullptr) return;
   ccn_schedule_cancel(this->sched(), evt);
 }
 
 std::chrono::microseconds Scheduler::Run(void) {
-  int next = ccn_schedule_run(this->global()->ccndh()->sched);
+  int next = ccn_schedule_run(this->sched());
   if (next < 0) return Scheduler::kNoMore;
   return std::chrono::microseconds(next);
 }

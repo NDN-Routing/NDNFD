@@ -4,6 +4,7 @@
 #include "face/wireproto.h"
 #include "face/addrverifier.h"
 #include "core/pollmgr.h"
+#include "core/scheduler.h"
 namespace ndnfd {
 
 class DgramChannel;
@@ -71,7 +72,7 @@ class DgramChannel : public Element, public IPollClient {
   
   // GetFace returns a unicast face for a peer.
   // One is created if it does not exist.
-  Ptr<DgramFace> GetFace(const NetworkAddress& peer);
+  Ptr<DgramFace> GetFace(const NetworkAddress& peer) { return this->MakePeer(peer, MakePeerFaceOp::kCreate)->face_; }
   
   // FaceSend sends message to face->peer() over the channel.
   // This is called by DgramFace.
@@ -91,7 +92,14 @@ class DgramChannel : public Element, public IPollClient {
  protected:
   // A PeerEntry represents per-peer information.
   // If .wp()->IsStateful() is false, Ptr<WireProtocolState> is null.
-  typedef std::tuple<Ptr<DgramFace>,Ptr<WireProtocolState>> PeerEntry;
+  struct PeerEntry : public Object {
+    PeerEntry() { this->recv_count_ = 0; }
+    Ptr<DgramFace> face_;
+    Ptr<WireProtocolState> wps_;
+    uint32_t recv_count_;
+   private:
+    DISALLOW_COPY_AND_ASSIGN(PeerEntry);
+  };
   
   // MakePeerFaceOp specifies what to do with Face in MakePeer
   enum class MakePeerFaceOp {
@@ -110,12 +118,12 @@ class DgramChannel : public Element, public IPollClient {
    private:
     DISALLOW_COPY_AND_ASSIGN(McastEntry);
   };
-
+  
   bool closed_;
   int fd(void) const { return this->fd_; }
   Ptr<AddressVerifier> av(void) const { return this->av_; }
   Ptr<WireProtocol> wp(void) const { return this->wp_; }
-  std::unordered_map<AddressHashKey,PeerEntry>& peers(void) { return this->peers_; }
+  std::unordered_map<AddressHashKey,Ptr<PeerEntry>>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
   const NetworkAddress& local_addr(void) const { return this->local_addr_; }
 
@@ -127,7 +135,7 @@ class DgramChannel : public Element, public IPollClient {
   
   // MakePeer ensures PeerEntry exists for peer.
   // WireProtocolState is created if WireProtocol is stateful.
-  PeerEntry MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op);
+  Ptr<PeerEntry> MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op);
   
   // CreateMcastFace makes a face for a multicast group.
   // It returns null if mcast is not supported.
@@ -162,15 +170,21 @@ class DgramChannel : public Element, public IPollClient {
   virtual void DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face);
   
  private:
+  static constexpr std::chrono::microseconds kReapInterval = std::chrono::microseconds(20000000);
+
   int fd_;
   Ptr<AddressVerifier> av_;
   Ptr<WireProtocol> wp_;
-  std::unordered_map<AddressHashKey,PeerEntry> peers_;
+  std::unordered_map<AddressHashKey,Ptr<PeerEntry>> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
   std::vector<Ptr<McastEntry>> mcasts_;//there's a small number of McastEntry, so vector would be faster than unordered_map
   Ptr<Buffer> recvbuf_;
   NetworkAddress local_addr_;
+  SchedulerEvent reap_evt_;
   
+  // ReapInactivePeers deletes PeerEntry if nothing is received from that peer during the last kReapInterval
+  std::chrono::microseconds ReapInactivePeers(void);
+
   std::vector<Ptr<McastEntry>>& mcasts(void) { return this->mcasts_; }
   Ptr<McastEntry> FindMcastEntryInternal(const NetworkAddress& group, bool create);
   
