@@ -9,7 +9,6 @@ using ndnfd::Global;
 using ndnfd::Face;
 using ndnfd::FaceId;
 using ndnfd::FaceMgr;
-using ndnfd::kLCFace;
 
 struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
   Global* global = ccnd_ndnfdGlobal(h);
@@ -24,17 +23,15 @@ void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_
 }
 
 int ccnd_req_newface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
-  using ndnfd::kLLError;
   Global* global = ccnd_ndnfdGlobal(h);
-  global->logging()->Log(kLLError, kLCFace, "ccnd_req_newface not implemented");
+  global->logging()->Log(ndnfd::kLLError, ndnfd::kLCFaceMgr, "ccnd_req_newface not implemented");
   //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
   return -1;
 }
 
 int ccnd_req_destroyface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
-  using ndnfd::kLLError;
   Global* global = ccnd_ndnfdGlobal(h);
-  global->logging()->Log(kLLError, kLCFace, "ccnd_req_destroyface not implemented");
+  global->logging()->Log(ndnfd::kLLError, ndnfd::kLCFaceMgr, "ccnd_req_destroyface not implemented");
   //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
   return -1;
 }
@@ -49,13 +46,13 @@ void CcndFaceInterface::BindFace(Ptr<Face> face) {
 void CcndFaceInterface::Receive(Ptr<Message> message) {
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(message->incoming_face());
   if (in_face == nullptr) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Receive face %" PRI_FaceId " does not exist", message->incoming_face());
+    this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Receive face %" PRI_FaceId " does not exist", message->incoming_face());
     return;
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
     Ptr<Face> uface = this->global()->facemgr()->MakeUnicastFace(in_face, message->incoming_sender());
     message->set_incoming_face(uface->id());
-    this->Log(kLLInfo, kLCFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
+    this->Log(kLLInfo, kLCCcndFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
@@ -66,11 +63,11 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
   Ptr<Face> out_face = this->global()->facemgr()->GetFace(faceid);
   if (out_face == nullptr) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send face %" PRI_FaceId " does not exist", faceid);
+    this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Send face %" PRI_FaceId " does not exist", faceid);
     return;
   }
   if (!out_face->CanSend()) {
-    this->Log(kLLError, kLCFace, "CcndFaceInterface::Send Face(%" PRI_FaceId ")::CanSend is false", out_face->id());
+    this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Send Face(%" PRI_FaceId ")::CanSend is false", out_face->id());
     return;
   }
   

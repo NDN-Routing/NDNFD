@@ -130,6 +130,7 @@ void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
   }
   //this->Log(kLLDebug, kLCFace, "DgramChannel::FaceSend(%"  PRI_FaceId") send %" PRIuMAX " packets", face->id(), static_cast<uintmax_t>(pkts.size()));
   for (Ptr<Buffer> pkt : pkts) {
+    face->CountBytesOut(pkt->length());
     this->SendTo(face->peer(), pkt);
   }
 }
@@ -166,6 +167,7 @@ void DgramChannel::DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt
 void DgramChannel::DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face) {
   assert(pkt != nullptr);
   assert(face != nullptr);
+  face->CountBytesIn(pkt->length());
 
   bool ok; std::list<Ptr<Message>> msgs;
   std::tie(ok, msgs) = this->wp()->Decode(peer, wps, pkt);

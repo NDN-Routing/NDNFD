@@ -91,6 +91,7 @@ void StreamFace::Write(void) {
       if (this->status() == FaceStatus::kConnecting) {
         this->set_status(FaceStatus::kUndecided);
       }
+      this->CountBytesOut(static_cast<size_t>(res));
       if (static_cast<size_t>(res) < pkt->length()) {//socket is blocked
         pkt->Pull(static_cast<size_t>(res));
         break;
@@ -144,6 +145,7 @@ void StreamFace::Read(void) {
     this->Disconnect();
     return;
   }
+  this->CountBytesIn(static_cast<size_t>(res));
   pkt->Put(static_cast<size_t>(res));
 
   bool ok; std::list<Ptr<Message>> msgs;

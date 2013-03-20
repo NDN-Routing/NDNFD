@@ -67,6 +67,10 @@ class Face : public Element {
   // Close closes the face immediately.
   virtual void Close(void) {}
   
+  // CountBytesIn, CountBytesOut update face counters.
+  void CountBytesIn(size_t n) { ccnd_meter_bump(this->global()->ccndh(), this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }
+  void CountBytesOut(size_t n) { ccnd_meter_bump(this->global()->ccndh(), this->ccnd_face()->meter[FM_BYTO], static_cast<unsigned>(n)); }
+
  protected:
   Face(void);
   void set_id(FaceId value);
@@ -75,7 +79,7 @@ class Face : public Element {
   
   // ReceiveMessage sets msg->incoming_face, then push to Receive port.
   void ReceiveMessage(Ptr<Message> msg);
-
+  
  private:
   FaceId id_;
   FaceKind kind_;
