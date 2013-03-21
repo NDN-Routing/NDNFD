@@ -51,6 +51,7 @@ void FaceMgr::AddFace(Ptr<Face> face) {
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {
   this->table_.erase(face->id());
+  face->Finalize();
   // TODO finalize_face, content_queue_destroy
 }
 

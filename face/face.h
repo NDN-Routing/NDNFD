@@ -63,6 +63,8 @@ class Face : public Element {
   // Enroll verifies mgr is the FaceMgr of this router,
   // and records the assigned FaceId.
   virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
+  // Finalize cleans up a face.
+  virtual void Finalize(void);
   
   // Close closes the face immediately.
   virtual void Close(void) {}

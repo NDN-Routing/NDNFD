@@ -645,25 +645,35 @@ ccnd_generate_face_guid(struct ccnd_handle *h, struct face *face, int size,
  * This is called when an entry is deleted from one of the hash tables that
  * keep track of faces.
  */
-#ifndef NDNFD
+#ifdef NDNFD
+void finalize_face(struct ccnd_handle* h, struct face* face)
+#else
 static void
 finalize_face(struct hashtb_enumerator *e)
+#endif
 {
+#ifndef NDNFD
     struct ccnd_handle *h = hashtb_get_param(e->ht, NULL);
     struct face *face = e->data;
     unsigned i = face->faceid & MAXFACES;
+#endif
     enum cq_delay_class c;
+#ifndef NDNFD
     int recycle = 0;
+#endif
     int m;
     
+#ifndef NDNFD
     if (i < h->face_limit && h->faces_by_faceid[i] == face) {
         if ((face->flags & CCN_FACE_UNDECIDED) == 0)
             ccnd_face_status_change(h, face->faceid);
         if (e->ht == h->faces_by_fd)
             ccnd_close_fd(h, face->faceid, &face->recv_fd);
+#endif
         if ((face->guid) != NULL)
             ccnd_forget_face_guid(h, face);
         ccn_charbuf_destroy(&face->guid_cob);
+#ifndef NDNFD
         h->faces_by_faceid[i] = NULL;
         if ((face->flags & CCN_FACE_UNDECIDED) != 0 &&
               face->faceid == ((h->face_rover - 1) | h->face_gen)) {
@@ -671,8 +681,10 @@ finalize_face(struct hashtb_enumerator *e)
             recycle = 1;
             h->face_rover--;
         }
+#endif
         for (c = 0; c < CCN_CQ_N; c++)
             content_queue_destroy(h, &(face->q[c]));
+#ifndef NDNFD
         ccnd_msg(h, "%s face id %u (slot %u)",
             recycle ? "recycling" : "releasing",
             face->faceid, face->faceid & MAXFACES);
@@ -680,10 +692,10 @@ finalize_face(struct hashtb_enumerator *e)
     }
     else if (face->faceid != CCN_NOFACEID)
         ccnd_msg(h, "orphaned face %u", face->faceid);
+#endif
     for (m = 0; m < CCND_FACE_METER_N; m++)
         ccnd_meter_destroy(&face->meter[m]);
 }
-#endif
 
 /**
  * Convert an accession to its associated content handle.

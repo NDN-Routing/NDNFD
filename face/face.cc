@@ -1,5 +1,8 @@
 #include "face.h"
 #include "facemgr.h"
+extern "C" {
+void finalize_face(struct ccnd_handle* h, struct face* face);
+}
 namespace ndnfd {
 
 std::string FaceKind_ToString(FaceKind kind) {
@@ -65,6 +68,10 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
   this->ccnd_face()->meter[FM_INTO] = ccnd_meter_create(this->global()->ccndh(), "introut");
   this->ccnd_face()->meter[FM_DATI] = ccnd_meter_create(this->global()->ccndh(), "datain");
   this->ccnd_face()->meter[FM_DATO] = ccnd_meter_create(this->global()->ccndh(), "dataout");
+}
+
+void Face::Finalize(void) {
+  finalize_face(this->global()->ccndh(), this->ccnd_face());
 }
 
 void Face::set_id(FaceId value) {
