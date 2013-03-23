@@ -121,15 +121,15 @@ Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& p
   return channel->GetFace(peer);
 }
 
-std::tuple<InternalClientHandler::ResponseKind,std::string> FaceMgr::FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size) {
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size) {
   // TODO decode msg as face_instance
   // TODO verify action in msg matches act
   // TODO verify inface trusted for face mgmt protocol
   // TODO call this->FaceMgmtNewFace() or this->FaceMgmtDestroyFace()
-  // TODO   on success, return response
-  // TODO   on failure, return nack or silent
+  // TODO   on success, return response (with face_inst)
+  // TODO   on failure, return nack (with error string) or silent
   assert(false);
-  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, "");
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
 }
 
 std::tuple<bool,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* face_inst) {

@@ -61,7 +61,7 @@ class FaceMgr : public Element {
   Ptr<Face> MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer);
   
   // FaceMgmtReq answers a face management request.
-  std::tuple<InternalClientHandler::ResponseKind,std::string> FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size);
+  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size);
 
  private:
   FaceId next_id_;

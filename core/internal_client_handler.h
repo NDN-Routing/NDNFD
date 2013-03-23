@@ -6,6 +6,7 @@ extern "C" {
 #define WANT_NDNFD_INTERNAL_CLIENT_OPS
 #include "ccnd/ndnfd_internal_client.h"
 }
+#include "util/buffer.h"
 namespace ndnfd {
 
 class InternalClientHandler : public Element {
@@ -20,9 +21,13 @@ class InternalClientHandler : public Element {
   InternalClientHandler(void) {}
   virtual ~InternalClientHandler(void) {}
   
-  std::tuple<ResponseKind,std::string> ReqSignature(const uint8_t* msg, size_t size);
-  std::tuple<ResponseKind,std::string> ReqNewFace(const uint8_t* msg, size_t size);
-  std::tuple<ResponseKind,std::string> ReqDestroyFace(const uint8_t* msg, size_t size);
+  // Req* processes a kind of request.
+  // msg is the last component of the Name in Interest; size is the length of msg.
+  // It returns ResponseKind, and the payload (Content) in a response.
+  
+  std::tuple<ResponseKind,Ptr<Buffer>> ReqSignature(const uint8_t* msg, size_t size);
+  std::tuple<ResponseKind,Ptr<Buffer>> ReqNewFace(const uint8_t* msg, size_t size);
+  std::tuple<ResponseKind,Ptr<Buffer>> ReqDestroyFace(const uint8_t* msg, size_t size);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(InternalClientHandler);
