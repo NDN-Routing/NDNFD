@@ -30,8 +30,7 @@ std::tuple<bool,std::list<Ptr<Buffer>>> NdnlpWireProtocol::Encode(const NetworkA
   
   for (Ptr<Buffer> ccnb_pkt : ccnb_pkts) {
     ccn_charbuf* encap = ccn_charbuf_create();
-    std::tie(encap->buf, encap->length) = ccnb_pkt->Detach();
-    encap->limit = encap->length;
+    ccnb_pkt->Swap(encap);
     CcnbMsg msg = CcnbMsg_fromEncap(encap);
 
     NdnlpPktA pkts = MsgSlicer_slice(this->slicer_, msg);
