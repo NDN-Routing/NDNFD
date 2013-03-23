@@ -241,6 +241,10 @@ TcpFaceFactory::TcpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
   this->av_ = new IpAddressVerifier();
 }
 
+void TcpFaceFactory::Init(void) {
+  this->fat_ = this->New<FaceAddressTable>(this->av_);
+}
+
 Ptr<StreamListener> TcpFaceFactory::Listen(const NetworkAddress& local_addr) {
   int fd = Socket_CreateForListen(local_addr.family(), SOCK_STREAM);
   if (fd < 0) {
@@ -265,7 +269,22 @@ Ptr<StreamListener> TcpFaceFactory::Listen(const NetworkAddress& local_addr) {
   return face;
 }
 
+Ptr<StreamFace> TcpFaceFactory::FindFace(const NetworkAddress& remote_addr) const {
+  FaceId faceid = this->fat_->Find(remote_addr);
+  if (faceid == FaceId_none) return nullptr;
+  Ptr<Face> face = this->global()->facemgr()->GetFace(faceid);
+  return static_cast<StreamFace*>(PeekPointer(face));
+}
+
 Ptr<StreamFace> TcpFaceFactory::Connect(const NetworkAddress& remote_addr) {
+  Ptr<StreamFace> face = this->FindFace(remote_addr);
+  if (face == nullptr) {
+    face = this->DoConnect(remote_addr);
+  }
+  return face;
+}
+
+Ptr<StreamFace> TcpFaceFactory::DoConnect(const NetworkAddress& remote_addr) {
   int fd = socket(remote_addr.family(), SOCK_STREAM, 0);
   if (fd < 0) {
     this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect socket(): %s", Logging::ErrorString().c_str());
@@ -281,6 +300,7 @@ Ptr<StreamFace> TcpFaceFactory::Connect(const NetworkAddress& remote_addr) {
     this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
   }
   Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->wp());
+  this->fat_->Add(remote_addr, face->id());
   return face;
 }
 

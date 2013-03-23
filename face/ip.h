@@ -12,6 +12,7 @@
 #include "face/dgram.h"
 #include "face/stream.h"
 #include "face/factory.h"
+#include "face/addrtable.h"
 namespace ndnfd {
 
 // An IpAddressVerifier verifies sockaddr_in or sockaddr_in6 addresses.
@@ -83,22 +84,32 @@ class UdpSingleMcastChannel : public DgramChannel {
   DISALLOW_COPY_AND_ASSIGN(UdpSingleMcastChannel);
 };
 
-// A TcpFaceFactory creates Face objects for TCP.
+// A TcpFaceFactory creates Face objects for TCP over IPv4 or IPv6.
 // Address is either sockaddr_in or sockaddr_in6.
 class TcpFaceFactory : public FaceFactory {
  public:
   TcpFaceFactory(Ptr<WireProtocol> wp);
+  virtual void Init(void);
   virtual ~TcpFaceFactory(void) {}
   
-  // Listen creates a StreamListener for TCP over IPv4 or IPv6.
+  // Listen creates a StreamListener for TCP.
   Ptr<StreamListener> Listen(const NetworkAddress& local_addr);
 
-  // Connect creates a StreamFace for TCP over IPv4 or IPv6,
-  // and connects to a remote peer.
+  // Connect creates a StreamFace for TCP, and connects to a remote peer.
+  // If an active outgoing TCP face to remote_addr is found, that is returned.
   Ptr<StreamFace> Connect(const NetworkAddress& remote_addr);
+
+  // FindFace returns an active outgoing TCP face to remote_addr,
+  // or null if it does not exist.
+  Ptr<StreamFace> FindFace(const NetworkAddress& remote_addr) const;
 
  private:
   Ptr<IpAddressVerifier> av_;
+  Ptr<FaceAddressTable> fat_;
+
+  // DoConnect makes a StreamFace and connects to remote_addr;
+  Ptr<StreamFace> DoConnect(const NetworkAddress& remote_addr);
+
   DISALLOW_COPY_AND_ASSIGN(TcpFaceFactory);
 };
 

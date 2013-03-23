@@ -70,6 +70,10 @@ class DgramChannel : public Element, public IPollClient {
   // One is created if it does not exist.
   Ptr<DgramFace> GetMcastFace(const NetworkAddress& group);
   
+  // FindFace returns a unicast face for a peer,
+  // or null if it does not exist.
+  Ptr<DgramFace> FindFace(const NetworkAddress& peer) { return this->MakePeer(peer, MakePeerFaceOp::kNone)->face_; }
+  
   // GetFace returns a unicast face for a peer.
   // One is created if it does not exist.
   Ptr<DgramFace> GetFace(const NetworkAddress& peer) { return this->MakePeer(peer, MakePeerFaceOp::kCreate)->face_; }

@@ -52,13 +52,13 @@ TEST(FaceTest, Udp) {
   for (int i = 0; i < 10; ++i) {
     f21->Send(m1);
     if (r10 > 0) break;
-    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(100));
   }
   EXPECT_NE(0, r10);
   r10 = 0;
   for (int i = 0; i < 5; ++i) {
     r10 = 0;
-    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(100));
     if (r10 == 0) break;
   }
   r10 = 0;
@@ -69,7 +69,7 @@ TEST(FaceTest, Udp) {
   for (int i = 0; i < 10; ++i) {
     f21->Send(m1);
     if (r12 > 0) break;
-    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(100));
   }
   EXPECT_NE(0, r12);
   EXPECT_EQ(0, r10);
@@ -105,18 +105,19 @@ TEST(FaceTest, Tcp) {
   };
   
   int received = 0;
-  Ptr<StreamFace> clients[10];
-  for (int i = 0; i < 10; ++i) {
-    clients[i] = factory->Connect(addr);
-    EXPECT_TRUE(clients[i]->CanSend());
-    EXPECT_TRUE(clients[i]->CanReceive());
-    clients[i]->Receive = [&received] (Ptr<Message> msg) {
-      ++received;
-    };
-  }
+  EXPECT_EQ(nullptr, factory->FindFace(addr));
+  Ptr<StreamFace> client = factory->Connect(addr);
+  EXPECT_TRUE(client->CanSend());
+  EXPECT_TRUE(client->CanReceive());
+  client->Receive = [&received] (Ptr<Message> msg) {
+    ++received;
+  };
+  EXPECT_EQ(client, factory->FindFace(addr));
+  Ptr<StreamFace> client2 = factory->Connect(addr);
+  EXPECT_EQ(client, client2);
 
-  while (accepted < 10 || received < 10) {
-    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));
+  while (accepted < 1 || received < 1) {
+    TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(100));
   }
   listener->Close();
 }

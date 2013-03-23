@@ -8,10 +8,6 @@
 namespace ndnfd {
 
 // A StreamFace sends and receives messages on a stream socket.
-//
-// If the socket is blocked for writing, or is still connecting,
-// octets are put in the send queue, and POLLOUT is registered.
-// If all octets in the send queue are sent, POLLOUT is unregistered.
 class StreamFace : public Face, public IPollClient {
  public:
   // fd: fd of the socket, after connect() or accept()
@@ -58,6 +54,9 @@ class StreamFace : public Face, public IPollClient {
   void Enqueue(std::list<Ptr<Buffer>>* pkts);
   // Write writes octets from send queue into the socket,
   // until socket is blocked, or queue is empty.
+  // If the socket is blocked for writing, or is still connecting,
+  // octets are put in the send queue, and POLLOUT is registered.
+  // If all octets in the send queue are sent, POLLOUT is unregistered.
   virtual void Write(void);
   
   // GetReceiveBuffer obtains a buffer for reading from socket.
