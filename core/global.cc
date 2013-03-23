@@ -5,6 +5,7 @@ extern "C" {
 #include "core/pollmgr.h"
 #include "core/scheduler.h"
 #include "face/facemgr.h"
+#include "core/internal_client_handler.h"
 namespace ndnfd {
 
 Global::Global(void) {
@@ -12,6 +13,7 @@ Global::Global(void) {
   this->pollmgr_ = nullptr;
   this->scheduler_ = nullptr;
   this->facemgr_ = nullptr;
+  this->internal_client_handler_ = nullptr;
 }
 
 void Global::Init(void) {
@@ -20,6 +22,7 @@ void Global::Init(void) {
   this->set_pollmgr(first->New<PollMgr>());
   this->set_scheduler(first->New<Scheduler>());
   this->set_facemgr(first->New<FaceMgr>());
+  this->set_internal_client_handler(first->New<InternalClientHandler>());
 }
 
 Global::~Global(void) {
@@ -27,6 +30,7 @@ Global::~Global(void) {
   this->set_pollmgr(nullptr);
   this->set_scheduler(nullptr);
   this->set_facemgr(nullptr);
+  this->set_internal_client_handler(nullptr);
 }
 
 void Global::set_ccndh(ccnd_handle* value) {
@@ -48,5 +52,6 @@ void Global::set_##field(Ptr<type> value) { \
 GLOBAL_DEF_SETTER(pollmgr,PollMgr);
 GLOBAL_DEF_SETTER(scheduler,Scheduler);
 GLOBAL_DEF_SETTER(facemgr,FaceMgr);
+GLOBAL_DEF_SETTER(internal_client_handler,InternalClientHandler);
 
 };//namespace ndnfd

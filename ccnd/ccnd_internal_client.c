@@ -965,6 +965,11 @@ ccnd_req_guest(struct ccn_closure *selfp,
 #define OP_ADJACENCY   0x0900
 #define OP_GUEST       0x0A00
 
+#ifdef NDNFD
+#define WANT_NDNFD_INTERNAL_CLIENT_OPS
+#include "ndnfd_internal_client.h"
+#endif
+
 /**
  * Common interest handler for ccnd_internal_client
  */
@@ -1049,6 +1054,7 @@ ccnd_answer_req(struct ccn_closure *selfp,
             sp.freshness = (info->pi->prefix_comps == info->matched_comps) ? 60 : 5;
             res = 0;
             break;
+#ifndef NDNFD
         case OP_NEWFACE:
             reply_body = ccn_charbuf_create();
             res = ccnd_req_newface(ccnd, final_comp, final_size, reply_body);
@@ -1057,6 +1063,7 @@ ccnd_answer_req(struct ccn_closure *selfp,
             reply_body = ccn_charbuf_create();
             res = ccnd_req_destroyface(ccnd, final_comp, final_size, reply_body);
             break;
+#endif
         case OP_PREFIXREG:
             reply_body = ccn_charbuf_create();
             res = ccnd_req_prefixreg(ccnd, final_comp, final_size, reply_body);
@@ -1179,6 +1186,10 @@ ccnd_answer_req(struct ccn_closure *selfp,
         case OP_GUEST:
             res = ccnd_req_guest(selfp, kind, info);
             goto Finish;
+#ifdef NDNFD
+#define WANT_NDNFD_ANSWER_REQ_CALLS
+#include "ndnfd_internal_client.h"
+#endif
         default:
             goto Bail;
     }
@@ -1551,6 +1562,10 @@ ccnd_internal_client_start(struct ccnd_handle *ccnd)
                     &ccnd_answer_req, OP_GUEST);
     ccnd_uri_listen(ccnd, "ccnx:/%C1.M.FACE",
                     &ccnd_answer_req, OP_ADJACENCY);
+#ifdef NDNFD
+#define WANT_NDNFD_URI_LISTEN
+#include "ndnfd_internal_client.h"
+#endif
     ccnd_reg_ccnx_ccndid(ccnd);
     ccnd_reg_uri(ccnd, "ccnx:/%C1.M.S.localhost",
                  0, /* special faceid for internal client */

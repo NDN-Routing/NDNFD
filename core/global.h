@@ -14,6 +14,7 @@ class Logging;
 class PollMgr;
 class Scheduler;
 class FaceMgr;
+class InternalClientHandler;
 
 // A Global contains all global structures of a router.
 // A pointer to the Global object is provided in every Element.
@@ -32,6 +33,8 @@ class Global {
   void set_scheduler(Ptr<Scheduler> value);
   FaceMgr* facemgr(void) const { return this->facemgr_; }
   void set_facemgr(Ptr<FaceMgr> value);
+  InternalClientHandler* internal_client_handler(void) const { return this->internal_client_handler_; }
+  void set_internal_client_handler(Ptr<InternalClientHandler> value);
   
  private:
   Logging logging_;
@@ -39,6 +42,7 @@ class Global {
   PollMgr* pollmgr_;
   Scheduler* scheduler_;
   FaceMgr* facemgr_;
+  InternalClientHandler* internal_client_handler_;
   DISALLOW_COPY_AND_ASSIGN(Global);
 };
 
