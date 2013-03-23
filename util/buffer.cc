@@ -94,6 +94,18 @@ std::tuple<uint8_t*,size_t> Buffer::Detach(void) {
   return std::forward_as_tuple(buf, length);
 }
 
+void Buffer::Swap(ccn_charbuf* c) {
+  uint8_t* buf; size_t length;
+  std::tie(buf, length) = this->Detach();
+  
+  this->c_->buf = c->buf;
+  this->c_->length = c->length;
+  this->c_->limit = c->limit;
+  
+  c->buf = buf;
+  c->length = c->limit = length;
+}
+
 BufferView::BufferView(Ptr<Buffer> buffer, size_t start, size_t length) {
   assert(buffer != nullptr);
   assert(buffer->length() >= start + length);

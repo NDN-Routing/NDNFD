@@ -82,6 +82,8 @@ class Buffer : public BufferView {
   // Detach detaches the octets from Buffer.
   // After this operation, this Buffer becomes empty.
   std::tuple<uint8_t*,size_t> Detach(void);
+  // Swap swaps the contents of Buffer and c.
+  void Swap(ccn_charbuf* c);
   
  private:
   ccn_charbuf* c_;

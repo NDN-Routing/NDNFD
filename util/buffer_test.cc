@@ -50,6 +50,17 @@ TEST(UtilTest, Buffer) {
   
   b3->Reset();
   EXPECT_EQ(0U, b3->length());
+  b3->Put(20)[0] = 0xC2;
+  EXPECT_EQ(20U, b3->length());
+  ccn_charbuf* c3 = ccn_charbuf_create_n(50);
+  c3->buf[0] = 0xC3;
+  c3->length = 50;
+  b3->Swap(c3);
+  EXPECT_EQ(50U, b3->length());
+  EXPECT_EQ(0xC3, b3->data()[0]);
+  EXPECT_EQ(20U, c3->length);
+  EXPECT_EQ(0xC2, c3->buf[0]);
+  ccn_charbuf_destroy(&c3);
 }
 
 TEST(UtilTest, BufferView) {
