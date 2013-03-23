@@ -52,7 +52,6 @@ void FaceMgr::AddFace(Ptr<Face> face) {
 void FaceMgr::RemoveFace(Ptr<Face> face) {
   this->table_.erase(face->id());
   face->Finalize();
-  // TODO finalize_face, content_queue_destroy
 }
 
 void FaceMgr::NotifyStatusChange(Ptr<Face> face) {
@@ -85,13 +84,21 @@ void FaceMgr::StartDefaultListeners(void) {
   
   std::tie(ok, addr) = EtherAddressVerifier::Parse("01:00:5E:00:17:AA"); assert(ok);
   Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>();
+  this->ether_channels_.clear();
   for (std::string ifname : ether_factory->ListNICs()) {
     Ptr<DgramChannel> channel = ether_factory->Channel(ifname, 0x8624);
     if (channel != nullptr) {
       Ptr<DgramFace> mcast_face = channel->GetMcastFace(addr);
-      this->ether_channels().emplace_back(ifname, GetPointer(channel), GetPointer(mcast_face));
+      this->ether_channels_.emplace_back(ifname, GetPointer(channel), GetPointer(mcast_face));
     }
   }
+}
+
+DgramChannel* FaceMgr::ether_channel(std::string ifname) const {
+  for (auto ether_tuple : this->ether_channels()) {
+    if (std::get<0>(ether_tuple) == ifname) return std::get<1>(ether_tuple);
+  }
+  return nullptr;
 }
 
 #define FACEMGR_DEF_SETTER(field,type) \
@@ -114,9 +121,35 @@ Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& p
   return channel->GetFace(peer);
 }
 
-std::tuple<bool,Ptr<Message>> FaceMgr::FaceMgmtRequest(const ccn_face_instance* req) {
-  assert(false);//not implemented
-  return std::forward_as_tuple(false, nullptr);
+std::tuple<InternalClientHandler::ResponseKind,std::string> FaceMgr::FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size) {
+  // TODO decode msg as face_instance
+  // TODO verify action in msg matches act
+  // TODO verify inface trusted for face mgmt protocol
+  // TODO call this->FaceMgmtNewFace() or this->FaceMgmtDestroyFace()
+  // TODO   on success, return response
+  // TODO   on failure, return nack or silent
+  assert(false);
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, "");
 }
+
+std::tuple<bool,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* face_inst) {
+  // TODO for UDP or TCP face, resolve hostname to IPv4/IPv6 address
+  // TODO construct NetworkAddress and create face (or get existing)
+  // TODO   UDP unicast: this->udp_channel()->GetFace(addr)
+  // TODO   UDP multicast: fail, not supported
+  // TODO   TCP: this->tcp_factory()->Connect(addr)
+  // TODO   Ethernet: this->ether_channel(ifname)->GetFace(addr)
+  assert(false);
+  return std::forward_as_tuple(false, "");
+}
+
+std::tuple<bool,std::string> FaceMgr::FaceMgmtDestroyFace(ccn_face_instance* face_inst) {
+  // TODO face = this->GetFace(faceid)
+  // TODO fail if face == nullptr
+  // TODO face->Close()
+  assert(false);
+  return std::forward_as_tuple(false, "");
+}
+
 
 };//namespace ndnfd

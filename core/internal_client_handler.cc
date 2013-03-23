@@ -25,12 +25,14 @@ std::tuple<InternalClientHandler::ResponseKind,std::string> InternalClientHandle
 std::tuple<InternalClientHandler::ResponseKind,std::string> InternalClientHandler::ReqNewFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqNewFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
+  // TODO call FaceMgr::FaceMgmtReq
   return std::forward_as_tuple(ResponseKind::kSilent, "");
 }
 
 std::tuple<InternalClientHandler::ResponseKind,std::string> InternalClientHandler::ReqDestroyFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqDestroyFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
+  // TODO call FaceMgr::FaceMgmtReq
   return std::forward_as_tuple(ResponseKind::kSilent, "");
 }
 

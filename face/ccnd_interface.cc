@@ -22,20 +22,6 @@ void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_
   global->facemgr()->ccnd_face_interface()->Send(static_cast<FaceId>(face->faceid), const_cast<uint8_t*>(static_cast<const uint8_t*>(data)), size);
 }
 
-int ccnd_req_newface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
-  Global* global = ccnd_ndnfdGlobal(h);
-  global->logging()->Log(ndnfd::kLLError, ndnfd::kLCFaceMgr, "ccnd_req_newface not implemented");
-  //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
-  return -1;
-}
-
-int ccnd_req_destroyface(struct ccnd_handle *h, const unsigned char *msg, size_t size, struct ccn_charbuf *reply_body) {
-  Global* global = ccnd_ndnfdGlobal(h);
-  global->logging()->Log(ndnfd::kLLError, ndnfd::kLCFaceMgr, "ccnd_req_destroyface not implemented");
-  //TODO decode msg as face_instance, verify trusted, call FaceMgr::FaceMgmtRequest, append response to reply_body
-  return -1;
-}
-
 namespace ndnfd {
 
 void CcndFaceInterface::BindFace(Ptr<Face> face) {

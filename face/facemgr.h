@@ -5,6 +5,7 @@ extern "C" {
 }
 #include "face/face.h"
 #include "face/ccnd_interface.h"
+#include "core/internal_client_handler.h"
 namespace ndnfd {
 
 class CcndFaceInterface;
@@ -19,6 +20,13 @@ class DgramFace;
 // A FaceMgr manages all Faces of a router.
 class FaceMgr : public Element {
  public:
+  // A FaceMgmtProtoAct represents an action in CCNx Face Management Protocol.
+  enum class FaceMgmtProtoAct {
+    kNone        = 0,
+    kNewFace     = 1,
+    kDestroyFace = 2
+  };
+
   FaceMgr(void);
   virtual void Init(void);
   virtual ~FaceMgr(void);
@@ -45,16 +53,16 @@ class FaceMgr : public Element {
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
   DgramFace* udp_mcast_face(void) const { return this->udp_mcast_face_; }
   DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
-  std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>>& ether_channels(void) { return this->ether_channels_; }
+  const std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>>& ether_channels(void) const { return this->ether_channels_; }
+  DgramChannel* ether_channel(std::string ifname) const;
 
   // MakeUnicastFace finds or creates a unicast Face
   // from a message received on a multicast Face.
   Ptr<Face> MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer);
-  // FaceMgmtRequest answers a face management request.
-  // Caller should ensure req is trusted (eg. coming from a local face).
-  // It returns whether success, and a reply ContentObject / ContentNack.
-  std::tuple<bool,Ptr<Message>> FaceMgmtRequest(const ccn_face_instance* req);
   
+  // FaceMgmtReq answers a face management request.
+  std::tuple<InternalClientHandler::ResponseKind,std::string> FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size);
+
  private:
   FaceId next_id_;
   std::map<FaceId,Ptr<Face>> table_;
@@ -75,6 +83,18 @@ class FaceMgr : public Element {
   void set_udp_mcast_face(Ptr<DgramFace> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
 
+  // FaceMgmtNewFace executes a face management protocol newface action.
+  // Caller should ensure req is trusted (eg. coming from a local face).
+  // On success, it returns true and updates face_inst for the response.
+  // On failure, it reutrns false and an error message.
+  std::tuple<bool,std::string> FaceMgmtNewFace(ccn_face_instance* face_inst);
+
+  // FaceMgmtDestroyFace executes a face management protocol destroyface action.
+  // Caller should ensure req is trusted (eg. coming from a local face).
+  // On success, it returns true and updates face_inst for the response.
+  // On failure, it reutrns false and an error message.
+  std::tuple<bool,std::string> FaceMgmtDestroyFace(ccn_face_instance* face_inst);
+  
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };
 
