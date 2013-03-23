@@ -21,7 +21,7 @@ TEST(CoreTest, PollMgr) {
   
   pm->Add(&client, sockets[0], POLLOUT);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(1U, client.log_.size());
   std::tie(fd, revents) = client.log_.front();
   EXPECT_EQ(sockets[0], fd);
@@ -30,13 +30,13 @@ TEST(CoreTest, PollMgr) {
   
   pm->Remove(&client, sockets[0], POLLOUT);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(0U, client.log_.size());
 
   pm->Add(&client, sockets[0], POLLOUT);
   pm->Add(&client, sockets[0], POLLIN);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(1U, client.log_.size());
   std::tie(fd, revents) = client.log_.front();
   EXPECT_EQ(sockets[0], fd);
@@ -45,7 +45,7 @@ TEST(CoreTest, PollMgr) {
   
   ASSERT_EQ(2, write(sockets[1], "..", 2));
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(1U, client.log_.size());
   std::tie(fd, revents) = client.log_.front();
   EXPECT_EQ(sockets[0], fd);
@@ -54,13 +54,13 @@ TEST(CoreTest, PollMgr) {
   
   pm->RemoveAll(&client);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(0U, client.log_.size());
   
   pm->Add(&client, sockets[1], POLLIN);
   close(sockets[0]);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(1U, client.log_.size());
   std::tie(fd, revents) = client.log_.front();
   EXPECT_EQ(sockets[1], fd);
@@ -68,7 +68,7 @@ TEST(CoreTest, PollMgr) {
 
   pm->Add(&client, sockets[0], POLLOUT);
   client.log_.clear();
-  pm->Poll(std::chrono::milliseconds(1000));
+  pm->Poll(std::chrono::milliseconds(100));
   EXPECT_EQ(2U, client.log_.size());
   
   close(sockets[1]);
