@@ -1,0 +1,34 @@
+import os
+
+def options(opt):
+    opt.add_option('--with-ndnfd',
+		   help=('Path to NDNFD source'),
+		   default='', dest='with_ndnfd')
+
+def configure(conf):
+    if conf.options.with_ndnfd:
+        if os.path.isdir(conf.options.with_ndnfd):
+            conf.msg("Checking for NDNFD location", ("%s" % conf.options.with_ndnfd))
+            conf.env['WITH_NDNFD'] = os.path.abspath(conf.options.with_ndnfd)
+    if not conf.env['WITH_NDNFD']:
+        conf.msg("Checking for NDNFD location", False)
+        conf.report_optional_feature('NDNFD','NDNFD',False,'see option --with-ndnfd')
+        conf.env['MODULES_NOT_BUILT'].append('NDNFD')
+    else:
+        conf.report_optional_feature('NDNFD','NDNFD',True,'')
+        conf.env['INCLUDES_NDNFD'] = conf.env['WITH_NDNFD']
+
+def build(bld):
+    deps = ['ndnSIM']
+    module = bld.create_ns3_module('NDNFD', deps)
+    module.module = 'NDNFD'
+    module.uselib = 'NDNFD'
+    module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc'])
+    module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
+
+    headers = bld.new_task_gen(features=['ns3header'])
+    headers.module = module.module
+    headers.source = [
+        'model/ndnfd-l3protocol.h'
+        ]
+
