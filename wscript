@@ -8,9 +8,10 @@ def options(opt):
     opt.load('compiler_c compiler_cxx')
     opt.load('ccnx', tooldir='.')
 
-    opt.add_option('--optimize',action='store_true',default=False,dest='optimize',help='''optimize object code''')
-    opt.add_option('--gtest', action='store_true',default=False,dest='gtest',help='''build unit tests''')
-    opt.add_option('--markdown', action='store_true',default=False,dest='markdown',help='''build Markdown into HTML''')
+    opt.add_option('--optimize',action='store_true',default=False,dest='optimize',help='optimize object code')
+    opt.add_option('--gtest',action='store_true',default=False,dest='gtest',help='build unit tests')
+    opt.add_option('--markdown',action='store_true',default=False,dest='markdown',help='build Markdown into HTML')
+    opt.add_option('--ns3',action='store_true',default=False,dest='ns3',help='enable ns3 support')
 
 
 def configure(conf):
@@ -45,9 +46,12 @@ def configure(conf):
     conf.check_cc(msg='Checking for resolv', lib=libresolv, fragment='#include <netinet/in.h>\n#include <arpa/nameser.h>\n#include <resolv.h>\nint main() { return 0; }', define_name='HAVE_RESOLV', uselib_store='RESOLV')
 
     conf.define('_GNU_SOURCE', 1)
-    flags = ['-Wall', '-Werror', '-Wpointer-arith']
+    flags = ['-Wall', '-Werror', '-Wpointer-arith', '-fPIC']
+    cxxflags_strict = ['-fno-rtti']
+    if conf.options.ns3:
+        cxxflags_strict = []
     conf.env.append_unique('CFLAGS', flags + ['-Wstrict-prototypes', '-std=c99'])
-    conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-fno-rtti', '-std=c++0x'])
+    conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'] + cxxflags_strict)
     conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
     if gcclibpath is not None:
         conf.env.append_unique('LIBPATH', [gcclibpath])
@@ -96,6 +100,11 @@ def build(bld):
     bld.program(target='ndnfd',
         source=['command/ndnfd.cc'],
         includes='.',
+        use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
+        )
+    
+    bld.stlib(target='ndnfdsim',
+        source=['command/ndnfdsim.cc'],
         use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
         )
     

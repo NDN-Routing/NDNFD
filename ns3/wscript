@@ -6,17 +6,23 @@ def options(opt):
 		   default='', dest='with_ndnfd')
 
 def configure(conf):
+    conf.env.append_unique('CXXFLAGS', ['-Wall', '-Werror', '-Wpointer-arith', '-std=c++0x'])
+
+    ndnfd_path = None
     if conf.options.with_ndnfd:
         if os.path.isdir(conf.options.with_ndnfd):
             conf.msg("Checking for NDNFD location", ("%s" % conf.options.with_ndnfd))
-            conf.env['WITH_NDNFD'] = os.path.abspath(conf.options.with_ndnfd)
-    if not conf.env['WITH_NDNFD']:
+            ndnfd_path = os.path.abspath(conf.options.with_ndnfd)
+            conf.env['WITH_NDNFD'] = ndnfd_path
+    if ndnfd_path is None:
         conf.msg("Checking for NDNFD location", False)
         conf.report_optional_feature('NDNFD','NDNFD',False,'see option --with-ndnfd')
         conf.env['MODULES_NOT_BUILT'].append('NDNFD')
     else:
         conf.report_optional_feature('NDNFD','NDNFD',True,'')
-        conf.env['INCLUDES_NDNFD'] = conf.env['WITH_NDNFD']
+        conf.env['INCLUDES_NDNFD'] = [ndnfd_path]
+        conf.env['LIBPATH_NDNFD'] = os.path.join(ndnfd_path, 'build')
+        conf.env['LIB_NDNFD'] = ['ndnfdsim','ccn','pcap','crypto']
 
 def build(bld):
     deps = ['ndnSIM']

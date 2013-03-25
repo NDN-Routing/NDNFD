@@ -221,6 +221,10 @@ Ptr<DgramChannel::McastEntry> DgramChannel::FindMcastEntryInternal(const Network
 }
 
 void DgramChannel::DeliverMcastPacket(const NetworkAddress& group, const NetworkAddress& peer, Ptr<BufferView> pkt) {
+  if (group == this->local_addr()) {
+    this->DeliverPacket(peer, pkt);
+    return;
+  }
   Ptr<McastEntry> entry = this->FindMcastEntry(group);
   this->DeliverMcastPacket(entry, peer, pkt);
 }

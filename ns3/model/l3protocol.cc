@@ -1,9 +1,7 @@
 #include "l3protocol.h"
-#include "ns3/node.h"
-#include "ns3/ndn-face.h"
-#include "ns3/ndn-forwarding-strategy.h"
-#include "ns3/ndn-pit.h"
-namespace ns3 {
+#include <ns3/node.h>
+#include <ns3/ndn-forwarding-strategy.h>
+#include <ns3/ndn-pit.h>
 namespace ndnfd {
 
 class FakeForwardingStrategy : public ns3::ndn::ForwardingStrategy {
@@ -26,7 +24,7 @@ class FakePit : public ns3::ndn::Pit {
 };
 
 ns3::TypeId L3Protocol::GetTypeId(void) {
-  static ns3::TypeId tid = ns3::TypeId("ns3::ndnfd::L3Protocol")
+  static ns3::TypeId tid = ns3::TypeId("ndnfd::L3Protocol")
     .SetGroupName("NDNFD")
     .SetParent<ns3::ndn::L3Protocol>()
     .AddConstructor<L3Protocol> ();
@@ -63,10 +61,9 @@ void L3Protocol::AppReceive(const ns3::Ptr<ns3::ndn::Face>& face, const ns3::Ptr
   // TODO deliver msg to NDNFD
 }
 
-void L3Protocol::AppDeliver(::ndnfd::FaceId faceid, const ::ndnfd::Ptr< ::ndnfd::Message> msg) {
+void L3Protocol::AppSend(FaceId faceid, const Ptr<Message> msg) {
   // TODO convert msg to p
   // TODO AppFace::Send(p)
 }
 
 };//namespace ndnfd
-};//namespace ns3

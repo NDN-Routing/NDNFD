@@ -167,6 +167,7 @@ class DgramChannel : public Element, public IPollClient {
   
   // DeliverMcastPacket does similar work as DeliverPacket
   // for packet received on a multicast group address.
+  // If group==local_addr, pkt is passed to DeliverPacket.
   void DeliverMcastPacket(const NetworkAddress& group, const NetworkAddress& peer, Ptr<BufferView> pkt);
   virtual void DeliverMcastPacket(Ptr<McastEntry> entry, const NetworkAddress& peer, Ptr<BufferView> pkt);
   

@@ -82,12 +82,7 @@ void PcapChannel::DispatchHandler(u_char* user, const pcap_pkthdr* h, const u_ch
     return;
   }
   Ptr<EtherPkt> pkt = new EtherPkt(bytes, h->len);
-  Ptr<McastEntry> entry = self->FindMcastEntry(pkt->local());
-  if (entry != nullptr) {
-    self->DeliverMcastPacket(entry, pkt->peer(), pkt);
-  } else {
-    self->DeliverPacket(pkt->peer(), pkt);
-  }
+  self->DeliverMcastPacket(pkt->local(), pkt->peer(), pkt);
 }
 
 PcapChannel::EtherPkt::EtherPkt(const uint8_t* pkt, size_t length) {
