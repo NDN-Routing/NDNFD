@@ -5,6 +5,7 @@ extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
 }
+using ndnfd::Ptr;
 using ndnfd::Global;
 using ndnfd::Face;
 using ndnfd::FaceId;

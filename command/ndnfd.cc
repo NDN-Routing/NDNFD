@@ -71,6 +71,7 @@ int CcndLogger(void* loggerdata, const char* format, va_list ap) {
 };//namespace ndnfd
 
 int main(int argc, char** argv) {
+  using ndnfd::Ptr;
   using ndnfd::Global;
   using ndnfd::Element;
   using ndnfd::NdnfdProgram;

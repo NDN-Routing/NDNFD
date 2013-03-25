@@ -18,14 +18,17 @@
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
 
-#ifndef PTR_H
-#define PTR_H
+//#ifndef PTR_H
+#ifndef NDNFD_UTIL_PTR_H_
+//#define PTR_H
+#define NDNFD_UTIL_PTR_H_
 
 #include <iostream>
 #include <stdint.h>
 #include "assert.h"
 
-namespace ns3 {
+//namespace ns3 {
+namespace ndnfd {
 
 /**
  * \ingroup core
@@ -221,7 +224,8 @@ struct EventMemberImplObjTraits<Ptr<T> >
 } // namespace ns3
 
 
-namespace ns3 {
+//namespace ns3 {
+namespace ndnfd {
 
 /*************************************************
  *  friend non-member function implementations
@@ -523,4 +527,5 @@ Ptr<T>::operator Tester * () const
 
 } // namespace ns3
 
-#endif /* PTR_H */
+//#endif /* PTR_H */
+#endif//NDNFD_UTIL_PTR_H_
