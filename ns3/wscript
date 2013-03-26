@@ -37,6 +37,6 @@ def build(bld):
         'model/ndnfd-l3protocol.h'
         ]
 
-    unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD'])
+    unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD','csma'])
     unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
 

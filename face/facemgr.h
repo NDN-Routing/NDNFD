@@ -70,6 +70,7 @@ class FaceMgr : public Element {
   void set_udp_channel(Ptr<DgramChannel> value);
   void set_udp_mcast_face(Ptr<DgramFace> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
+  void add_ether_channel(const std::string& ifname, Ptr<DgramChannel> channel, Ptr<DgramFace> mcast_face);
 
  private:
   FaceId next_id_;

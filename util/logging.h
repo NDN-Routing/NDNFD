@@ -13,14 +13,15 @@ enum LoggingLevel {
 };
 
 typedef uint32_t LoggingComponent;
-const LoggingComponent kLCPollMgr = 0x0001;
-const LoggingComponent kLCScheduler = 0x0002;
+const LoggingComponent kLCPollMgr    = 0x0001;
+const LoggingComponent kLCScheduler  = 0x0002;
 const LoggingComponent kLCIntClientH = 0x0004;
-const LoggingComponent kLCWireProto = 0x0010;
-const LoggingComponent kLCFace = 0x0020;
-const LoggingComponent kLCFaceMgr = 0x0040;
-const LoggingComponent kLCCcndCore = 0x0100;
-const LoggingComponent kLCCcndFace = 0x0200;
+const LoggingComponent kLCWireProto  = 0x0010;
+const LoggingComponent kLCFace       = 0x0020;
+const LoggingComponent kLCFaceMgr    = 0x0040;
+const LoggingComponent kLCCcndCore   = 0x0100;
+const LoggingComponent kLCCcndFace   = 0x0200;
+const LoggingComponent kLCSim        = 0x0800;
 
 class Logging {
   public:

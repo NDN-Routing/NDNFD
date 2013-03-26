@@ -84,12 +84,11 @@ void FaceMgr::StartDefaultListeners(void) {
   
   std::tie(ok, addr) = EtherAddressVerifier::Parse("01:00:5E:00:17:AA"); assert(ok);
   Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>();
-  this->ether_channels_.clear();
   for (std::string ifname : ether_factory->ListNICs()) {
     Ptr<DgramChannel> channel = ether_factory->Channel(ifname, 0x8624);
     if (channel != nullptr) {
       Ptr<DgramFace> mcast_face = channel->GetMcastFace(addr);
-      this->ether_channels_.emplace_back(ifname, GetPointer(channel), GetPointer(mcast_face));
+      this->add_ether_channel(ifname, channel, mcast_face);
     }
   }
 }
@@ -114,6 +113,10 @@ FACEMGR_DEF_SETTER(tcp_listener, StreamListener);
 FACEMGR_DEF_SETTER(udp_channel, DgramChannel);
 FACEMGR_DEF_SETTER(udp_mcast_face, DgramFace);
 FACEMGR_DEF_SETTER(udp_ndnlp_channel, DgramChannel);
+
+void FaceMgr::add_ether_channel(const std::string& ifname, Ptr<DgramChannel> channel, Ptr<DgramFace> mcast_face) {
+  this->ether_channels_.emplace_back(ifname, GetPointer(channel), GetPointer(mcast_face));
+}
 
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {
   DgramFace* dface = static_cast<DgramFace*>(PeekPointer(mcast_face));

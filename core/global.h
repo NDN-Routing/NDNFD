@@ -21,8 +21,8 @@ class InternalClientHandler;
 class Global {
  public:
   Global(void);
-  void Init(void);//create all objects
-  ~Global(void);
+  virtual void Init(void);//create all objects
+  virtual ~Global(void);
 
   Logging* logging(void) { return &this->logging_; }
   ccnd_handle* ccndh(void) const { return this->ccndh_; }

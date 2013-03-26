@@ -3,9 +3,8 @@
 #include <ns3/node.h>
 #include <ns3/packet.h>
 #include <ns3/mac48-address.h>
+#include "face/ndnlp.h"
 namespace ndnfd {
-
-const uint16_t SimNetChannel::EtherProtocol = ns3::ndn::L3Protocol::ETHERNET_FRAME_TYPE;
 
 NetworkAddress SimNetChannel::ConvertAddress(const ns3::Address& addr) {
   ns3::Mac48Address mac48 = ns3::Mac48Address::ConvertFrom(addr);
@@ -24,12 +23,13 @@ ns3::Address SimNetChannel::ConvertAddress(const NetworkAddress& addr) {
   return mac48;
 }
 
-SimNetChannel::SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) : DgramChannel(-1, SimNetChannel::ConvertAddress(nic->GetAddress()), av, wp) {
+SimNetChannel::SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) : DgramChannel(-1, SimNetChannel::ConvertAddress(nic->GetAddress()), av, wp) {
+  this->ether_type_ = ether_type;
   this->nic_ = nic;
 }
 
 void SimNetChannel::Init(void) {
-  this->nic_->GetNode()->RegisterProtocolHandler(ns3::MakeCallback(&SimNetChannel::NicReceive, this), SimNetChannel::EtherProtocol, this->nic_, true);
+  this->nic_->GetNode()->RegisterProtocolHandler(ns3::MakeCallback(&SimNetChannel::NicReceive, this), this->ether_type_, this->nic_, true);
 }
 
 void SimNetChannel::CloseFd(void) {
@@ -38,7 +38,7 @@ void SimNetChannel::CloseFd(void) {
 
 void SimNetChannel::SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt) {
   ns3::Ptr<ns3::Packet> packet = ns3::Create<ns3::Packet>(pkt->data(), static_cast<uint32_t>(pkt->length()));
-  this->nic_->Send(packet, SimNetChannel::ConvertAddress(peer), SimNetChannel::EtherProtocol);
+  this->nic_->Send(packet, SimNetChannel::ConvertAddress(peer), this->ether_type_);
 }
 
 Ptr<DgramFace> SimNetChannel::CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group) {
@@ -49,13 +49,36 @@ Ptr<DgramFace> SimNetChannel::CreateMcastFace(const AddressHashKey& hashkey, con
 
 void SimNetChannel::NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const ns3::Packet> packet, uint16_t protocol, const ns3::Address& sender, const ns3::Address& receiver, ns3::NetDevice::PacketType packetType) {
   NS_ASSERT(device == this->nic_);
-  NS_ASSERT(protocol == SimNetChannel::EtherProtocol);
+  NS_ASSERT(protocol == this->ether_type_);
   Ptr<Buffer> pkt = new Buffer(packet->GetSize());
   packet->CopyData(pkt->mutable_data(), static_cast<uint32_t>(pkt->length()));
   
   NetworkAddress sender_addr = SimNetChannel::ConvertAddress(sender);
   NetworkAddress receiver_addr = SimNetChannel::ConvertAddress(receiver);
   this->DeliverMcastPacket(receiver_addr, sender_addr, pkt);
+}
+
+SimFaceFactory::SimFaceFactory(void) {
+  this->av_ = new EtherAddressVerifier();
+}
+
+std::vector<ns3::Ptr<ns3::NetDevice>> SimFaceFactory::ListNICs(void) {
+  std::vector<ns3::Ptr<ns3::NetDevice>> devs;
+  ns3::Ptr<ns3::Node> node = THIS_SIMGLOBAL->l3()->GetObject<ns3::Node>();
+  for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
+    devs.push_back(node->GetDevice(i));
+  }
+  return devs;
+}
+
+Ptr<DgramChannel> SimFaceFactory::Channel(ns3::Ptr<ns3::NetDevice> dev, uint16_t ether_type) {
+  int mtu = static_cast<int>(dev->GetMtu());
+  if (mtu < 256) return nullptr;
+
+  Ptr<NdnlpWireProtocol> ndnlp = this->New<NdnlpWireProtocol>(mtu);
+
+  Ptr<SimNetChannel> channel = this->New<SimNetChannel>(dev, ether_type, this->av_, ndnlp);
+  return channel;
 }
 
 
