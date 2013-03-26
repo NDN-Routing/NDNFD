@@ -33,7 +33,7 @@ class Name : public Object {
   Ptr<Name> StripSuffix(uint16_t remove_n) const;
   
   // ToCcnb writes Name as CCNB
-  bool ToCcnb(ccn_charbuf* c) const;
+  std::basic_string<uint8_t> ToCcnb(void) const;
   // ToUri writes Name as URI
   std::string ToUri(void) const;
   

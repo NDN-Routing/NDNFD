@@ -10,11 +10,16 @@ class InterestMessage : public CcnbMessage {
  public:
   static const MessageType kType = 1001;
   virtual MessageType type(void) const { return InterestMessage::kType; }
+  static Ptr<InterestMessage> Parse(uint8_t* msg, size_t length);
   
-  const Name& name(void) const;
-  ccn_parsed_interest parsed;
+  Ptr<Name> name(void) const;
+  const ccn_parsed_interest* parsed() const { return &this->parsed_; }
 
  private:
+  ccn_parsed_interest parsed_;
+  Ptr<Name> name_;
+
+  InterestMessage(uint8_t* msg, size_t length);
   DISALLOW_COPY_AND_ASSIGN(InterestMessage);
 };
 

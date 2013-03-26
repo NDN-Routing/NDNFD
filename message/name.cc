@@ -57,24 +57,22 @@ Ptr<Name> Name::StripSuffix(uint16_t remove_n) const {
   return this->GetPrefix(this->n_comps() - remove_n);
 }
 
-bool Name::ToCcnb(ccn_charbuf* c) const {
-  int res = ccn_name_init(c);
-  if (res != 0) return false;
+std::basic_string<uint8_t> Name::ToCcnb(void) const {
+  ccn_charbuf* c = ccn_charbuf_create();
+  ccn_name_init(c);
   for (const Component& comp : this->comps()) {
-    res = ccn_name_append(c, comp.data(), comp.size());
-    if (res != 0) return false;
+    ccn_name_append(c, comp.data(), comp.size());
   }
-  return res;
+  std::basic_string<uint8_t> s(c->buf, c->length);
+  ccn_charbuf_destroy(&c);
+  return s;
 }
 
 std::string Name::ToUri(void) const {
-  ccn_charbuf* ccnb = ccn_charbuf_create();
+  std::basic_string<uint8_t> ccnb = this->ToCcnb();
   ccn_charbuf* uri = ccn_charbuf_create();
-  if (this->ToCcnb(ccnb)) {
-    ccn_uri_append(uri, ccnb->buf, ccnb->length, 0);
-  }
+  ccn_uri_append(uri, ccnb.data(), ccnb.size(), 0);
   std::string u(reinterpret_cast<const char*>(uri->buf), uri->length);
-  ccn_charbuf_destroy(&ccnb);
   ccn_charbuf_destroy(&uri);
   return u;
 }

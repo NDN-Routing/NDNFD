@@ -5,7 +5,7 @@
 namespace ndnfd {
 
 TEST(SimTest, SimNetChannel) {
-  //EXPECT_EXIT({
+  EXPECT_EXIT({
     ns3::NodeContainer nodes;
     nodes.Create(3);
     ns3::CsmaHelper csma;
@@ -36,7 +36,7 @@ TEST(SimTest, SimNetChannel) {
     ns3::Simulator::Run();
 
     exit(0);
-  //}, ::testing::ExitedWithCode(0), "");
+  }, ::testing::ExitedWithCode(0), "");
 }
 
 };//namespace ndnfd
