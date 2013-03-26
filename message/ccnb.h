@@ -17,18 +17,23 @@ class CcnbMessage : public Message {
   virtual ~CcnbMessage(void) {}
   virtual MessageType type(void) const { return CcnbMessage::kType; }
   
+  // CCNB message
   uint8_t* msg(void) const { return this->msg_; }
+  // length of msg
   size_t length(void) const { return this->length_; }
   
   // Verify checks whether CcnbMessage has correct CCNB format
   bool Verify(void) const;
   
-  // a BufferView that should not be released
-  Ptr<BufferView> source_buffer_;
-
+  // add reference to a BufferView so that it won't be deleted before this CcnbMessage
+  void set_source_buffer(Ptr<const BufferView> value) { this->source_buffer_ = value; }
+  
  private:
   uint8_t* msg_;
   size_t length_;
+  
+  Ptr<const BufferView> source_buffer_;
+  
   DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 

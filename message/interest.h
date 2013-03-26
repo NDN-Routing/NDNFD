@@ -5,15 +5,20 @@
 namespace ndnfd {
 
 // An InterestMessage represents a decoded Interest.
-// This is not currently used.
 class InterestMessage : public CcnbMessage {
  public:
   static const MessageType kType = 1001;
   virtual MessageType type(void) const { return InterestMessage::kType; }
+  
+  // Parse parses a buffer and returns parsed InterestMessage,
+  // or null if buffer is not a CCNB Interest.
   static Ptr<InterestMessage> Parse(uint8_t* msg, size_t length);
   
+  // Interest Name
   Ptr<Name> name(void) const;
-  const ccn_parsed_interest* parsed() const { return &this->parsed_; }
+  
+  // ccn_parsed_interest structure
+  const ccn_parsed_interest* parsed(void) const { return &this->parsed_; }
 
  private:
   ccn_parsed_interest parsed_;

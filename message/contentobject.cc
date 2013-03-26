@@ -19,7 +19,7 @@ Ptr<Name> ContentObjectMessage::name(void) const {
   return this->name_;
 }
 
-std::tuple<const uint8_t*,size_t> ContentObjectMessage::payload() const {
+std::tuple<const uint8_t*,size_t> ContentObjectMessage::payload(void) const {
   const uint8_t* value; size_t value_size;
   int res = ccn_content_get_value(this->msg(), this->length(), this->parsed(), &value, &value_size);
   if (res != 0) return std::forward_as_tuple(nullptr, 0);

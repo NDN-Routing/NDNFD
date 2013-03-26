@@ -65,7 +65,7 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
     if (d->index > static_cast<ssize_t>(s->msgstart_)) {
       Ptr<CcnbMessage> msg = new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_);
       assert(msg->Verify());
-      msg->source_buffer_ = packet;
+      msg->set_source_buffer(packet);
       results.push_back(msg);
     }
     s->msgstart_ = d->index;
