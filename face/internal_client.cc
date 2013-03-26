@@ -24,7 +24,7 @@ InternalClientFace::~InternalClientFace(void) {
 
 void InternalClientFace::Send(Ptr<Message> message) {
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
-  ccn_dispatch_message(this->internal_client(), msg->msg(), msg->length());
+  ccn_dispatch_message(this->internal_client(), const_cast<uint8_t*>(msg->msg()), msg->length());
 }
 
 void InternalClientFace::Grab(void) {

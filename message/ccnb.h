@@ -13,12 +13,12 @@ namespace ndnfd {
 class CcnbMessage : public Message {
  public:
   static const MessageType kType = 1099;
-  CcnbMessage(uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
+  CcnbMessage(const uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
   virtual ~CcnbMessage(void) {}
   virtual MessageType type(void) const { return CcnbMessage::kType; }
   
   // CCNB message
-  uint8_t* msg(void) const { return this->msg_; }
+  const uint8_t* msg(void) const { return this->msg_; }
   // length of msg
   size_t length(void) const { return this->length_; }
   
@@ -29,7 +29,7 @@ class CcnbMessage : public Message {
   void set_source_buffer(Ptr<const BufferView> value) { this->source_buffer_ = value; }
   
  private:
-  uint8_t* msg_;
+  const uint8_t* msg_;
   size_t length_;
   
   Ptr<const BufferView> source_buffer_;

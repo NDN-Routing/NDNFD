@@ -12,7 +12,7 @@ class InterestMessage : public CcnbMessage {
   
   // Parse parses a buffer and returns parsed InterestMessage,
   // or null if buffer is not a CCNB Interest.
-  static Ptr<InterestMessage> Parse(uint8_t* msg, size_t length);
+  static Ptr<InterestMessage> Parse(const uint8_t* msg, size_t length);
   
   // Interest Name
   Ptr<Name> name(void) const;
@@ -24,7 +24,7 @@ class InterestMessage : public CcnbMessage {
   ccn_parsed_interest parsed_;
   Ptr<Name> name_;
 
-  InterestMessage(uint8_t* msg, size_t length);
+  InterestMessage(const uint8_t* msg, size_t length);
   DISALLOW_COPY_AND_ASSIGN(InterestMessage);
 };
 

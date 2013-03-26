@@ -13,7 +13,7 @@ class ContentObjectMessage : public CcnbMessage {
   
   // Parse parses a buffer and returns parsed ContentObjectMessage,
   // or null if buffer is not a CCNB ContentObject.
-  static Ptr<ContentObjectMessage> Parse(uint8_t* msg, size_t length);
+  static Ptr<ContentObjectMessage> Parse(const uint8_t* msg, size_t length);
   
   // ContentObject Name
   Ptr<Name> name(void) const;
@@ -28,7 +28,7 @@ class ContentObjectMessage : public CcnbMessage {
   ccn_parsed_ContentObject parsed_;
   Ptr<Name> name_;
   
-  ContentObjectMessage(uint8_t* msg, size_t length);
+  ContentObjectMessage(const uint8_t* msg, size_t length);
   DISALLOW_COPY_AND_ASSIGN(ContentObjectMessage);
 };
 

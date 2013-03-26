@@ -5,7 +5,7 @@ extern "C" {
 }
 namespace ndnfd {
 
-Ptr<Name> Name::FromCcnb(uint8_t* buf, size_t length) {
+Ptr<Name> Name::FromCcnb(const uint8_t* buf, size_t length) {
   ccn_buf_decoder decoder;
   ccn_buf_decoder* d = ccn_buf_decoder_start(&decoder, buf, length);
 
@@ -24,7 +24,7 @@ Ptr<Name> Name::FromCcnb(uint8_t* buf, size_t length) {
   return n;
 }
 
-Ptr<Name> Name::FromUri(std::string uri) {
+Ptr<Name> Name::FromUri(const std::string& uri) {
   ccn_charbuf* c = ccn_charbuf_create();
   int res = ccn_name_from_uri(c, uri.c_str());
   Ptr<Name> n = nullptr;

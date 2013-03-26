@@ -16,9 +16,9 @@ class Name : public Object {
   // Name creates Name from components.
   explicit Name(const std::vector<Component>& comps) { this->comps_ = comps; }
   // FromCcnb parses Name from CCNB.
-  static Ptr<Name> FromCcnb(uint8_t* buf, size_t length);
+  static Ptr<Name> FromCcnb(const uint8_t* buf, size_t length);
   // FromUri parses Name from URI.
-  static Ptr<Name> FromUri(std::string uri);
+  static Ptr<Name> FromUri(const std::string& uri);
 
   // components
   const std::vector<Component>& comps(void) const { return this->comps_; }

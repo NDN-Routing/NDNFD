@@ -18,7 +18,7 @@ TEST(MessageTest, ContentObject) {
   ccn_charbuf_append(c1, n1ccnb.data(), n1ccnb.size());
   ccnb_element_begin(c1, CCN_DTAG_SignedInfo);
   ccnb_append_tagged_blob(c1, CCN_DTAG_PublisherPublicKeyDigest, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
-  ccnb_append_tagged_binary_number(c1, CCN_DTAG_Timestamp, 0x1000000);
+  ccnb_append_tagged_binary_number(c1, CCN_DTAG_Timestamp, 0x10000);
   ccnb_element_end(c1);//</SignedInfo>
   ccnb_append_tagged_blob(c1, CCN_DTAG_Content, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", 26);
   ccnb_element_end(c1);//</ContentObject>

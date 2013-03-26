@@ -1,14 +1,14 @@
 #include "contentobject.h"
 namespace ndnfd {
 
-Ptr<ContentObjectMessage> ContentObjectMessage::Parse(uint8_t* msg, size_t length) {
+Ptr<ContentObjectMessage> ContentObjectMessage::Parse(const uint8_t* msg, size_t length) {
   Ptr<ContentObjectMessage> m = new ContentObjectMessage(msg, length);
   int res = ccn_parse_ContentObject(msg, length, &m->parsed_, nullptr);
   if (res < 0) return nullptr;
   return m;
 }
 
-ContentObjectMessage::ContentObjectMessage(uint8_t* msg, size_t length) : CcnbMessage(msg, length) {}
+ContentObjectMessage::ContentObjectMessage(const uint8_t* msg, size_t length) : CcnbMessage(msg, length) {}
 
 Ptr<Name> ContentObjectMessage::name(void) const {
   if (this->name_ == nullptr) {
