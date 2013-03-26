@@ -7,9 +7,9 @@ TEST(MessageTest, Interest) {
   std::basic_string<uint8_t> n1ccnb = n1->ToCcnb();
 
   ccn_charbuf* c1 = ccn_charbuf_create();
-  ccn_charbuf_append_tt(c1, CCN_DTAG_Interest, CCN_DTAG);
+  ccnb_element_begin(c1, CCN_DTAG_Interest);
   ccn_charbuf_append(c1, n1ccnb.data(), n1ccnb.size());
-  ccn_charbuf_append_closer(c1);
+  ccnb_element_end(c1);//</Interest>
 
   Ptr<InterestMessage> i1 = InterestMessage::Parse(c1->buf, c1->length);
   ASSERT_NE(nullptr, i1);
