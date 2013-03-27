@@ -67,7 +67,7 @@ class Face : public Element {
   virtual void Finalize(void);
   
   // Close closes the face immediately.
-  virtual void Close(void) {}
+  virtual void Close(void) { this->set_status(FaceStatus::kClosed); }
   
   // CountBytesIn, CountBytesOut update face counters.
   void CountBytesIn(size_t n) { ccnd_meter_bump(this->global()->ccndh(), this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }

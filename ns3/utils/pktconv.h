@@ -19,7 +19,7 @@ class NdnsimPacketConverter : public Object {
   Ptr<InterestMessage> InterestFrom(const ns3::ndn::Interest& header);
   Ptr<ContentObjectMessage> ContentObjectFrom(const ns3::ndn::ContentObject& header, ns3::Ptr<ns3::Packet> payload);
 
-  ns3::Ptr<ns3::Packet> MessageTo(Ptr<const CcnbMessage> msg);
+  ns3::Ptr<ns3::Packet> MessageTo(Ptr<const Message> msg);
   ns3::Ptr<ns3::ndn::Name> NameTo(Ptr<const Name> name);
   ns3::Ptr<ns3::Packet> InterestTo(Ptr<const InterestMessage> msg);
   ns3::Ptr<ns3::Packet> ContentObjectTo(Ptr<const ContentObjectMessage> msg);

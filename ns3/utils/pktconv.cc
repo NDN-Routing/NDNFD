@@ -122,16 +122,17 @@ Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::nd
   return m;
 }
 
-ns3::Ptr<ns3::Packet> NdnsimPacketConverter::MessageTo(Ptr<const CcnbMessage> msg) {
+ns3::Ptr<ns3::Packet> NdnsimPacketConverter::MessageTo(Ptr<const Message> msg) {
   switch (msg->type()) {
     case InterestMessage::kType:
       return this->InterestTo(static_cast<const InterestMessage*>(PeekPointer(msg)));
     case ContentObjectMessage::kType:
       return this->ContentObjectTo(static_cast<const ContentObjectMessage*>(PeekPointer(msg)));
     case CcnbMessage::kType: {
-      Ptr<InterestMessage> interest = InterestMessage::Parse(msg->msg(), msg->length());
+      const CcnbMessage* ccnb = static_cast<const CcnbMessage*>(PeekPointer(msg));
+      Ptr<InterestMessage> interest = InterestMessage::Parse(ccnb->msg(), ccnb->length());
       if (interest != nullptr) return this->InterestTo(interest);
-      Ptr<ContentObjectMessage> co = ContentObjectMessage::Parse(msg->msg(), msg->length());
+      Ptr<ContentObjectMessage> co = ContentObjectMessage::Parse(ccnb->msg(), ccnb->length());
       if (co != nullptr) return this->ContentObjectTo(co);
       return nullptr;
     }

@@ -7,13 +7,14 @@ namespace ndnfd {
 class SimAppFace : public Face {
  public:
   SimAppFace(Ptr<L3Protocol> l3) { this->l3_ = l3; }
+  virtual void Init(void);
   virtual ~SimAppFace(void) {}
 
   virtual bool CanSend(void) const { return true; }
   virtual bool CanReceive(void) const { return true; }
 
   // Send delivers a message from NDNFD to App.
-  virtual void Send(Ptr<Message> message) { this->l3_->AppSend(this->id(), message); }
+  virtual void Send(Ptr<Message> message) { this->l3_->AppSend(this, PeekPointer(message)); }
   
   // Deliver delivers a message from App to NDNFD.
   void Deliver(Ptr<Message> message) { this->ReceiveMessage(message); }
