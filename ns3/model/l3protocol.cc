@@ -1,7 +1,9 @@
 #include "l3protocol.h"
+#include <ns3/simulator.h>
 #include <ns3/ndn-forwarding-strategy.h>
 #include <ns3/ndn-pit.h>
 #include "face/facemgr.h"
+#include "ndnfdsim.h"
 namespace ndnfd {
 
 class MockForwardingStrategy : public ns3::ndn::ForwardingStrategy {
@@ -55,16 +57,30 @@ L3Protocol::L3Protocol(void) {
   this->global_ = nullptr;
   Ptr<NdnsimPacketConverter> npc = new NdnsimPacketConverter();
   this->npc_ = GetPointer(npc);
+  this->program_ = nullptr;
 }
 
 L3Protocol::~L3Protocol(void) {
+  if (this->program_ != nullptr) this->program_->Unref();
   this->npc_->Unref();
+  if (this->global_ != nullptr) delete this->global_;
 }
 
-void L3Protocol::AggregateNode(ns3::Ptr<ns3::Node> node) {
+void L3Protocol::Init(ns3::Ptr<ns3::Node> node) {
+  if (this->global_ != nullptr) return;
+  NS_ASSERT_MSG(ns3::Now() >= L3Protocol::kMinStartTime(), "cannot initialize before kMinStartTime");//ContentObject Timestamp is considered invalid before kMinStartTime
+  
+  this->global_ = new SimGlobal();
+  this->global_->Init();
+  this->global_->set_l3(this);
+
   this->AggregateObject(ns3::CreateObject<MockForwardingStrategy>());
   this->AggregateObject(ns3::CreateObject<MockPit>());
   node->AggregateObject(this);
+  
+  Ptr<NdnfdSim> program = this->global()->facemgr()->New<NdnfdSim>(node->GetId());
+  this->program_ = GetPointer(program);
+  program->Start();
 }
 
 uint32_t L3Protocol::nodeid(void) const {

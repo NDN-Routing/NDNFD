@@ -19,13 +19,9 @@ SimGlobal::~SimGlobal(void) {
 
 void SimGlobal::set_l3(ns3::Ptr<L3Protocol> value) {
   if (this->l3_ != nullptr) {
-    this->l3_->set_global(nullptr);
     this->l3_->Unref();
   }
   this->l3_ = ns3::GetPointer(value);
-  if (this->l3_ != nullptr) {
-    this->l3_->set_global(this);
-  }
 }
 
 };//namespace ndnfd

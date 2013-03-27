@@ -10,18 +10,21 @@ class SimGlobal;
 class SimAppFace;
 class NdnsimPacketConverter;
 class Message;
+class NdnfdSim;
 
 class L3Protocol : public ns3::ndn::L3Protocol {
  public:
+  static ns3::Time kMinStartTime(void) { return ns3::MicroSeconds(16000000); }
+
   static ns3::TypeId GetTypeId(void);
   L3Protocol(void);
   virtual ~L3Protocol(void);
   SimGlobal* global(void) const { NS_ASSERT(this->global_ != nullptr); return this->global_; }
-  void set_global(SimGlobal* value) { this->global_ = value; }
-  
-  // AggregateNode aggregates this to node,
-  // after aggregating several mock objects.
-  void AggregateNode(ns3::Ptr<ns3::Node> node);
+  NdnfdSim* program(void) const { return this->program_; }
+
+  // Init initializes this L3Protocol,
+  // and aggregate this to node.
+  void Init(ns3::Ptr<ns3::Node> node);
 
   // AddFace registers an AppFace, and returns face id.
   virtual uint32_t AddFace(const ns3::Ptr<ns3::ndn::Face> face);
@@ -46,6 +49,7 @@ class L3Protocol : public ns3::ndn::L3Protocol {
  private:
   SimGlobal* global_;
   NdnsimPacketConverter* npc_;
+  NdnfdSim* program_;
   std::map<uint32_t,ns3::Ptr<ns3::ndn::Face>> facelist_;
   
   uint32_t nodeid(void) const;

@@ -18,21 +18,14 @@ TEST(SimTest, SimNetChannel) {
       addrs[i] = SimNetChannel::ConvertAddress(dev->GetAddress());
     }
     
-    SimGlobal* globals[3];
-    Ptr<NdnfdSim> programs[3];
     for (uint32_t i = 0; i < 3; ++i) {
       ns3::Ptr<ns3::NetDevice> dev = devs.Get(i);
       ns3::Ptr<ns3::Node> node = dev->GetNode();
-      SimGlobal* global = globals[i] = new SimGlobal();
-      global->Init();
       ns3::Ptr<L3Protocol> l3 = ns3::CreateObject<L3Protocol>();
-      global->set_l3(l3);
-      l3->AggregateNode(node);
-      Ptr<NdnfdSim> program = programs[i] = Element::MakeFirstElement(global)->New<NdnfdSim>(node->GetId());
-      program->Start();
+      ns3::Simulator::Schedule(L3Protocol::kMinStartTime(), &L3Protocol::Init, l3, node);
     }
     
-    ns3::Simulator::Stop(ns3::Seconds(5));
+    ns3::Simulator::Stop(ns3::Seconds(20));
     ns3::Simulator::Run();
 
     exit(0);
