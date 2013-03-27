@@ -1,6 +1,8 @@
 #include "ccnb.h"
 namespace ndnfd {
 
+const MessageType CcnbMessage::kType;
+
 bool CcnbMessage::Verify(void) const {
   ccn_skeleton_decoder d;
   memset(&d, 0, sizeof(d));

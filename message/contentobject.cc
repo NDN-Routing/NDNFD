@@ -1,6 +1,8 @@
 #include "contentobject.h"
 namespace ndnfd {
 
+const MessageType ContentObjectMessage::kType;
+
 Ptr<ContentObjectMessage> ContentObjectMessage::Parse(const uint8_t* msg, size_t length) {
   Ptr<ContentObjectMessage> m = new ContentObjectMessage(msg, length);
   int res = ccn_parse_ContentObject(msg, length, &m->parsed_, nullptr);

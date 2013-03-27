@@ -1,6 +1,8 @@
 #include "interest.h"
 namespace ndnfd {
 
+const MessageType InterestMessage::kType;
+
 Ptr<InterestMessage> InterestMessage::Parse(const uint8_t* msg, size_t length) {
   Ptr<InterestMessage> m = new InterestMessage(msg, length);
   int res = ccn_parse_interest(msg, length, &m->parsed_, nullptr);
