@@ -34,9 +34,13 @@ def build(bld):
     headers = bld.new_task_gen(features=['ns3header'])
     headers.module = module.module
     headers.source = [
-        'model/ndnfd-l3protocol.h'
+        'model/ndnfd-l3protocol.h',
+        'helper/ndnfd-stack-helper.h',
         ]
 
     unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD','csma'])
     unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.add_subdirs('examples')
 

@@ -25,7 +25,8 @@ class Global {
   virtual void Init(void);//create all objects
   virtual ~Global(void);
 
-  Logging* logging(void) { return &this->logging_; }
+  Logging* logging(void) { return this->logging_; }
+  void set_logging(Logging* value);
   ccnd_handle* ccndh(void) const { return this->ccndh_; }
   void set_ccndh(ccnd_handle* value);
   PollMgr* pollmgr(void) const { return this->pollmgr_; }
@@ -40,7 +41,7 @@ class Global {
   void set_npt(Ptr<NamePrefixTable> value);
   
  private:
-  Logging logging_;
+  Logging* logging_;
   ccnd_handle* ccndh_;
   PollMgr* pollmgr_;
   Scheduler* scheduler_;

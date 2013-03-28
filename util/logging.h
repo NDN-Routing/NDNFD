@@ -24,22 +24,24 @@ const LoggingComponent kLCCcndFace   = 0x0200;
 const LoggingComponent kLCSim        = 0x0800;
 
 class Logging {
-  public:
-    Logging(void);
-    LoggingLevel min_level(void) const { return this->min_level_; }
-    void set_min_level(LoggingLevel value) { this->min_level_ = value; }
-    LoggingComponent components(void) const { return this->components_; }
-    void set_components(LoggingComponent value) { this->components_ = value; }
-    
-    void Log(LoggingLevel level, LoggingComponent component, const char* format, ...);
-    void LogVA(LoggingLevel level, LoggingComponent component, const char* format, va_list* args);
+ public:
+  Logging(void);
+  LoggingLevel min_level(void) const { return this->min_level_; }
+  void set_min_level(LoggingLevel value) { this->min_level_ = value; }
+  LoggingComponent components(void) const { return this->components_; }
+  void set_components(LoggingComponent value) { this->components_ = value; }
+  
+  void Log(LoggingLevel level, LoggingComponent component, const char* format, ...);
+  void LogVA(LoggingLevel level, LoggingComponent component, const char* format, va_list* args);
+  
+  virtual std::string line_prefix(void) { return ""; }
 
-    static std::string ErrorString(int errnum);
-    static std::string ErrorString(void) { return Logging::ErrorString(errno); }
-    
-  private:
-    LoggingLevel min_level_;
-    LoggingComponent components_;
+  static std::string ErrorString(int errnum);
+  static std::string ErrorString(void) { return Logging::ErrorString(errno); }
+  
+ private:
+  LoggingLevel min_level_;
+  LoggingComponent components_;
 };
 
 

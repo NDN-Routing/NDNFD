@@ -10,6 +10,7 @@ extern "C" {
 namespace ndnfd {
 
 Global::Global(void) {
+  this->logging_ = new Logging();
   this->ccndh_ = nullptr;
   this->pollmgr_ = nullptr;
   this->scheduler_ = nullptr;
@@ -29,12 +30,20 @@ void Global::Init(void) {
 }
 
 Global::~Global(void) {
+  this->set_logging(nullptr);
   this->set_ccndh(nullptr);
   this->set_pollmgr(nullptr);
   this->set_scheduler(nullptr);
   this->set_facemgr(nullptr);
   this->set_internal_client_handler(nullptr);
   this->set_npt(nullptr);
+}
+
+void Global::set_logging(Logging* value) {
+  if (this->logging_ != nullptr) {
+    delete this->logging_;
+  }
+  this->logging_ = value;
 }
 
 void Global::set_ccndh(ccnd_handle* value) {

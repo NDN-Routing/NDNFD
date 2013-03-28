@@ -8,7 +8,6 @@ namespace ndnfd {
 
 class SimGlobal;
 class SimAppFace;
-class NdnsimPacketConverter;
 class Message;
 class NdnfdSim;
 
@@ -20,14 +19,13 @@ class L3Protocol : public ns3::ndn::L3Protocol {
   L3Protocol(void);
   virtual ~L3Protocol(void);
   SimGlobal* global(void) const { NS_ASSERT(this->global_ != nullptr); return this->global_; }
-  NdnfdSim* program(void) const { return this->program_; }
 
   // Init initializes this L3Protocol,
   // and aggregate this to node.
   void Init(ns3::Ptr<ns3::Node> node);
 
   // AddFace registers an AppFace, and returns face id.
-  virtual uint32_t AddFace(const ns3::Ptr<ns3::ndn::Face> face);
+  virtual uint32_t AddFace(const ns3::Ptr<ns3::ndn::Face>& face);
   // RemoveFace deletes a Face.
   virtual void RemoveFace(ns3::Ptr<ns3::ndn::Face> face);
 
@@ -48,8 +46,6 @@ class L3Protocol : public ns3::ndn::L3Protocol {
 
  private:
   SimGlobal* global_;
-  NdnsimPacketConverter* npc_;
-  NdnfdSim* program_;
   std::map<uint32_t,ns3::Ptr<ns3::ndn::Face>> facelist_;
   
   uint32_t nodeid(void) const;

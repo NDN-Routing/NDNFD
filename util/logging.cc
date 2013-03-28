@@ -19,6 +19,7 @@ void Logging::LogVA(LoggingLevel level, LoggingComponent component, const char* 
   if (level < Logging::min_level()) return;
   if ((component & Logging::components()) == 0) return;
   
+  fprintf(stderr, "%s", this->line_prefix().c_str());
   vfprintf(stderr, format, *args);
   fprintf(stderr, "\n");
 }

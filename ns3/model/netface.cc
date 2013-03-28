@@ -4,6 +4,8 @@
 #include <ns3/packet.h>
 #include <ns3/mac48-address.h>
 #include "face/ndnlp.h"
+#include "l3protocol.h"
+#include "ndnfdsim.h"
 namespace ndnfd {
 
 NetworkAddress SimNetChannel::ConvertAddress(const ns3::Address& addr) {
@@ -29,6 +31,7 @@ SimNetChannel::SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, 
 }
 
 void SimNetChannel::Init(void) {
+  this->DgramChannel::Init();
   this->nic_->GetNode()->RegisterProtocolHandler(ns3::MakeCallback(&SimNetChannel::NicReceive, this), this->ether_type_, this->nic_, true);
 }
 
@@ -37,6 +40,8 @@ void SimNetChannel::CloseFd(void) {
 }
 
 void SimNetChannel::SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt) {
+  //this->Log(kLLDebug, kLCFace, "SimNetChannel::SendTo");
+
   ns3::Ptr<ns3::Packet> packet = ns3::Create<ns3::Packet>(pkt->data(), static_cast<uint32_t>(pkt->length()));
   this->nic_->Send(packet, SimNetChannel::ConvertAddress(peer), this->ether_type_);
 }
@@ -50,12 +55,16 @@ Ptr<DgramFace> SimNetChannel::CreateMcastFace(const AddressHashKey& hashkey, con
 void SimNetChannel::NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const ns3::Packet> packet, uint16_t protocol, const ns3::Address& sender, const ns3::Address& receiver, ns3::NetDevice::PacketType packetType) {
   NS_ASSERT(device == this->nic_);
   NS_ASSERT(protocol == this->ether_type_);
+  
   Ptr<Buffer> pkt = new Buffer(packet->GetSize());
   packet->CopyData(pkt->mutable_data(), static_cast<uint32_t>(pkt->length()));
   
   NetworkAddress sender_addr = SimNetChannel::ConvertAddress(sender);
   NetworkAddress receiver_addr = SimNetChannel::ConvertAddress(receiver);
-  this->DeliverMcastPacket(receiver_addr, sender_addr, pkt);
+
+  //this->Log(kLLDebug, kLCFace, "SimNetChannel::NicReceive");
+  typedef void (DgramChannel::*DeliverMcastPacket_type)(const NetworkAddress&, const NetworkAddress&, Ptr<BufferView>);
+  THIS_SIMGLOBAL->program()->ScheduleOnNextRun(std::bind((DeliverMcastPacket_type)&DgramChannel::DeliverMcastPacket, this, receiver_addr, sender_addr, pkt));
 }
 
 SimFaceFactory::SimFaceFactory(void) {

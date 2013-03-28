@@ -36,6 +36,7 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
   
   if (create) {
     f = seek_forwarding(this->global()->ccndh(), this->npe(), static_cast<unsigned>(faceid));
+    ++(this->global()->ccndh()->forward_to_gen);
   } else {
     for (f = this->npe()->forwarding; f != nullptr; f = f->next) {
       if (static_cast<FaceId>(f->faceid) == faceid) break;

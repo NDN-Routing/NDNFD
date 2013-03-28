@@ -50,4 +50,4 @@ class SimFaceFactory : public FaceFactory {
 };
 
 };//namespace ndnfd
-#endif//NDNFD_NS3_MODEL_FACE_H_
+#endif//NDNFD_NS3_MODEL_NETFACE_H_

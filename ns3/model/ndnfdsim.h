@@ -1,20 +1,24 @@
 #ifndef NDNFD_NS3_MODEL_NDNFDSIM_H_
 #define NDNFD_NS3_MODEL_NDNFDSIM_H_
+#include <queue>
+#include <ns3/simulator.h>
 #include "core/element.h"
 #include "face/internal_client.h"
 namespace ndnfd {
 
 class NdnfdSim : public Element {
  public:
-  NdnfdSim(uint32_t nodeid) { this->nodeid_ = nodeid; }
+  NdnfdSim(void) {}
   virtual void Init(void);
-  virtual ~NdnfdSim(void) {}
+  virtual ~NdnfdSim(void);
   
   void Start(void);
+  void ScheduleOnNextRun(std::function<void()> action);
   
  private:
-  uint32_t nodeid_;
   Ptr<InternalClientFace> internal_client_;
+  ns3::EventId run_event_;
+  std::queue<std::function<void()>> next_run_actions_;
   
   static void CcndGetTime(const ccn_gettime* self, ccn_timeval* result);
   void RunOnce(void);
