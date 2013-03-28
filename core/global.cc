@@ -6,6 +6,7 @@ extern "C" {
 #include "core/scheduler.h"
 #include "face/facemgr.h"
 #include "core/internal_client_handler.h"
+#include "core/nameprefix_table.h"
 namespace ndnfd {
 
 Global::Global(void) {
@@ -14,6 +15,7 @@ Global::Global(void) {
   this->scheduler_ = nullptr;
   this->facemgr_ = nullptr;
   this->internal_client_handler_ = nullptr;
+  this->npt_ = nullptr;
 }
 
 void Global::Init(void) {
@@ -23,6 +25,7 @@ void Global::Init(void) {
   this->set_scheduler(first->New<Scheduler>());
   this->set_facemgr(first->New<FaceMgr>());
   this->set_internal_client_handler(first->New<InternalClientHandler>());
+  this->set_npt(first->New<NamePrefixTable>());
 }
 
 Global::~Global(void) {
@@ -31,6 +34,7 @@ Global::~Global(void) {
   this->set_scheduler(nullptr);
   this->set_facemgr(nullptr);
   this->set_internal_client_handler(nullptr);
+  this->set_npt(nullptr);
 }
 
 void Global::set_ccndh(ccnd_handle* value) {
@@ -53,5 +57,6 @@ GLOBAL_DEF_SETTER(pollmgr,PollMgr);
 GLOBAL_DEF_SETTER(scheduler,Scheduler);
 GLOBAL_DEF_SETTER(facemgr,FaceMgr);
 GLOBAL_DEF_SETTER(internal_client_handler,InternalClientHandler);
+GLOBAL_DEF_SETTER(npt,NamePrefixTable);
 
 };//namespace ndnfd

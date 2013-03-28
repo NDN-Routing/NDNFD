@@ -110,11 +110,15 @@ static ccn_accession_t content_skiplist_next(struct ccnd_handle *h,
                                              struct content_entry *content);
 static void reap_needed(struct ccnd_handle *h, int init_delay_usec);
 static void check_comm_file(struct ccnd_handle *h);
+#ifdef NDNFD
+int nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e, const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps);
+#else
 static int nameprefix_seek(struct ccnd_handle *h,
                            struct hashtb_enumerator *e,
                            const unsigned char *msg,
                            struct ccn_indexbuf *comps,
                            int ncomps);
+#endif
 #ifdef NDNFD
 void register_new_face(struct ccnd_handle *h, struct face *face);
 #else
@@ -2561,9 +2565,15 @@ age_forwarding_needed(struct ccnd_handle *h)
 /**
  * Look up a forwarding entry, creating it if it is not there.
  */
+#ifdef NDNFD
+struct ccn_forwarding *
+seek_forwarding(struct ccnd_handle *h,
+                struct nameprefix_entry *npe, unsigned faceid)
+#else
 static struct ccn_forwarding *
 seek_forwarding(struct ccnd_handle *h,
                 struct nameprefix_entry *npe, unsigned faceid)
+#endif
 {
     struct ccn_forwarding *f;
     
@@ -4175,9 +4185,15 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
  * Creates a nameprefix entry if it does not already exist, together
  * with all of its parents.
  */
+#ifdef NDNFD
+int
+nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
+                const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps)
+#else
 static int
 nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
                 const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps)
+#endif
 {
     int i;
     int base;

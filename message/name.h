@@ -3,6 +3,7 @@
 #include "util/defs.h"
 extern "C" {
 #include <ccn/charbuf.h>
+#include <ccn/indexbuf.h>
 }
 namespace ndnfd {
 
@@ -32,15 +33,17 @@ class Name : public Object {
   // StripSuffix returns a new Name that has the first (this->n_comps() - remove_n) components of this
   Ptr<Name> StripSuffix(uint16_t remove_n) const;
   
-  // ToCcnb writes Name as CCNB
-  std::basic_string<uint8_t> ToCcnb(void) const;
-  // ToUri writes Name as URI
+  // ToCcnb returns CCNB for Name.
+  // If tag_Name is true, <Name>..</Name> tags are included; otherwise they are not included.
+  // If comps is not null, it is populated with positions of <Component> elements and beyond last </Component>.
+  std::basic_string<uint8_t> ToCcnb(bool tag_Name = true, ccn_indexbuf* comps = nullptr) const;
+  // ToUri returns URI for Name.
   std::string ToUri(void) const;
   
   // Equals returns true if this and other are identical.
-  bool Equals(const Ptr<Name> other) const;
+  bool Equals(Ptr<const Name> other) const;
   // IsPrefixOf returns true if this is a prefix of other
-  bool IsPrefixOf(const Ptr<Name> other) const;
+  bool IsPrefixOf(Ptr<const Name> other) const;
 
  private:
   Name(void) {}

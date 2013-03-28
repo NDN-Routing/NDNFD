@@ -57,13 +57,18 @@ Ptr<Name> Name::StripSuffix(uint16_t remove_n) const {
   return this->GetPrefix(this->n_comps() - remove_n);
 }
 
-std::basic_string<uint8_t> Name::ToCcnb(void) const {
+std::basic_string<uint8_t> Name::ToCcnb(bool tag_Name, ccn_indexbuf* comps) const {
   ccn_charbuf* c = ccn_charbuf_create();
   ccn_name_init(c);
+  size_t start = tag_Name ? 0 : c->length - 1;
+  if (comps != nullptr) comps->n = 0;
   for (const Component& comp : this->comps()) {
+    if (comps != nullptr) ccn_indexbuf_append_element(comps, c->length - 1 - start);
     ccn_name_append(c, comp.data(), comp.size());
   }
-  std::basic_string<uint8_t> s(c->buf, c->length);
+  if (comps != nullptr) ccn_indexbuf_append_element(comps, c->length - 1 - start);
+  size_t end = tag_Name ? c->length : c->length - 1;
+  std::basic_string<uint8_t> s(c->buf + start, end - start);
   ccn_charbuf_destroy(&c);
   return s;
 }
@@ -77,7 +82,7 @@ std::string Name::ToUri(void) const {
   return u;
 }
 
-bool Name::Equals(const Ptr<Name> other) const {
+bool Name::Equals(Ptr<const Name> other) const {
   if (this->n_comps() != other->n_comps()) return false;
   for (uint16_t i = 0; i < this->n_comps(); ++i) {
     if (this->comps_[i] != other->comps_[i]) return false;
@@ -85,7 +90,7 @@ bool Name::Equals(const Ptr<Name> other) const {
   return true;
 }
 
-bool Name::IsPrefixOf(const Ptr<Name> other) const {
+bool Name::IsPrefixOf(Ptr<const Name> other) const {
   if (this->n_comps() > other->n_comps()) return false;
   for (uint16_t i = 0; i < this->n_comps(); ++i) {
     if (this->comps_[i] != other->comps_[i]) return false;

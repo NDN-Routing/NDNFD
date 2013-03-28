@@ -1,5 +1,6 @@
 #include "name.h"
 extern "C" {
+#include <ccn/ccn.h>
 #include <ccn/uri.h>
 }
 #include "gtest/gtest.h"
@@ -9,10 +10,25 @@ TEST(MessageTest, Name) {
   ccn_charbuf* c1 = ccn_charbuf_create();
   EXPECT_EQ(12, ccn_name_from_uri(c1, "/hello/world"));
   Ptr<Name> n1 = Name::FromCcnb(c1->buf, c1->length);
-  ccn_charbuf_destroy(&c1);
   ASSERT_NE(nullptr, n1);
   EXPECT_EQ(2, n1->n_comps());
   EXPECT_EQ(0, n1->comps()[0].compare(reinterpret_cast<const uint8_t*>("hello")));
+
+  ccn_indexbuf* comps2 = ccn_indexbuf_create();
+  std::basic_string<uint8_t> c2 = n1->ToCcnb(true, comps2);
+  ASSERT_EQ(c1->length, c2.size());
+  EXPECT_EQ(0, memcmp(c1->buf, c2.data(), c1->length));
+  ASSERT_EQ(n1->n_comps() + 1U, comps2->n);
+  ccn_indexbuf* comps1 = ccn_indexbuf_create();
+  int ncomps1 = ccn_name_split(c1, comps1);
+  ASSERT_EQ(n1->n_comps(), static_cast<uint32_t>(ncomps1));
+  ASSERT_EQ(n1->n_comps() + 1U, comps1->n);
+  for (uint32_t i = 0; i <= n1->n_comps(); ++i) {
+    EXPECT_EQ(comps1->buf[i], comps2->buf[i]);
+  }
+  ccn_indexbuf_destroy(&comps2);
+  ccn_indexbuf_destroy(&comps1);
+  ccn_charbuf_destroy(&c1);
   
   Ptr<Name> n2 = Name::FromUri("/hello/world/earth");
   ASSERT_NE(nullptr, n2);
