@@ -19,13 +19,22 @@ void Logging::LogVA(LoggingLevel level, LoggingComponent component, const char* 
   if (level < Logging::min_level()) return;
   if ((component & Logging::components()) == 0) return;
   
-  fprintf(stderr, "%s", this->line_prefix().c_str());
-  vfprintf(stderr, format, args);
-  if (format[0] == '\0' || format[strlen(format)-1] != '\n') fprintf(stderr, "\n");
+  char buf[512];
+  int res = vsnprintf(buf, sizeof(buf), format, args);
+  if (res <= 0) return;
+  
+  size_t len = strlen(buf);
+  if (buf[len-1] == '\n') buf[len-1] = '\0';
+  
+  this->WriteLine(level, component, buf);
 }
 
 std::string Logging::ErrorString(int errnum) {
   return std::string(strerror(errno));
+}
+
+void Logging::WriteLine(LoggingLevel level, LoggingComponent component, const char* s) {
+  fprintf(stderr, "%s\n", s);
 }
 
 int Logging::CcndLogger(void* loggerdata, const char* format, va_list ap) {

@@ -13,7 +13,7 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 4. build ns-3 with NDNFD  
    in ns-3 directory, execute `./waf configure --disable-python --enable-examples --with-ndnfd=where/is/ndnfd_source` then `waf`
 5. run NDNFD simulation examples  
-   in ns-3 directory, execute `NS_LOG=ndn.Consumer:ndn.Producer ./waf --run ndnfd-simple`
+   in ns-3 directory, execute `NS_LOG=NDNFD:ndn.Consumer:ndn.Producer ./waf --run ndnfd-simple`
 
 ## Protocol Support
 

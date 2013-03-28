@@ -23,7 +23,6 @@ void NdnfdSim::Init(void) {
 }
 
 NdnfdSim::~NdnfdSim(void) {
-  this->run_event_.Cancel();
 }
 
 void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
@@ -49,7 +48,7 @@ void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
 }
 
 void NdnfdSim::Start(void) {
-  this->run_event_ = ns3::Simulator::ScheduleNow(&NdnfdSim::RunOnce, this);
+  ns3::Simulator::ScheduleWithContext(THIS_SIMGLOBAL->nodeid(), ns3::MicroSeconds(0), &NdnfdSim::RunOnce, this);
 }
 
 void NdnfdSim::ScheduleOnNextRun(std::function<void()> action) {
@@ -57,7 +56,6 @@ void NdnfdSim::ScheduleOnNextRun(std::function<void()> action) {
 }
 
 void NdnfdSim::RunOnce(void) {
-  this->run_event_.Cancel();
   //this->Log(kLLDebug, kLCSim, "NdnfdSim(%" PRIu32 ")::RunOnce() at %0.6f", THIS_SIMGLOBAL->nodeid(), ns3::Now().GetSeconds());
 
   ccn_timeval dummy;
@@ -76,7 +74,7 @@ void NdnfdSim::RunOnce(void) {
   if (next_scheduler_evt != Scheduler::kNoMore) {
     next_us = std::min(next_us, static_cast<uint64_t>(next_scheduler_evt.count()));
   }
-  this->run_event_ = ns3::Simulator::Schedule(ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
+  ns3::Simulator::ScheduleWithContext(THIS_SIMGLOBAL->nodeid(), ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
 }
 
 };//namespace ndnfd

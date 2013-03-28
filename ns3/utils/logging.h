@@ -6,8 +6,10 @@ namespace ndnfd {
 // SimLogging prepends nodeid and time to each log line.
 class SimLogging : public Logging {
  public:
-  SimLogging(uint32_t nodeid) : nodeid_(nodeid) {}
-  virtual std::string line_prefix(void);
+  SimLogging(uint32_t nodeid);
+
+ protected:
+  virtual void WriteLine(LoggingLevel level, LoggingComponent component, const char* s);
 
  private:
   uint32_t nodeid_;
