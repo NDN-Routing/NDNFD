@@ -51,14 +51,14 @@ void body() {
   // Consumer will request /prefix/0, /prefix/1, ...
   consumerHelper.SetPrefix("/prefix");
   consumerHelper.SetAttribute("Frequency", ns3::StringValue("10")); // 10 interests a second
-  consumerHelper.Install (nodes.Get (0)); // first node
+  consumerHelper.Install(nodes.Get(0)); // first node
 
   // Producer
   ns3::ndn::AppHelper producerHelper("ns3::ndn::Producer");
   // Producer will reply to all requests starting with /prefix
   producerHelper.SetPrefix("/prefix");
-  producerHelper.SetAttribute("PayloadSize", ns3::StringValue("1024"));
-  producerHelper.Install (nodes.Get (2)); // last node
+  producerHelper.SetAttribute("PayloadSize", ns3::StringValue("9999"));
+  producerHelper.Install(nodes.Get(2)); // last node
 }
 
 int main(int argc, char *argv[]) {

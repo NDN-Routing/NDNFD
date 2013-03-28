@@ -11,7 +11,7 @@ def options(opt):
     opt.add_option('--optimize',action='store_true',default=False,dest='optimize',help='optimize object code')
     opt.add_option('--gtest',action='store_true',default=False,dest='gtest',help='build unit tests')
     opt.add_option('--markdown',action='store_true',default=False,dest='markdown',help='build Markdown into HTML')
-    opt.add_option('--ns3',action='store_true',default=False,dest='ns3',help='enable ns3 support')
+    opt.add_option('--sim',action='store_true',default=False,dest='sim',help='build library for ns-3 simulation')
 
 
 def configure(conf):
@@ -48,7 +48,8 @@ def configure(conf):
     conf.define('_GNU_SOURCE', 1)
     flags = ['-Wall', '-Werror', '-Wpointer-arith', '-fPIC']
     cxxflags_strict = ['-fno-rtti']
-    if conf.options.ns3:
+    if conf.options.sim:
+        conf.env.SIM = 1
         cxxflags_strict = []
     conf.env.append_unique('CFLAGS', flags + ['-Wstrict-prototypes', '-std=c99'])
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'] + cxxflags_strict)
@@ -103,10 +104,11 @@ def build(bld):
         use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
         )
     
-    bld.stlib(target='ndnfdsim',
-        source=['command/ndnfdsim.cc'],
-        use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
-        )
+    if bld.env.SIM:
+        bld.stlib(target='ndnfdsim',
+            source=['command/ndnfdsim.cc'],
+            use='ccnd/ccndcore ndnld/ndnldcore ndnfdcommon',
+            )
     
     bld.program(target='ndnfdc',
         source=bld.path.ant_glob(['command/ndnfdc/*.c']),

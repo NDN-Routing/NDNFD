@@ -3,6 +3,9 @@
 #include "core/scheduler.h"
 #include "global.h"
 #include "facemgr.h"
+extern "C" {
+#include "ndnld/ndnld.h"
+}
 namespace ndnfd {
 
 void NdnfdSim::Init(void) {
@@ -30,7 +33,7 @@ void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
   int64_t now_us = ns3::Now().GetMicroSeconds();
   result->s = static_cast<long>(now_us / 1000000);
   result->micros = static_cast<unsigned>(now_us % 1000000);
-
+  
   long sdelta = result->s - h->sec; int udelta = result->micros + h->sliver - h->usec;
   while (udelta < 0) { udelta += 1000000; sdelta -= 1; }
   h->sec = result->s; h->usec = result->micros;
@@ -40,6 +43,9 @@ void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
   h->sliver = udelta - delta * (1000000U / WTHZ);
   delta += static_cast<unsigned>(sdelta) * WTHZ;
   h->wtnow += delta;
+
+  // also update time in ndnld
+  DateTime_mockNow(static_cast<DateTime>(now_us / 1000));
 }
 
 void NdnfdSim::Start(void) {
