@@ -1,20 +1,12 @@
 #include "ndnfdsim.h"
+#include <cstdarg>
 #include "core/scheduler.h"
 #include "global.h"
 #include "facemgr.h"
 namespace ndnfd {
 
-int CcndLogger(void* loggerdata, const char* format, va_list ap) {
-  char buf[512];
-  int res = vsnprintf(buf, sizeof(buf), format, ap);
-  
-  Logging* logging = static_cast<Logging*>(loggerdata);
-  logging->Log(kLLInfo, kLCCcndCore, "%s", buf);
-  return res;
-}
-
 void NdnfdSim::Init(void) {
-  ccnd_handle* h = ccnd_create("ndnfdsim", &CcndLogger, this->global()->logging());
+  ccnd_handle* h = ccnd_create("ndnfdsim", &Logging::CcndLogger, this->global()->logging());
   h->logpid = static_cast<int>(THIS_SIMGLOBAL->nodeid());
   h->ticktock.gettime = &NdnfdSim::CcndGetTime;
   struct ccn_timeval dummy;

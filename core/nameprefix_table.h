@@ -66,6 +66,13 @@ class ForwardingEntry : public Element {
   Ptr<const Name> name(void) const { return this->npe_->name(); }
   Ptr<NamePrefixEntry> npe(void) const { return this->npe_; }
   ccn_forwarding* forw(void) const { return this->forw_; }
+  
+  // Refresh makes the forwarding entry valid until now+expires,
+  // or when face is closed.
+  void Refresh(std::chrono::seconds expires);
+  
+  // MakePermanent makes the forwarding entry valid until the face is closed.
+  void MakePermanent(void);
 
  private:
   Ptr<NamePrefixEntry> npe_;

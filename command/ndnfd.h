@@ -19,8 +19,5 @@ class NdnfdProgram : public Element {
   DISALLOW_COPY_AND_ASSIGN(NdnfdProgram);
 };
 
-int CcndLogger(void* loggerdata, const char* format, va_list ap);
-
-
 };//namespace ndnfd
 #endif//NDNFD_UTIL_BUFFER_H

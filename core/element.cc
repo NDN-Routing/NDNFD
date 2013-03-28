@@ -11,7 +11,7 @@ Ptr<Element> Element::MakeFirstElement(Global* global) {
 void Element::Log(LoggingLevel level, LoggingComponent component, const char* format, ...) const {
   va_list args;
   va_start(args, format);
-  this->global()->logging()->LogVA(level, component, format, &args);
+  this->global()->logging()->LogVA(level, component, format, args);
   va_end(args);
 }
 

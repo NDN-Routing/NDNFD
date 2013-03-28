@@ -32,12 +32,16 @@ class Logging {
   void set_components(LoggingComponent value) { this->components_ = value; }
   
   void Log(LoggingLevel level, LoggingComponent component, const char* format, ...);
-  void LogVA(LoggingLevel level, LoggingComponent component, const char* format, va_list* args);
+  void LogVA(LoggingLevel level, LoggingComponent component, const char* format, va_list args);
   
   virtual std::string line_prefix(void) { return ""; }
 
   static std::string ErrorString(int errnum);
   static std::string ErrorString(void) { return Logging::ErrorString(errno); }
+  
+  // CcndLogger is suitable for passing to ccnd_create as logger.
+  // loggerdata should be a Logging instance.
+  static int CcndLogger(void* loggerdata, const char* format, va_list ap);
   
  private:
   LoggingLevel min_level_;

@@ -1,4 +1,5 @@
 #include "nameprefix_table.h"
+#include <limits>
 extern "C" {
 #include <ccn/hashtb.h>
 int nameprefix_seek(struct ccnd_handle* h, struct hashtb_enumerator* e, const uint8_t* msg, struct ccn_indexbuf* comps, int ncomps);
@@ -50,6 +51,24 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* forw) : npe_(npe), forw_(forw) {
   assert(npe != nullptr);
   assert(forw != nullptr);
+}
+
+void ForwardingEntry::Refresh(std::chrono::seconds expires) {
+  if (expires < std::chrono::seconds::zero()) {
+    this->forw()->flags &= ~CCN_FORW_REFRESHED;
+    return;
+  }
+  
+  if (expires.count() >= std::numeric_limits<int>::max()) {
+    this->forw()->expires = std::numeric_limits<int>::max();
+  } else {
+    this->forw()->expires = static_cast<int>(expires.count());
+  }
+  this->forw()->flags |= CCN_FORW_REFRESHED;
+}
+
+void ForwardingEntry::MakePermanent(void) {
+  this->Refresh(std::chrono::seconds::max());
 }
 
 };//namespace ndnfd

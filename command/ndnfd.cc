@@ -11,7 +11,7 @@ extern "C" {
 namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
-  ccnd_handle* h = ccnd_create("ndnfd", &CcndLogger, this->global()->logging());
+  ccnd_handle* h = ccnd_create("ndnfd", &Logging::CcndLogger, this->global()->logging());
   this->global()->set_ccndh(h);
   
   this->internal_client_ = this->New<InternalClientFace>();
@@ -57,15 +57,6 @@ void NdnfdProgram::ccndc_add(FaceId faceid, std::string prefix) {
   snprintf(buf, sizeof(buf), "bash -c 'sleep 1 && ccndc add %s face %" PRI_FaceId "' &", prefix.c_str(), faceid);
   int res = system(buf);
   if (res == 0) {}
-}
-
-int CcndLogger(void* loggerdata, const char* format, va_list ap) {
-  char buf[512];
-  int res = vsnprintf(buf, sizeof(buf), format, ap);
-  
-  Logging* logging = static_cast<Logging*>(loggerdata);
-  logging->Log(kLLInfo, kLCCcndCore, "%s", buf);
-  return res;
 }
 
 };//namespace ndnfd

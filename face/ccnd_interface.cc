@@ -31,8 +31,6 @@ void CcndFaceInterface::BindFace(Ptr<Face> face) {
 }
 
 void CcndFaceInterface::Receive(Ptr<Message> message) {
-  //this->Log(kLLDebug, kLCFace, "CcndFaceInterface::Receive");
-
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(message->incoming_face());
   if (in_face == nullptr) {
     this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Receive face %" PRI_FaceId " does not exist", message->incoming_face());
@@ -51,8 +49,6 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
 }
 
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
-  //this->Log(kLLDebug, kLCFace, "CcndFaceInterface::Send");
-
   Ptr<Face> out_face = this->global()->facemgr()->GetFace(faceid);
   if (out_face == nullptr) {
     this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Send face %" PRI_FaceId " does not exist", faceid);
