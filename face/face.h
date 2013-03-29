@@ -7,6 +7,10 @@ extern "C" {
 #include "message/message.h"
 namespace ndnfd {
 
+// FaceType indicates the type of a Face subclass.
+// Each subclass of Face must have a unique FaceType.
+typedef uint16_t FaceType;
+
 // FaceKind describes what's the peer(s) of a Face.
 enum class FaceKind {
   kNone      = 0,
@@ -38,6 +42,8 @@ bool FaceStatus_IsUsable(FaceStatus status);
 // A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {
  public:
+  virtual FaceType type(void) const =0;
+
   virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
@@ -51,6 +57,9 @@ class Face : public Element {
   virtual void Send(Ptr<Message> message) { assert(false); }
   // whether sending is likely blocked
   bool send_blocked(void) const { return (this->ccnd_face()->flags & CCN_FACE_NOSEND) != 0; }
+  // SendReachable returns true if a message sent on this face
+  // is likely to reach all recipients on other face.
+  virtual bool SendReachable(Ptr<Face> other) const { return false; }
   
   // CanReceive returns true if this Face may be used to receive messages.
   virtual bool CanReceive(void) const { return false; }

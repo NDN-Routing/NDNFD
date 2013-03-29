@@ -23,6 +23,19 @@ void DgramFace::Send(Ptr<Message> message) {
   this->channel()->FaceSend(this, message);
 }
 
+bool DgramFace::SendReachable(Ptr<Face> other) const {
+  assert(other != nullptr);
+  
+  if (this->kind() == FaceKind::kMulticast && this->CanSend() && DgramFace::IsDgramFaceType(other->type())) {
+    DgramFace* other_face = static_cast<DgramFace*>(PeekPointer(other));
+    // Assume everyone on a channel joins the multicast group.
+    // This can be mandated for Ethernet.
+    // UDP mcast is unreliable, but it's on a separate port number (and separate channel).
+    return this->channel() == other_face->channel();
+  }
+  return false;
+}
+
 void DgramFace::Deliver(Ptr<Message> msg) {
   if (this->status() == FaceStatus::kUndecided) this->set_status(FaceStatus::kEstablished);
   this->ReceiveMessage(msg);
@@ -84,6 +97,8 @@ Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const Net
 }
 
 Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op) {
+  assert(this->av()->Check(peer));
+  
   AddressHashKey hashkey = this->av()->GetHashKey(peer);
   Ptr<PeerEntry> pe;
   auto it = this->peers_.find(hashkey);

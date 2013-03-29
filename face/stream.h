@@ -10,6 +10,10 @@ namespace ndnfd {
 // A StreamFace sends and receives messages on a stream socket.
 class StreamFace : public Face, public IPollClient {
  public:
+  static const FaceType kType = 200;
+  static bool IsStreamFaceType(FaceType t) { return 200 <= t && t <= 299; }
+  virtual FaceType type(void) const { return StreamFace::kType; }
+
   // fd: fd of the socket, after connect() or accept()
   StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp);
   virtual void Init(void);
@@ -79,6 +83,9 @@ class StreamFace : public Face, public IPollClient {
 // A StreamListener listens for new connections on a stream socket.
 class StreamListener : public Face, public IPollClient {
  public:
+  static const FaceType kType = 201;
+  virtual FaceType type(void) const { return StreamListener::kType; }
+
   FaceKind accepted_kind(void) const { return this->accepted_kind_; }
   void set_accepted_kind(FaceKind value) { this->accepted_kind_ = value; }
 

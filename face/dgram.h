@@ -12,6 +12,10 @@ class DgramChannel;
 // A DgramFace is a Face that communicates on a shared DgramChannel.
 class DgramFace : public Face {
  public:
+  static const FaceType kType = 100;
+  static bool IsDgramFaceType(FaceType t) { return 100 <= t && t <= 199; }
+  virtual FaceType type(void) const { return DgramFace::kType; }
+  
   DgramFace(Ptr<DgramChannel> channel, const NetworkAddress& peer);
   virtual void Init(void);
   virtual ~DgramFace(void) {}
@@ -20,13 +24,13 @@ class DgramFace : public Face {
   Ptr<DgramChannel> channel(void) const { return this->channel_; }
   
   virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
-  virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
-  
   virtual void Send(Ptr<Message> message);
+  virtual bool SendReachable(Ptr<Face> other) const;
   
+  virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
   void Deliver(Ptr<Message> msg);
+
   virtual void Close(void);
-  
   // CloseInternal closes the face immediately,
   // but does not notify DgramChannel.
   void CloseInternal(void);
@@ -42,6 +46,9 @@ class DgramFace : public Face {
 // It cannot be used for sending.
 class DgramFallbackFace : public DgramFace {
  public:
+  static const FaceType kType = 101;
+  virtual FaceType type(void) const { return DgramFallbackFace::kType; }
+
   DgramFallbackFace(Ptr<DgramChannel> channel);
   virtual ~DgramFallbackFace(void) {}
   

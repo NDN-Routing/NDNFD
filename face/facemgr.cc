@@ -119,6 +119,9 @@ void FaceMgr::add_ether_channel(const std::string& ifname, Ptr<DgramChannel> cha
 }
 
 Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& peer) {
+  assert(mcast_face->kind() == FaceKind::kMulticast);
+  assert(DgramFace::IsDgramFaceType(mcast_face->type()));
+  
   DgramFace* dface = static_cast<DgramFace*>(PeekPointer(mcast_face));
   Ptr<DgramChannel> channel = dface->channel();
   return channel->GetFace(peer);

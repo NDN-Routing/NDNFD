@@ -11,6 +11,9 @@ namespace ndnfd {
 // An InternalClientFace talks with ccnd internal client.
 class InternalClientFace : public Face {
  public:
+  static const FaceType kType = 10;
+  virtual FaceType type(void) const { return InternalClientFace::kType; }
+
   InternalClientFace(void) {}
   virtual void Init(void);
   virtual ~InternalClientFace(void);
@@ -34,7 +37,7 @@ ccnd internal client is a standard ccn client.
 * send to internal client: ccnd_send calls ccn_dispatch_message
 * receive from internal client: process_internal_client_buffer calls ccn_grab_buffered_output
 
-This may should be changed to operate on Messages directly. Benefits:
+This should be changed to operate on Messages directly. Benefits:
 1. save a round of Encode-Decode
 2. Message is tagged with incoming Face, so that we know whether to trust a face mgmt command.
    ccnd sets global variable h->interest_face before sending Interest to internal client,
