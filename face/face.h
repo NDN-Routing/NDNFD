@@ -49,6 +49,8 @@ class Face : public Element {
   virtual bool CanSend(void) const { return false; }
   // Send enqueues a message for sending.
   virtual void Send(Ptr<Message> message) { assert(false); }
+  // whether sending is likely blocked
+  bool send_blocked(void) const { return (this->ccnd_face()->flags & CCN_FACE_NOSEND) != 0; }
   
   // CanReceive returns true if this Face may be used to receive messages.
   virtual bool CanReceive(void) const { return false; }
@@ -78,6 +80,7 @@ class Face : public Element {
   void set_id(FaceId value);
   void set_status(FaceStatus value);
   void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
+  void set_send_blocked(bool value) { this->set_ccnd_flags(value ? CCN_FACE_NOSEND : 0, CCN_FACE_NOSEND); }
   
   // ReceiveMessage sets msg->incoming_face, then push to Receive port.
   void ReceiveMessage(Ptr<Message> msg);

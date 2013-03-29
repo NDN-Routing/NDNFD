@@ -68,7 +68,7 @@ void StreamFace::SetClosing(void) {
   if (FaceStatus_IsUsable(this->status())) {
     this->set_status(FaceStatus::kClosing);
   }
-  if (this->status() == FaceStatus::kClosing && !this->SendBlocked()) {
+  if (this->status() == FaceStatus::kClosing && this->send_queue().empty()) {
     this->Disconnect(FaceStatus::kClosed);
   }
 }
@@ -100,18 +100,18 @@ void StreamFace::Write(void) {
       }
     }
   }
-  if (this->SendBlocked()) {
-    this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
-    this->set_ccnd_flags(CCN_FACE_NOSEND, CCN_FACE_NOSEND);
-  } else {
+  if (this->send_queue().empty()) {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
-    this->set_ccnd_flags(0, CCN_FACE_NOSEND);
+    this->set_send_blocked(false);
     if (this->status() == FaceStatus::kConnecting) {
       this->Disconnect(FaceStatus::kUndecided);
     }
     if (this->status() == FaceStatus::kClosing) {
       this->Disconnect(FaceStatus::kClosed);
     }
+  } else {
+    this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
+    this->set_send_blocked(true);
   }
 }
 

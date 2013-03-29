@@ -21,9 +21,6 @@ class StreamFace : public Face, public IPollClient {
   // Send calls WireProtocol to encode the messages into octets
   // and writes them to the socket.
   virtual void Send(Ptr<Message> message);
-  
-  // SendBlocked returns true if send queue is not empty.
-  bool SendBlocked(void) { return !this->send_queue().empty(); }
 
   // PollCallback is invoked with POLLIN when there are packets
   // on the socket to read.

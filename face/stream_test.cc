@@ -32,7 +32,7 @@ TEST(FaceTest, StreamFace) {
   ASSERT_TRUE(m1->Verify());
   
   int sent = 0;
-  while (!f1->SendBlocked()) {
+  while (!f1->send_blocked()) {
     ++sent;
     f1->Send(m1);
   }
