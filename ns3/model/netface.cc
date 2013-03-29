@@ -40,7 +40,7 @@ void SimNetChannel::CloseFd(void) {
 }
 
 void SimNetChannel::SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt) {
-  //this->Log(kLLDebug, kLCFace, "SimNetChannel::SendTo");
+  //this->Log(kLLDebug, kLCFace, "SimNetChannel::Send src=%s dst=%s length=%" PRIuMAX "", this->av()->ToString(this->local_addr()).c_str(), this->av()->ToString(peer).c_str(), static_cast<uintmax_t>(pkt->length()));
 
   ns3::Ptr<ns3::Packet> packet = ns3::Create<ns3::Packet>(pkt->data(), static_cast<uint32_t>(pkt->length()));
   this->nic_->Send(packet, SimNetChannel::ConvertAddress(peer), this->ether_type_);
@@ -61,8 +61,8 @@ void SimNetChannel::NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const n
   
   NetworkAddress sender_addr = SimNetChannel::ConvertAddress(sender);
   NetworkAddress receiver_addr = SimNetChannel::ConvertAddress(receiver);
-
-  //this->Log(kLLDebug, kLCFace, "SimNetChannel::NicReceive");
+  //this->Log(kLLDebug, kLCFace, "SimNetChannel::NicReceive src=%s dst=%s length=%" PRIuMAX "", this->av()->ToString(sender_addr).c_str(), this->av()->ToString(receiver_addr).c_str(), static_cast<uintmax_t>(pkt->length()));
+  
   typedef void (DgramChannel::*DeliverMcastPacket_type)(const NetworkAddress&, const NetworkAddress&, Ptr<BufferView>);
   THIS_SIMGLOBAL->program()->ScheduleOnNextRun(std::bind((DeliverMcastPacket_type)&DgramChannel::DeliverMcastPacket, this, receiver_addr, sender_addr, pkt));
 }
@@ -76,7 +76,9 @@ std::vector<ns3::Ptr<ns3::NetDevice>> SimFaceFactory::ListNICs(void) {
   ns3::Ptr<ns3::Node> node = THIS_SIMGLOBAL->l3()->GetObject<ns3::Node>();
   for (uint32_t i = 0; i < node->GetNDevices(); ++i) {
     devs.push_back(node->GetDevice(i));
+    //this->Log(kLLDebug, kLCSim, "SimFaceFactory::ListNICs %" PRIxPTR "", PeekPointer(devs.back()));
   }
+  //this->Log(kLLDebug, kLCSim, "SimFaceFactory::ListNICs %" PRIuMAX "", static_cast<uintmax_t>(devs.size()));
   return devs;
 }
 

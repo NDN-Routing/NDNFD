@@ -24,7 +24,9 @@
  *     NS_LOG=ndn.Consumer:ndn.Producer ./waf --run=ndnfd-simple
  */
 
-void body() {
+int main(int argc, char *argv[]) {
+  ndnfd::StackHelper::WaitUntilMinStartTime();
+
   // setting default parameters for PointToPoint links and channels
   ns3::Config::SetDefault("ns3::PointToPointNetDevice::DataRate", ns3::StringValue("1Mbps"));
   ns3::Config::SetDefault("ns3::PointToPointChannel::Delay", ns3::StringValue("10ms"));
@@ -59,13 +61,8 @@ void body() {
   producerHelper.SetPrefix("/prefix");
   producerHelper.SetAttribute("PayloadSize", ns3::StringValue("9999"));
   producerHelper.Install(nodes.Get(2)); // last node
-}
 
-int main(int argc, char *argv[]) {
-  ns3::Simulator::Schedule(ndnfd::StackHelper::kMinStartTime(), &body);
-
-  ns3::Simulator::Stop(ndnfd::StackHelper::kMinStartTime() + ns3::Seconds(20.0));
-
+  ns3::Simulator::Stop(ns3::Seconds(20.0));
   ns3::Simulator::Run();
   ns3::Simulator::Destroy();
 

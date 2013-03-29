@@ -7,6 +7,7 @@ namespace ndnfd {
 class StackHelper {
  public:
   static ns3::Time kMinStartTime(void) { return L3Protocol::kMinStartTime(); }
+  static void WaitUntilMinStartTime(void);
   
   StackHelper(void);
   virtual ~StackHelper(void) {}

@@ -74,7 +74,7 @@ void NdnfdSim::RunOnce(void) {
   if (next_scheduler_evt != Scheduler::kNoMore) {
     next_us = std::min(next_us, static_cast<uint64_t>(next_scheduler_evt.count()));
   }
-  ns3::Simulator::ScheduleWithContext(THIS_SIMGLOBAL->nodeid(), ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
+  ns3::Simulator::Schedule(ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
 }
 
 };//namespace ndnfd

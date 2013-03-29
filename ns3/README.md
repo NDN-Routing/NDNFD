@@ -31,11 +31,12 @@ NDNFD module for ns-3 is implemented as a subclass of ns3::ndn::L3Protocol.
 The steps to run a simulation is:
 
 1. construct the physical topology: Nodes, Channels, NetDevices
-2. install NDN stack with ndnfd::StackHelper  
+2. defer simulation setup until after ndnfd::StackHelper::kMinStartTime().
    Due to a limitation in libccn, NDNFD cannot start before ndnfd::StackHelper::kMinStartTime().
-   You must arrange ndnfd::StackHelper::Install to be called after this time, otherwise it will result in an assertion failure.
-3. install NDN apps with ndnSIM ns3::ndn::AppHelper
-4. set a simulation stop time with ns3::Simulator::Stop  
+   Call ndnfd::StackHelper::WaitUntilMinStartTime() to defer simulation setup.
+3. install NDN stack with ndnfd::StackHelper
+4. install NDN apps with ndnSIM ns3::ndn::AppHelper
+5. set a simulation stop time with ns3::Simulator::Stop  
    Simulation will run forever without setting a stop time.
-5. ns3::Simulator::Run()
+6. ns3::Simulator::Run()
 

@@ -6,6 +6,13 @@
 #include "face/dgram.h"
 namespace ndnfd {
 
+void StackHelper::WaitUntilMinStartTime(void) {
+  ns3::Time diff = StackHelper::kMinStartTime() - ns3::Now();
+  if (diff.IsNegative()) return;
+  ns3::Simulator::Stop(diff);
+  ns3::Simulator::Run();
+}
+
 StackHelper::StackHelper(void) : set_default_routes_(false) {}
 
 void StackHelper::Install(ns3::Ptr<ns3::Node> node) const {
