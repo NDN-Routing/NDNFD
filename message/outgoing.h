@@ -3,7 +3,8 @@
 #include "message/message.h"
 namespace ndnfd {
 
-// An Outgoing represents a message to be sent out through a Face,
+// An Outgoing represents a message to be sent out through a Face.
+// This is not currently used because send_queue is provided by ccnd core.
 class Outgoing : public Object {
  public:
   Outgoing(Ptr<Message> message, FaceId outgoing_face);

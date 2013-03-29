@@ -21,7 +21,7 @@ class InternalClientFace : public Face {
   virtual bool CanSend(void) const { return true; }
   virtual bool CanReceive(void) const { return true; }
 
-  virtual void Send(Ptr<Message> message);
+  virtual void Send(Ptr<const Message> message);
 
   // Grab receives messages from internal client by reading its buffer.
   // This should be called in main loop.

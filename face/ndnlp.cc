@@ -21,7 +21,7 @@ NdnlpWireProtocol::~NdnlpWireProtocol(void) {
   SeqGen_dtor(this->seqgen_);
 }
 
-std::tuple<bool,std::list<Ptr<Buffer>>> NdnlpWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
+std::tuple<bool,std::list<Ptr<Buffer>>> NdnlpWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const {
   bool ok; std::list<Ptr<Buffer>> ccnb_pkts;
   std::tie(ok, ccnb_pkts) = this->ccnb_wp_->Encode(peer, nullptr, message);
   
@@ -45,7 +45,7 @@ std::tuple<bool,std::list<Ptr<Buffer>>> NdnlpWireProtocol::Encode(const NetworkA
   return std::forward_as_tuple(true, results);
 }
 
-std::tuple<bool,std::list<Ptr<Message>>> NdnlpWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) {
+std::tuple<bool,std::list<Ptr<Message>>> NdnlpWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const {
   assert(state != nullptr);
   State* s = static_cast<State*>(PeekPointer(state));
   std::list<Ptr<Message>> results;

@@ -15,7 +15,7 @@ void DgramFace::Init(void) {
   this->global()->facemgr()->AddFace(this);
 }
 
-void DgramFace::Send(Ptr<Message> message) {
+void DgramFace::Send(Ptr<const Message> message) {
   if (!this->CanSend()) {
     this->Log(kLLError, kLCFace, "DgramFace(%" PRI_FaceId ")::Send !CanSend", this->id());
     return;
@@ -23,11 +23,11 @@ void DgramFace::Send(Ptr<Message> message) {
   this->channel()->FaceSend(this, message);
 }
 
-bool DgramFace::SendReachable(Ptr<Face> other) const {
+bool DgramFace::SendReachable(Ptr<const Face> other) const {
   assert(other != nullptr);
   
   if (this->kind() == FaceKind::kMulticast && this->CanSend() && DgramFace::IsDgramFaceType(other->type())) {
-    DgramFace* other_face = static_cast<DgramFace*>(PeekPointer(other));
+    const DgramFace* other_face = static_cast<const DgramFace*>(PeekPointer(other));
     // Assume everyone on a channel joins the multicast group.
     // This can be mandated for Ethernet.
     // UDP mcast is unreliable, but it's on a separate port number (and separate channel).
@@ -59,7 +59,7 @@ void DgramFallbackFace::Close(void) {
   this->channel()->Close();
 }
 
-DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
+DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(av != nullptr);
   assert(wp != nullptr);
   this->fd_ = fd;
@@ -136,7 +136,7 @@ std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
   return DgramChannel::kReapInterval;
 }
 
-void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
+void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<const Message> message) {
   Ptr<DgramFace> oface; Ptr<WireProtocolState> wps;
   if (face->kind() == FaceKind::kMulticast) {
     Ptr<McastEntry> entry = this->FindMcastEntry(face->peer());

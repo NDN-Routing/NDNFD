@@ -4,7 +4,7 @@
 #include <ns3/ndn-header-helper.h>
 namespace ndnfd {
 
-Ptr<CcnbMessage> NdnsimPacketConverter::MessageFrom(ns3::Ptr<ns3::Packet> p) {
+Ptr<CcnbMessage> NdnsimPacketConverter::MessageFrom(ns3::Ptr<ns3::Packet> p) const {
   using ns3::ndn::HeaderHelper;
   
   HeaderHelper::Type type = HeaderHelper::GetNdnHeaderType(p);
@@ -32,7 +32,7 @@ Ptr<CcnbMessage> NdnsimPacketConverter::MessageFrom(ns3::Ptr<ns3::Packet> p) {
   return nullptr;
 }
 
-Ptr<Name> NdnsimPacketConverter::NameFrom(const ns3::ndn::Name& name) {
+Ptr<Name> NdnsimPacketConverter::NameFrom(const ns3::ndn::Name& name) const {
   std::vector<Name::Component> comps;
   for (const std::string& comp : name.GetComponents()) {
     comps.emplace_back(reinterpret_cast<const Name::Component::value_type*>(comp.data()), comp.size());
@@ -40,7 +40,7 @@ Ptr<Name> NdnsimPacketConverter::NameFrom(const ns3::ndn::Name& name) {
   return new Name(comps);
 }
 
-Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interest& header) {
+Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interest& header) const {
   ccn_charbuf* c = ccn_charbuf_create();
   ccnb_element_begin(c, CCN_DTAG_Interest);
 
@@ -67,7 +67,7 @@ Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interes
   return m;
 }
 
-Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::ndn::ContentObject& header, ns3::Ptr<ns3::Packet> payload) {
+Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::ndn::ContentObject& header, ns3::Ptr<ns3::Packet> payload) const {
   ccn_charbuf* c = ccn_charbuf_create();
   ccnb_element_begin(c, CCN_DTAG_ContentObject);
 
@@ -122,7 +122,7 @@ Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::nd
   return m;
 }
 
-ns3::Ptr<ns3::Packet> NdnsimPacketConverter::MessageTo(Ptr<const Message> msg) {
+ns3::Ptr<ns3::Packet> NdnsimPacketConverter::MessageTo(Ptr<const Message> msg) const {
   switch (msg->type()) {
     case InterestMessage::kType:
       return this->InterestTo(static_cast<const InterestMessage*>(PeekPointer(msg)));
@@ -140,7 +140,7 @@ ns3::Ptr<ns3::Packet> NdnsimPacketConverter::MessageTo(Ptr<const Message> msg) {
   }
 }
 
-ns3::Ptr<ns3::ndn::Name> NdnsimPacketConverter::NameTo(Ptr<const Name> name) {
+ns3::Ptr<ns3::ndn::Name> NdnsimPacketConverter::NameTo(Ptr<const Name> name) const {
   ns3::Ptr<ns3::ndn::Name> n = ns3::Create<ns3::ndn::Name>();
   for (const Name::Component& comp : name->comps()) {
     n->Add(std::string(reinterpret_cast<const char*>(comp.data()), comp.size()));
@@ -148,7 +148,7 @@ ns3::Ptr<ns3::ndn::Name> NdnsimPacketConverter::NameTo(Ptr<const Name> name) {
   return n;
 }
 
-ns3::Ptr<ns3::Packet> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessage> msg) {
+ns3::Ptr<ns3::Packet> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessage> msg) const {
   ns3::ndn::Interest header;
   // These elements are not supported by ndnSIM:
   // MinSuffixComponents MaxSuffixComponents PublisherPublicKeyDigest Exclude ChildSelector AnswerOriginKind FaceID
@@ -172,7 +172,7 @@ ns3::Ptr<ns3::Packet> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessag
   return p;
 }
 
-ns3::Ptr<ns3::Packet> NdnsimPacketConverter::ContentObjectTo(Ptr<const ContentObjectMessage> msg) {
+ns3::Ptr<ns3::Packet> NdnsimPacketConverter::ContentObjectTo(Ptr<const ContentObjectMessage> msg) const {
   ns3::ndn::ContentObject header;
   ns3::ndn::ContentObjectTail tail;
   // These elements are not supported by ndnSIM:

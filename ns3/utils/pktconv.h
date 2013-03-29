@@ -14,15 +14,15 @@ class NdnsimPacketConverter : public Object {
   NdnsimPacketConverter(void) {}
   virtual ~NdnsimPacketConverter(void) {}
   
-  Ptr<CcnbMessage> MessageFrom(ns3::Ptr<ns3::Packet> p);
-  Ptr<Name> NameFrom(const ns3::ndn::Name& name);
-  Ptr<InterestMessage> InterestFrom(const ns3::ndn::Interest& header);
-  Ptr<ContentObjectMessage> ContentObjectFrom(const ns3::ndn::ContentObject& header, ns3::Ptr<ns3::Packet> payload);
+  Ptr<CcnbMessage> MessageFrom(ns3::Ptr<ns3::Packet> p) const;
+  Ptr<Name> NameFrom(const ns3::ndn::Name& name) const;
+  Ptr<InterestMessage> InterestFrom(const ns3::ndn::Interest& header) const;
+  Ptr<ContentObjectMessage> ContentObjectFrom(const ns3::ndn::ContentObject& header, ns3::Ptr<ns3::Packet> payload) const;
 
-  ns3::Ptr<ns3::Packet> MessageTo(Ptr<const Message> msg);
-  ns3::Ptr<ns3::ndn::Name> NameTo(Ptr<const Name> name);
-  ns3::Ptr<ns3::Packet> InterestTo(Ptr<const InterestMessage> msg);
-  ns3::Ptr<ns3::Packet> ContentObjectTo(Ptr<const ContentObjectMessage> msg);
+  ns3::Ptr<ns3::Packet> MessageTo(Ptr<const Message> msg) const;
+  ns3::Ptr<ns3::ndn::Name> NameTo(Ptr<const Name> name) const;
+  ns3::Ptr<ns3::Packet> InterestTo(Ptr<const InterestMessage> msg) const;
+  ns3::Ptr<ns3::Packet> ContentObjectTo(Ptr<const ContentObjectMessage> msg) const;
   
  private:
   DISALLOW_COPY_AND_ASSIGN(NdnsimPacketConverter);

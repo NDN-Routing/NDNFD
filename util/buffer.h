@@ -30,7 +30,7 @@ class BufferView : public Object {
   // AsBuffer turns the BufferView into a Buffer.
   // If clone is true, the Buffer is guaranteed to have separate
   // storage with this BufferView.
-  virtual Ptr<Buffer> AsBuffer(bool clone);
+  virtual Ptr<Buffer> AsBuffer(bool clone) const;
 
  protected:
   BufferView(void) { this->buffer_ = nullptr; this->start_ = this->length_ = 0; }
@@ -78,7 +78,7 @@ class Buffer : public BufferView {
   void Reset(void) { this->Take(this->length()); }
   
   // AsBuffer returns or clones self.
-  virtual Ptr<Buffer> AsBuffer(bool clone);
+  virtual Ptr<Buffer> AsBuffer(bool clone) const;
   // Detach detaches the octets from Buffer.
   // After this operation, this Buffer becomes empty.
   std::tuple<uint8_t*,size_t> Detach(void);

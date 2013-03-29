@@ -8,12 +8,12 @@
 #include "util/socket_helper.h"
 namespace ndnfd {
 
-bool IpAddressVerifier::Check(const NetworkAddress& addr) {
+bool IpAddressVerifier::Check(const NetworkAddress& addr) const {
   return (addr.wholen == sizeof(sockaddr_in) && addr.family() == AF_INET)
          || (addr.wholen == sizeof(sockaddr_in6) && addr.family() == AF_INET6);
 }
 
-AddressHashKey IpAddressVerifier::GetHashKey(const NetworkAddress& addr) {
+AddressHashKey IpAddressVerifier::GetHashKey(const NetworkAddress& addr) const {
   switch (addr.family()) {
     case AF_INET: {
       const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
@@ -31,7 +31,7 @@ AddressHashKey IpAddressVerifier::GetHashKey(const NetworkAddress& addr) {
   }
 }
 
-bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) {
+bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) const {
   switch (addr.family()) {
     case AF_INET: {
       const sockaddr_in* sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
@@ -49,7 +49,7 @@ bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) {
   return false;
 }
 
-bool IpAddressVerifier::AreSameHost(const NetworkAddress& a, const NetworkAddress& b) {
+bool IpAddressVerifier::AreSameHost(const NetworkAddress& a, const NetworkAddress& b) const {
   if (a.family() != b.family()) return false;
   switch (a.family()) {
     case AF_INET: {
@@ -67,7 +67,7 @@ bool IpAddressVerifier::AreSameHost(const NetworkAddress& a, const NetworkAddres
   return false;
 }
 
-std::string IpAddressVerifier::IpToString(const NetworkAddress& addr) {
+std::string IpAddressVerifier::IpToString(const NetworkAddress& addr) const {
   char buf[INET6_ADDRSTRLEN];
   switch (addr.family()) {
     case AF_INET: {
@@ -83,7 +83,7 @@ std::string IpAddressVerifier::IpToString(const NetworkAddress& addr) {
   return std::string(buf);
 }
 
-uint16_t IpAddressVerifier::GetPort(const NetworkAddress& addr) {
+uint16_t IpAddressVerifier::GetPort(const NetworkAddress& addr) const {
   in_port_t port = 0;
   switch (addr.family()) {
     case AF_INET: {
@@ -99,7 +99,7 @@ uint16_t IpAddressVerifier::GetPort(const NetworkAddress& addr) {
   return be16toh(port);
 }
 
-std::string IpAddressVerifier::ToString(const NetworkAddress& addr) {
+std::string IpAddressVerifier::ToString(const NetworkAddress& addr) const {
   char buf[INET6_ADDRSTRLEN];
   std::string r;
   in_port_t port = 0;
@@ -216,7 +216,7 @@ Ptr<DgramFace> UdpFaceFactory::McastFace(const NetworkAddress& local_addr, const
   return face;
 }
 
-UdpSingleMcastChannel::UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) : DgramChannel(recv_fd, local_addr, av, wp) {
+UdpSingleMcastChannel::UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) : DgramChannel(recv_fd, local_addr, av, wp) {
   this->send_fd_ = send_fd;
   this->group_addr_ = group_addr;
 }

@@ -33,7 +33,7 @@ class FaceMgr : public Element {
   Ptr<CcndFaceInterface> ccnd_face_interface(void) const { return this->ccnd_face_interface_; }
   
   // GetFace finds a Face by FaceId.
-  Ptr<Face> GetFace(FaceId id);
+  Ptr<Face> GetFace(FaceId id) const;
   // AddFace assigns FaceId to a new Face, and puts it in the table.
   // This is called by Face::Init.
   void AddFace(Ptr<Face> face);

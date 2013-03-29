@@ -4,7 +4,7 @@
 #include "message/ccnb.h"
 namespace ndnfd {
 
-StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp) {
+StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(wp != nullptr);
   this->set_fd(fd);
@@ -29,7 +29,7 @@ StreamFace::~StreamFace(void) {
   this->Disconnect();
 }
 
-void StreamFace::Send(Ptr<Message> message) {
+void StreamFace::Send(Ptr<const Message> message) {
   if (!FaceStatus_IsUsable(this->status())) {
     this->Log(kLLError, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
     return;
@@ -170,7 +170,7 @@ void StreamFace::Disconnect(FaceStatus status) {
   this->set_status(status);
 }
 
-StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
+StreamListener::StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(av != nullptr);
   assert(wp != nullptr);

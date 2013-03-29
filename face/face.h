@@ -54,12 +54,12 @@ class Face : public Element {
   // CanSend returns true if this Face may be used to send messages.
   virtual bool CanSend(void) const { return false; }
   // Send enqueues a message for sending.
-  virtual void Send(Ptr<Message> message) { assert(false); }
+  virtual void Send(Ptr<const Message> message) { assert(false); }
   // whether sending is likely blocked
   bool send_blocked(void) const { return (this->ccnd_face()->flags & CCN_FACE_NOSEND) != 0; }
   // SendReachable returns true if a message sent on this face
   // is likely to reach all recipients on other face.
-  virtual bool SendReachable(Ptr<Face> other) const { return false; }
+  virtual bool SendReachable(Ptr<const Face> other) const { return false; }
   
   // CanReceive returns true if this Face may be used to receive messages.
   virtual bool CanReceive(void) const { return false; }

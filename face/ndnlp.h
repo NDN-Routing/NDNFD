@@ -26,10 +26,10 @@ class NdnlpWireProtocol : public WireProtocol {
   virtual ~NdnlpWireProtocol(void);
   
   virtual bool IsStateful(void) const { return true; }
-  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
+  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) const { return new State(); }
   
-  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
-  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const;
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const;
 
  private:
   Ptr<CcnbWireProtocol> ccnb_wp_;

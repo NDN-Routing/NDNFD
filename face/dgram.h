@@ -24,8 +24,8 @@ class DgramFace : public Face {
   Ptr<DgramChannel> channel(void) const { return this->channel_; }
   
   virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
-  virtual void Send(Ptr<Message> message);
-  virtual bool SendReachable(Ptr<Face> other) const;
+  virtual void Send(Ptr<const Message> message);
+  virtual bool SendReachable(Ptr<const Face> other) const;
   
   virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
   void Deliver(Ptr<Message> msg);
@@ -49,7 +49,7 @@ class DgramFallbackFace : public DgramFace {
   static const FaceType kType = 101;
   virtual FaceType type(void) const { return DgramFallbackFace::kType; }
 
-  DgramFallbackFace(Ptr<DgramChannel> channel);
+  explicit DgramFallbackFace(Ptr<DgramChannel> channel);
   virtual ~DgramFallbackFace(void) {}
   
   virtual bool CanSend(void) const { return false; }
@@ -65,7 +65,7 @@ class DgramFallbackFace : public DgramFace {
 class DgramChannel : public Element, public IPollClient {
  public:
   // fd: fd of the socket, after bind(local_addr)
-  DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~DgramChannel(void);
   
@@ -87,7 +87,7 @@ class DgramChannel : public Element, public IPollClient {
   
   // FaceSend sends message to face->peer() over the channel.
   // This is called by DgramFace.
-  virtual void FaceSend(Ptr<DgramFace> face, Ptr<Message> message);
+  virtual void FaceSend(Ptr<DgramFace> face, Ptr<const Message> message);
   
   // FaceClose removes a face.
   // It does not remove the PeerEntry.
@@ -132,8 +132,8 @@ class DgramChannel : public Element, public IPollClient {
   
   bool closed_;
   int fd(void) const { return this->fd_; }
-  Ptr<AddressVerifier> av(void) const { return this->av_; }
-  Ptr<WireProtocol> wp(void) const { return this->wp_; }
+  Ptr<const AddressVerifier> av(void) const { return this->av_; }
+  Ptr<const WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<AddressHashKey,Ptr<PeerEntry>>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
   const NetworkAddress& local_addr(void) const { return this->local_addr_; }
@@ -162,6 +162,7 @@ class DgramChannel : public Element, public IPollClient {
   Ptr<McastEntry> MakeMcastEntry(const NetworkAddress& group) { return this->FindMcastEntryInternal(group, true); }
   
   // SendTo calls sendto() syscall to send one packet to the socket.
+  // Mutating pkt is allowed.
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   
   // ReceiveFrom calls recvfrom() syscall to read one or more packets
@@ -169,7 +170,7 @@ class DgramChannel : public Element, public IPollClient {
   virtual void ReceiveFrom(void);
   
   // DeliverPacket decodes pkt, delivers any result messages
-  // to the Face associated with peer or the fallback face.
+  // to the unicast Face associated with peer or the fallback face.
   virtual void DeliverPacket(const NetworkAddress& peer, Ptr<BufferView> pkt);
   
   // DeliverMcastPacket does similar work as DeliverPacket
@@ -185,8 +186,8 @@ class DgramChannel : public Element, public IPollClient {
   static constexpr std::chrono::microseconds kReapInterval = std::chrono::microseconds(20000000);
 
   int fd_;
-  Ptr<AddressVerifier> av_;
-  Ptr<WireProtocol> wp_;
+  Ptr<const AddressVerifier> av_;
+  Ptr<const WireProtocol> wp_;
   std::unordered_map<AddressHashKey,Ptr<PeerEntry>> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
   std::vector<Ptr<McastEntry>> mcasts_;//there's a small number of McastEntry, so vector would be faster than unordered_map

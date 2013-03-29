@@ -25,7 +25,7 @@ ns3::Address SimNetChannel::ConvertAddress(const NetworkAddress& addr) {
   return mac48;
 }
 
-SimNetChannel::SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) : DgramChannel(-1, SimNetChannel::ConvertAddress(nic->GetAddress()), av, wp) {
+SimNetChannel::SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) : DgramChannel(-1, SimNetChannel::ConvertAddress(nic->GetAddress()), av, wp) {
   this->ether_type_ = ether_type;
   this->nic_ = nic;
 }

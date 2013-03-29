@@ -70,13 +70,13 @@ void Buffer::Rebase(void) {
   this->c_->length = this->headroom_ + datalen;
 }
 
-Ptr<Buffer> Buffer::AsBuffer(bool clone) {
+Ptr<Buffer> Buffer::AsBuffer(bool clone) const {
   if (clone) {
     Buffer* other = new Buffer(this->length(), this->initial_headroom_, this->initial_tailroom_);
     memcpy(other->mutable_data(), this->mutable_data(), this->length());
     return other;
   } else {
-    return this;
+    return const_cast<Buffer*>(this);
   }
 }
 
@@ -125,7 +125,7 @@ void BufferView::Pull(size_t n) {
   this->length_ -= n;
 }
 
-Ptr<Buffer> BufferView::AsBuffer(bool clone) {
+Ptr<Buffer> BufferView::AsBuffer(bool clone) const {
   if (!clone && this->buffer_ != nullptr && this->start_ == 0U && this->length() == this->buffer_->length()) {
     return this->buffer_;
   }

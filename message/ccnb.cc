@@ -14,7 +14,7 @@ CcnbWireProtocol::CcnbWireProtocol(bool stream_mode) {
   this->stream_mode_ = stream_mode;
 }
 
-CcnbWireProtocol::State::State() {
+CcnbWireProtocol::State::State(void) {
   this->Clear();
 }
 
@@ -32,13 +32,13 @@ Ptr<Buffer> CcnbWireProtocol::State::GetReceiveBuffer(void) {
   return b;
 }
 
-void CcnbWireProtocol::State::Clear() {
+void CcnbWireProtocol::State::Clear(void) {
   memset(&this->d_, 0, sizeof(this->d_));
   this->msgstart_ = 0;
 }
 
-std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
-  CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
+std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const {
+  const CcnbMessage* msg = static_cast<const CcnbMessage*>(PeekPointer(message));
   Ptr<Buffer> pkt = new Buffer(msg->length());
   memcpy(pkt->mutable_data(), msg->msg(), pkt->length());
 
@@ -47,14 +47,14 @@ std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAd
   return std::forward_as_tuple(true, results);
 }
 
-std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) {
+std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const {
   bool ok = true;
   State* s;
   if (this->stream_mode_) {
     assert(state != nullptr);
     s = static_cast<State*>(PeekPointer(state));
   } else {
-    s = &this->state_;
+    s = const_cast<State*>(&this->state_);
     s->Clear();
   }
   ccn_skeleton_decoder* d = &s->d_;

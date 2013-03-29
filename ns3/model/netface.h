@@ -7,7 +7,7 @@ namespace ndnfd {
 
 class SimNetChannel : public DgramChannel {
  public:
-  SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  SimNetChannel(ns3::Ptr<ns3::NetDevice> nic, uint16_t ether_type, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~SimNetChannel(void) {}
   

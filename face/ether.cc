@@ -146,15 +146,15 @@ bool PcapChannel::JoinIpMcast(const NetworkAddress& group) {
   return true;
 }
 
-bool EtherAddressVerifier::Check(const NetworkAddress& addr) {
+bool EtherAddressVerifier::Check(const NetworkAddress& addr) const {
   return addr.wholen == sizeof(ether_addr);
 }
 
-AddressHashKey EtherAddressVerifier::GetHashKey(const NetworkAddress& addr) {
+AddressHashKey EtherAddressVerifier::GetHashKey(const NetworkAddress& addr) const {
   return AddressHashKey(reinterpret_cast<const char*>(&addr.who), sizeof(ether_addr));
 }
 
-std::string EtherAddressVerifier::ToString(const NetworkAddress& addr) {
+std::string EtherAddressVerifier::ToString(const NetworkAddress& addr) const {
   const ether_addr* ea = reinterpret_cast<const ether_addr*>(&addr.who);
   return std::string(ether_ntoa(ea));
 }
@@ -174,7 +174,7 @@ EtherFaceFactory::EtherFaceFactory(void) {
   this->av_ = new EtherAddressVerifier();
 }
 
-std::vector<std::string> EtherFaceFactory::ListNICs(void) {
+std::vector<std::string> EtherFaceFactory::ListNICs(void) const {
   std::vector<std::string> r;
 
   char errbuf[PCAP_ERRBUF_SIZE];

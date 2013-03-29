@@ -12,19 +12,19 @@ class AddressVerifier : public Object {
   virtual ~AddressVerifier(void) {}
   
   // Check checks whether addr is valid in lower protocol.
-  virtual bool Check(const NetworkAddress& addr) =0;
+  virtual bool Check(const NetworkAddress& addr) const =0;
   
   // GetHashKey returns a binary string that can be used as hash key.
-  virtual AddressHashKey GetHashKey(const NetworkAddress& addr) { assert(false); return AddressHashKey(); }
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr) const { assert(false); return AddressHashKey(); }
   
   // IsLocal returns true if addr represents localhost.
-  virtual bool IsLocal(const NetworkAddress& addr) { return false; };
+  virtual bool IsLocal(const NetworkAddress& addr) const { return false; };
   
   // AreSameHost returns true if a and b represent the same host (but not necessarily same endpoint).
-  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b) { return false; }
+  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b) const { return false; }
 
   // ToString returns a human readable string representation of an address.
-  virtual std::string ToString(const NetworkAddress& addr) =0;
+  virtual std::string ToString(const NetworkAddress& addr) const =0;
 
  protected:
   AddressVerifier(void) {}

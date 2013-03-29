@@ -35,7 +35,7 @@ FaceMgr::~FaceMgr(void) {
   }
 }
 
-Ptr<Face> FaceMgr::GetFace(FaceId id) {
+Ptr<Face> FaceMgr::GetFace(FaceId id) const {
   auto it = this->table_.find(id);
   if (it == this->table_.end()) return nullptr;
   return it->second;

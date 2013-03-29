@@ -20,13 +20,13 @@ class IpAddressVerifier : public AddressVerifier {
  public:
   IpAddressVerifier(void) {}
   virtual ~IpAddressVerifier(void) {}
-  virtual bool Check(const NetworkAddress& addr);
-  virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
-  virtual bool IsLocal(const NetworkAddress& addr);
-  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
-  std::string IpToString(const NetworkAddress& addr);
-  uint16_t GetPort(const NetworkAddress& addr);
-  virtual std::string ToString(const NetworkAddress& addr);
+  virtual bool Check(const NetworkAddress& addr) const;
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr) const;
+  virtual bool IsLocal(const NetworkAddress& addr) const;
+  virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b) const;
+  std::string IpToString(const NetworkAddress& addr) const;
+  uint16_t GetPort(const NetworkAddress& addr) const;
+  virtual std::string ToString(const NetworkAddress& addr) const;
   static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
@@ -60,7 +60,7 @@ class UdpFaceFactory : public FaceFactory {
 // and accounts every incoming packet to group_addr.
 class UdpSingleMcastChannel : public DgramChannel {
  public:
-  UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp);
+  UdpSingleMcastChannel(int recv_fd, int send_fd, const NetworkAddress& local_addr, const NetworkAddress& group_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual ~UdpSingleMcastChannel(void) {}
 
  protected:

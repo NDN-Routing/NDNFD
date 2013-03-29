@@ -11,8 +11,8 @@ class UnixAddressVerifier : public AddressVerifier {
  public:
   UnixAddressVerifier(void) {}
   virtual ~UnixAddressVerifier(void) {}
-  virtual bool Check(const NetworkAddress& addr);
-  virtual std::string ToString(const NetworkAddress& addr);
+  virtual bool Check(const NetworkAddress& addr) const;
+  virtual std::string ToString(const NetworkAddress& addr) const;
  private:
   DISALLOW_COPY_AND_ASSIGN(UnixAddressVerifier);
 };
@@ -21,7 +21,7 @@ class UnixAddressVerifier : public AddressVerifier {
 // that unlinks local socket when closing.
 class UnixListener : public StreamListener {
  public:
-  UnixListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp, const std::string& local_socket)
+  UnixListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp, const std::string& local_socket)
     : StreamListener(fd, av, wp), local_socket_(local_socket) {}
   
   virtual void Close(void);
@@ -34,7 +34,7 @@ class UnixListener : public StreamListener {
 // A UnixFaceFactory creates Face objects for UNIX sockets.
 class UnixFaceFactory : public FaceFactory {
  public:
-  UnixFaceFactory(Ptr<WireProtocol> wp);
+  explicit UnixFaceFactory(Ptr<WireProtocol> wp);
   virtual ~UnixFaceFactory(void) {}
   
   // Listen creates a StreamListener for UNIX socket.
