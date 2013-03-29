@@ -4,16 +4,35 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 
 ## How to Install
 
-1. build NDNFD library for ns-3 simulation  
-   in NDNFD directory, execute `./waf configure --sim` then `./waf`
-2. [install ns-3 and ndnSIM](http://ndnsim.net/getting-started.html)
-3. fix ns-3 to build in C++ 11 standard  
-   in ns-3 directory, execute `grep -lr 'make_pair<' *`,
-   open each file, find each `make\_pair<...> (` and replace with `make\_pair (`
-4. build ns-3 with NDNFD  
-   in ns-3 directory, execute `./waf configure --disable-python --enable-examples --with-ndnfd=where/is/ndnfd_source` then `waf`
-5. run NDNFD simulation examples  
-   in ns-3 directory, execute `NS_LOG=NDNFD:ndn.Consumer:ndn.Producer ./waf --run ndnfd-simple`
+1. build NDNFD library for ns-3 simulation (`$NDNFD_ROOT` represents the location of NDNFD directory)
+
+		cd $NDNFD_ROOT
+		./waf configure --sim
+		./waf
+
+2. [install ns-3 and ndnSIM](http://ndnsim.net/getting-started.html)  
+   (`$NS3_ROOT` represents the location of ns-3 directory)
+3. fix ns-3 to build in C++ 11 standard
+
+		cd $NS3_ROOT
+		grep -lr 'make_pair<' *
+   open each file, find each `make_pair<...> (` and replace with `make_pair (`
+
+4. install NDNFD module into ns-3
+
+		cd $NS3_ROOT/src
+		ln -s $NDNFD_ROOT/ns3 NDNFD
+
+5. build ns-3 with NDNFD  
+
+		cd $NS3_ROOT
+		./waf configure --disable-python --enable-examples --with-ndnfd=$NDNFD_ROOT
+		./waf
+
+6. run NDNFD simulation examples  
+
+		cd $NS3_ROOT
+		NS_LOG=NDNFD:ndn.Consumer:ndn.Producer ./waf --run ndnfd-simple
 
 ## Protocol Support
 
