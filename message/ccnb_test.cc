@@ -4,6 +4,7 @@ namespace ndnfd {
 
 TEST(MessageTest, CcnbMessage) {
   uint8_t buf[16];
+  memset(buf, 0x80, sizeof(buf));
   Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 16);
   EXPECT_EQ(buf, m1->msg());
   EXPECT_EQ(16U, m1->length());
