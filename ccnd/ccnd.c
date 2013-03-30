@@ -63,6 +63,9 @@
 
 #ifdef NDNFD
 #include "face/ccnd_interface.h"
+#define NDNFD_EXPOSE_static ;
+#else
+#define NDNFD_EXPOSE_static static
 #endif
 #define NDNFD_FIXCCNDWARNINGS
 #define NDNFD_SELFLEARNING
@@ -86,12 +89,8 @@ static struct face *record_connection(struct ccnd_handle *h,
                                       struct sockaddr *who,
                                       socklen_t wholen,
                                       int setflags);
-#ifdef NDNFD
-void process_input_message(struct ccnd_handle *h, struct face *face, unsigned char *msg, size_t size, int pdu_ok);
-#else
-static void process_input_message(struct ccnd_handle *h, struct face *face,
+NDNFD_EXPOSE_static void process_input_message(struct ccnd_handle *h, struct face *face,
                                   unsigned char *msg, size_t size, int pdu_ok);
-#endif
 static void process_input(struct ccnd_handle *h, int fd);
 static int ccn_stuff_interest(struct ccnd_handle *h,
                               struct face *face, struct ccn_charbuf *c);
@@ -110,20 +109,12 @@ static ccn_accession_t content_skiplist_next(struct ccnd_handle *h,
                                              struct content_entry *content);
 static void reap_needed(struct ccnd_handle *h, int init_delay_usec);
 static void check_comm_file(struct ccnd_handle *h);
-#ifdef NDNFD
-int nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e, const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps);
-#else
-static int nameprefix_seek(struct ccnd_handle *h,
+NDNFD_EXPOSE_static int nameprefix_seek(struct ccnd_handle *h,
                            struct hashtb_enumerator *e,
                            const unsigned char *msg,
                            struct ccn_indexbuf *comps,
                            int ncomps);
-#endif
-#ifdef NDNFD
-void register_new_face(struct ccnd_handle *h, struct face *face);
-#else
-static void register_new_face(struct ccnd_handle *h, struct face *face);
-#endif
+NDNFD_EXPOSE_static void register_new_face(struct ccnd_handle *h, struct face *face);
 static void update_forward_to(struct ccnd_handle *h,
                               struct nameprefix_entry *npe);
 static void stuff_and_send(struct ccnd_handle *h, struct face *face,
@@ -137,11 +128,7 @@ static void ccn_append_link_stuff(struct ccnd_handle *h,
 static int process_incoming_link_message(struct ccnd_handle *h,
                                          struct face *face, enum ccn_dtag dtag,
                                          unsigned char *msg, size_t size);
-#ifdef NDNFD
-void process_internal_client_buffer(struct ccnd_handle *h);
-#else
-static void process_internal_client_buffer(struct ccnd_handle *h);
-#endif
+NDNFD_EXPOSE_static void process_internal_client_buffer(struct ccnd_handle *h);
 static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
             struct pit_face_item *p);
@@ -419,13 +406,8 @@ content_queue_create(struct ccnd_handle *h, struct face *face, enum cq_delay_cla
 /**
  * Destroy a queue.
  */
-#ifdef NDNFD
-void
+NDNFD_EXPOSE_static void
 content_queue_destroy(struct ccnd_handle *h, struct content_queue **pq)
-#else
-static void
-content_queue_destroy(struct ccnd_handle *h, struct content_queue **pq)
-#endif
 {
     struct content_queue *q;
     if (*pq != NULL) {
@@ -1112,7 +1094,7 @@ finalize_nameprefix(struct hashtb_enumerator *e)
 /**
  * Link an interest to its name prefix entry.
  */
-static void
+NDNFD_EXPOSE_static void
 link_interest_entry_to_nameprefix(struct ccnd_handle *h,
     struct interest_entry *ie, struct nameprefix_entry *npe)
 {
@@ -2565,15 +2547,9 @@ age_forwarding_needed(struct ccnd_handle *h)
 /**
  * Look up a forwarding entry, creating it if it is not there.
  */
-#ifdef NDNFD
-struct ccn_forwarding *
+NDNFD_EXPOSE_static struct ccn_forwarding *
 seek_forwarding(struct ccnd_handle *h,
                 struct nameprefix_entry *npe, unsigned faceid)
-#else
-static struct ccn_forwarding *
-seek_forwarding(struct ccnd_handle *h,
-                struct nameprefix_entry *npe, unsigned faceid)
-#endif
 {
     struct ccn_forwarding *f;
     
@@ -2727,13 +2703,8 @@ ccnd_reg_uri_list(struct ccnd_handle *h,
  * Called when a face is first created, and (perhaps) a second time in the case
  * that a face transitions from the undecided state.
  */
-#ifdef NDNFD
-void
+NDNFD_EXPOSE_static void
 register_new_face(struct ccnd_handle *h, struct face *face)
-#else
-static void
-register_new_face(struct ccnd_handle *h, struct face *face)
-#endif
 {
     if (face->faceid != 0 && (face->flags & (CCN_FACE_UNDECIDED | CCN_FACE_PASSIVE)) == 0) {
         ccnd_face_status_change(h, face->faceid);
@@ -4185,15 +4156,9 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
  * Creates a nameprefix entry if it does not already exist, together
  * with all of its parents.
  */
-#ifdef NDNFD
-int
+NDNFD_EXPOSE_static int
 nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
                 const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps)
-#else
-static int
-nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
-                const unsigned char *msg, struct ccn_indexbuf *comps, int ncomps)
-#endif
 {
     int i;
     int base;
@@ -4753,15 +4718,9 @@ Bail:
  * This is where we decide whether we have an Interest message,
  * a ContentObject, or something else.
  */
-#ifdef NDNFD
-void
+NDNFD_EXPOSE_static void
 process_input_message(struct ccnd_handle *h, struct face *face,
                       unsigned char *msg, size_t size, int pdu_ok)
-#else
-static void
-process_input_message(struct ccnd_handle *h, struct face *face,
-                      unsigned char *msg, size_t size, int pdu_ok)
-#endif
 {
     struct ccn_skeleton_decoder decoder = {0};
     struct ccn_skeleton_decoder *d = &decoder;
@@ -5092,13 +5051,8 @@ process_input(struct ccnd_handle *h, int fd)
  *
  * The internal client's output is input to us.
  */
-#ifdef NDNFD
-void
+NDNFD_EXPOSE_static void
 process_internal_client_buffer(struct ccnd_handle *h)
-#else
-static void
-process_internal_client_buffer(struct ccnd_handle *h)
-#endif
 {
     struct face *face = h->face0;
     if (face == NULL)

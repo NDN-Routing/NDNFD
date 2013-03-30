@@ -4,6 +4,7 @@ extern "C" {
 #include <ccn/hashtb.h>
 int nameprefix_seek(struct ccnd_handle* h, struct hashtb_enumerator* e, const uint8_t* msg, struct ccn_indexbuf* comps, int ncomps);
 struct ccn_forwarding* seek_forwarding(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid);
+void link_interest_entry_to_nameprefix(struct ccnd_handle *h, struct interest_entry *ie, struct nameprefix_entry *npe);
 }
 namespace ndnfd {
 
@@ -27,9 +28,54 @@ Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool cr
   return this->New<NamePrefixEntry>(name, npe);
 }
 
+Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
+  interest_entry* ie = reinterpret_cast<interest_entry*>(hashtb_lookup(this->global()->ccndh()->interest_tab, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime]));
+  if (ie == nullptr) return nullptr;
+  return this->New<PitEntry>(ie);
+}
+
+Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
+  assert(interest != nullptr);
+  assert(npe != nullptr);
+  ccnd_handle* h = this->global()->ccndh();
+  hashtb_enumerator ee; hashtb_enumerator* e = &ee;
+  hashtb_start(h->interest_tab, e);
+
+  int res = hashtb_seek(e, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime], 1);
+  interest_entry* ie; ie = reinterpret_cast<interest_entry*>(e->data);
+  if (res == HT_NEW_ENTRY) {
+    ie->serial = ++h->iserial;
+    ie->strategy.birth = ie->strategy.renewed = h->wtnow;
+    ie->strategy.renewals = 0;
+  }
+  if (ie->interest_msg == nullptr) {
+    link_interest_entry_to_nameprefix(h, ie, npe->npe());
+    ie->interest_msg = reinterpret_cast<const uint8_t*>(e->key);
+    ie->size = interest->parsed()->offset[CCN_PI_B_InterestLifetime] + 1;
+    const_cast<uint8_t*>(ie->interest_msg) [ie->size-1] = '\0';//set last byte to </Interest>
+  }
+
+  hashtb_end(e);
+  if (ie == nullptr) return nullptr;
+  return this->New<PitEntry>(ie);
+}
+
 NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* npe) : name_(name), npe_(npe) {
   assert(name != nullptr);
   assert(npe != nullptr);
+}
+
+Ptr<NamePrefixEntry> NamePrefixEntry::Parent(void) const {
+  nameprefix_entry* parent = this->npe()->parent;
+  if (parent == nullptr) return nullptr;
+  return new NamePrefixEntry(this->name()->StripSuffix(1), parent);
+}
+  
+Ptr<NamePrefixEntry> NamePrefixEntry::FibNode(void) const {
+  for (Ptr<NamePrefixEntry> n = const_cast<NamePrefixEntry*>(this); n != nullptr; n = n->Parent()) {
+    if (n->npe()->forwarding != nullptr) return n;
+  }
+  return nullptr;
 }
 
 Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool create) {
@@ -69,6 +115,10 @@ void ForwardingEntry::Refresh(std::chrono::seconds expires) {
 
 void ForwardingEntry::MakePermanent(void) {
   this->Refresh(std::chrono::seconds::max());
+}
+
+PitEntry::PitEntry(interest_entry* ie) : ie_(ie) {
+  assert(ie != nullptr);
 }
 
 };//namespace ndnfd
