@@ -3,3 +3,5 @@
 build
 .lock-*
 *.pyc
+*~
+*.orig
