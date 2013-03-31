@@ -16,6 +16,20 @@ int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedti
 int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 }
 #include "face/facemgr.h"
+#include "message/interest.h"
+extern "C" {
+
+void ndnfd_finalize_interest(struct interest_entry* ie) {
+  ndnfd::InterestMessage* interest = ie_ndnfdInterest(ie);
+  interest->Unref();
+}
+
+const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie) {
+  ndnfd::InterestMessage* interest = ie_ndnfdInterest(ie);
+  return interest->parsed();
+}
+
+}
 namespace ndnfd {
 
 Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool create) {
@@ -41,7 +55,7 @@ Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool cr
 Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
   interest_entry* ie = reinterpret_cast<interest_entry*>(hashtb_lookup(this->global()->ccndh()->interest_tab, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime]));
   if (ie == nullptr) return nullptr;
-  return this->New<PitEntry>(interest->name(), ie);
+  return this->New<PitEntry>(ie);
 }
 
 Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
@@ -65,11 +79,14 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
     ie->interest_msg = reinterpret_cast<const uint8_t*>(e->key);
     ie->size = interest->parsed()->offset[CCN_PI_B_InterestLifetime] + 1;
     const_cast<uint8_t*>(ie->interest_msg) [ie->size-1] = '\0';//set last byte to </Interest>
+    Ptr<InterestMessage> interest2 = InterestMessage::Parse(ie->interest_msg, ie->size);
+    assert(interest2 != nullptr);
+    ie->ndnfd_interest = GetPointer(interest2);
   }
 
   hashtb_end(e);
   if (ie == nullptr) return nullptr;
-  return this->New<PitEntry>(interest->name(), ie);
+  return this->New<PitEntry>(ie);
 }
 
 void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
@@ -135,7 +152,7 @@ void NamePrefixEntry::ForeachPit(std::function<void(Ptr<PitEntry>)> f) {
   for (interest_entry* ie = static_cast<interest_entry*>(e->data); ie != nullptr; ie = static_cast<interest_entry*>(e->data)) {
     for (nameprefix_entry* x = ie->ll.npe; x != nullptr; x = x->parent) {
       if (x == this->npe()) {
-        Ptr<PitEntry> ie1 = this->New<PitEntry>(this->name(), ie);
+        Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
         f(ie1);
         break;
       }
@@ -168,19 +185,13 @@ void ForwardingEntry::MakePermanent(void) {
   this->Refresh(std::chrono::seconds::max());
 }
 
-PitEntry::PitEntry(Ptr<const Name> name, interest_entry* ie) : name_(name), ie_(ie) {
-  assert(name != nullptr);
+PitEntry::PitEntry(interest_entry* ie) : ie_(ie) {
   assert(ie != nullptr);
+  assert(ie_ndnfdInterest(ie) != nullptr);
 }
 
 Ptr<NamePrefixEntry> PitEntry::npe(void) const {
   return this->New<NamePrefixEntry>(this->name(), this->ie()->ll.npe);
-}
-
-Ptr<const InterestMessage> PitEntry::interest(void) const {
-  Ptr<InterestMessage> interest = InterestMessage::Parse(this->ie()->interest_msg, this->ie()->size);
-  assert(interest != nullptr);
-  return interest;
 }
 
 pit_face_item* PitEntry::SeekPfiInternal(FaceId face, bool create, unsigned flag) {

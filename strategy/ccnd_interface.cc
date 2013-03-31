@@ -28,9 +28,7 @@ int CcndStrategyInterface::PropagateInterest(face* face, uint8_t* msg, ccn_parse
 }
 
 void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream) {
-  Ptr<InterestMessage> interest = InterestMessage::Parse(ie->interest_msg, ie->size);
-  assert(interest != nullptr);
-  Ptr<PitEntry> ie1 = this->New<PitEntry>(interest->name(), ie);
+  Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
   this->global()->strategy()->WillSatisfyPendingInterest(ie1, upstream);
 }
 

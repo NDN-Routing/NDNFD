@@ -120,19 +120,18 @@ class PitEntry : public Element {
   typedef uint32_t Serial;
   #define PRI_PitEntrySerial PRIu32
   
-  PitEntry(Ptr<const Name> name, interest_entry* ie);
+  explicit PitEntry(interest_entry* ie);
   virtual ~PitEntry(void) {}
   
   Serial serial(void) const { return static_cast<Serial>(this->ie()->serial); }
-  Ptr<const Name> name(void) const { return this->name_; }
+  Ptr<const Name> name(void) const { return this->interest()->name(); }
   interest_entry* ie(void) const { return this->ie_; }
   
   // related NamePrefixEntry
   Ptr<NamePrefixEntry> npe(void) const;
 
   // related InterestMessage (without InterestLifetime and Nonce)
-  // note: this parses the message again
-  Ptr<const InterestMessage> interest() const;
+  Ptr<const InterestMessage> interest() const { return ie_ndnfdInterest(this->ie()); }
   
   // GetUpstream returns the upstream record for face, or null.
   pit_face_item* GetUpstream(FaceId face) { return this->SeekPfiInternal(face, false, CCND_PFI_UPSTREAM); }

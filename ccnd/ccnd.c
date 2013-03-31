@@ -1148,6 +1148,9 @@ finalize_interest(struct hashtb_enumerator *e)
     }
     ie->pfl = NULL;
     ie->interest_msg = NULL; /* part of hashtb, don't free this */
+#ifdef NDNFD
+    ndnfd_finalize_interest(ie);
+#endif
 }
 
 /**
@@ -1810,8 +1813,13 @@ consume_matching_interests(struct ccnd_handle *h,
             continue;
         if (face != NULL && is_pending_on(h, p, face->faceid) == 0)
             continue;
+#ifdef NDNFD
+        if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
+                                         p->interest_msg, p->size, ndnfd_ie_pi(p))) {
+#else
         if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
                                          p->interest_msg, p->size, NULL)) {
+#endif
             for (x = p->pfl; x != NULL; x = x->next) {
                 if ((x->pfi_flags & CCND_PFI_PENDING) != 0)
                     face_send_queue_insert(h, face_from_faceid(h, x->faceid),
