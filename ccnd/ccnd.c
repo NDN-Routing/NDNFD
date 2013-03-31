@@ -146,8 +146,10 @@ NDNFD_EXPOSE_static int
 pfi_unique_nonce(struct ccnd_handle *h, struct interest_entry *ie,
                  struct pit_face_item *p);
 NDNFD_EXPOSE_static int wt_compare(ccn_wrappedtime, ccn_wrappedtime);
+#ifndef NDNFD
 static void
 update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigned faceid);
+#endif
 NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
@@ -2639,8 +2641,14 @@ ccnd_reg_prefix(struct ccnd_handle *h,
             res = -1;
     }
     hashtb_end(e);
+#ifdef NDNFD
+    if (res >= 0) {
+        update_npe_children2(h, npe, faceid, msg + comps->buf[0], comps->buf[ncomps] - comps->buf[0]);
+    }
+#else
     if (res >= 0)
         update_npe_children(h, npe, faceid);
+#endif
     return(res);
 }
 
@@ -3603,6 +3611,7 @@ strategy_callout(struct ccnd_handle *h,
     }
 }
 
+#ifndef NDNFD
 /**
  * Execute the next timed action on a propagating interest.
  */
@@ -3717,6 +3726,7 @@ do_propagate(struct ccn_schedule *sched,
     ie->ev = ev;
     return(next_delay);
 }
+#endif
 
 /**
  * Append an interest Nonce value that is useful for debugging.
@@ -4079,7 +4089,6 @@ Bail:
     ccn_indexbuf_destroy(&outbound);
     return(res);
 }
-#endif
 
 /**
  * We have a FIB change - accelerate forwarding of existing interests
@@ -4141,6 +4150,7 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
     }
     hashtb_end(e);
 }
+#endif
 
 /**
  * Creates a nameprefix entry if it does not already exist, together

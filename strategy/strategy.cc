@@ -5,6 +5,7 @@ struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry
 struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
 int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
+uint32_t WTHZ_value(void);
 int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 }
 #include "core/scheduler.h"
@@ -173,6 +174,39 @@ void Strategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
 
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
+}
+
+void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
+  assert(forw != nullptr);
+  Ptr<NamePrefixEntry> npe = forw->npe();
+  FaceId faceid = forw->face();
+  
+  std::chrono::microseconds defer(6000);
+
+  npe->ForeachPit([&] (Ptr<PitEntry> ie) {
+    if (ie->GetUpstream(faceid) != nullptr) return;
+    
+    Ptr<Face> downstream = nullptr;
+    ie->ForeachDownstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+      if (downstream == nullptr || downstream->kind() != FaceKind::kApp) {
+        downstream = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
+      }
+      return PitEntry::ForeachAction::kNone;
+    });
+    if (downstream == nullptr) return;
+    
+    Ptr<const InterestMessage> interest = ie->interest();
+    std::unordered_set<FaceId> outbound = npe->LookupFib(interest);
+    if (outbound.find(faceid) == outbound.end()) return;
+    
+    pit_face_item* p = ie->SeekUpstream(faceid);
+    if ((p->pfi_flags & CCND_PFI_UPENDING) != 0) return;
+    
+    p->expiry = this->global()->ccndh()->wtnow + defer.count() / (1000000 / WTHZ_value());
+    defer += std::chrono::microseconds(200);
+    this->global()->scheduler()->Cancel(ie->ie()->ev);
+    ie->ie()->ev = this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie));
+  });
 }
 
 };//namespace ndnfd

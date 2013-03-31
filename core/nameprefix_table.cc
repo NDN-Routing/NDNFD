@@ -130,6 +130,22 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
   return this->New<ForwardingEntry>(this, f);
 }
 
+void NamePrefixEntry::ForeachPit(std::function<void(Ptr<PitEntry>)> f) {
+  hashtb_enumerator ee; hashtb_enumerator* e = &ee;
+  hashtb_start(this->global()->ccndh()->interest_tab, e);
+  for (interest_entry* ie = static_cast<interest_entry*>(e->data); ie != nullptr; ie = static_cast<interest_entry*>(e->data)) {
+    for (nameprefix_entry* x = ie->ll.npe; x != nullptr; x = x->parent) {
+      if (x == this->npe()) {
+        Ptr<PitEntry> ie1 = this->New<PitEntry>(this->name(), ie);
+        f(ie1);
+        break;
+      }
+    }
+    hashtb_next(e);
+  }
+  hashtb_end(e);
+}
+
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* forw) : npe_(npe), forw_(forw) {
   assert(npe != nullptr);
   assert(forw != nullptr);
@@ -162,12 +178,23 @@ Ptr<NamePrefixEntry> PitEntry::npe(void) const {
   return this->New<NamePrefixEntry>(this->name(), this->ie()->ll.npe);
 }
 
-pit_face_item* PitEntry::SeekUpstream(FaceId face) {
-  return pfi_seek(this->global()->ccndh(), this->ie(), static_cast<unsigned>(face), CCND_PFI_UPSTREAM);
+Ptr<const InterestMessage> PitEntry::interest(void) const {
+  Ptr<InterestMessage> interest = InterestMessage::Parse(this->ie()->interest_msg, this->ie()->size);
+  assert(interest != nullptr);
+  return interest;
 }
 
-pit_face_item* PitEntry::SeekDownstream(FaceId face) {
-  return pfi_seek(this->global()->ccndh(), this->ie(), static_cast<unsigned>(face), CCND_PFI_DNSTREAM);
+pit_face_item* PitEntry::SeekPfiInternal(FaceId face, bool create, unsigned flag) {
+  if (create) {
+    return pfi_seek(this->global()->ccndh(), this->ie(), static_cast<unsigned>(face), flag);
+  }
+  
+  for (pit_face_item* x = this->ie()->pfl; x != nullptr; x = x->next) {
+    if ((x->pfi_flags & flag) != 0 && static_cast<FaceId>(x->faceid) == face) {
+      return x;
+    }
+  }
+  return nullptr;
 }
 
 void PitEntry::ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, unsigned flag) {
