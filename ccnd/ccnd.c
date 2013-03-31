@@ -70,6 +70,7 @@
 #endif
 #define NDNFD_FIXCCNDWARNINGS
 
+#ifndef NDNFD
 /** Ops for strategy callout */
 enum ccn_strategy_op {
     CCNST_NOP,      /* no-operation */
@@ -79,7 +80,6 @@ enum ccn_strategy_op {
     CCNST_TIMEOUT,  /* all downstreams timed out, pit entry will go away */
 };
 
-#ifndef NDNFD
 static void cleanup_at_exit(void);
 static void unlink_at_exit(const char *path);
 static int create_local_listener(struct ccnd_handle *h, const char *sockname, int backlog);
@@ -153,15 +153,19 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
 NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
+#ifndef NDNFD
 static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros);
+#endif
 NDNFD_EXPOSE_static struct pit_face_item *
 pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
          unsigned faceid, unsigned pfi_flag);
+#ifndef NDNFD
 static void strategy_callout(struct ccnd_handle *h,
                              struct interest_entry *ie,
                              enum ccn_strategy_op op);
+#endif
 
 /**
  * Frequency of wrapped timer
@@ -1781,7 +1785,11 @@ consume_matching_interests(struct ccnd_handle *h,
                            struct nameprefix_entry *npe,
                            struct content_entry *content,
                            struct ccn_parsed_ContentObject *pc,
+#ifdef NDNFD
+                           struct face *face, struct face* from_face)
+#else
                            struct face *face)
+#endif
 {
     int matches = 0;
     struct ielinks *head;
@@ -1810,7 +1818,11 @@ consume_matching_interests(struct ccnd_handle *h,
                                            content);
             }
             matches += 1;
+#ifdef NDNFD
+            strategy_callout2_SATISFIED(h, p, from_face);
+#else
             strategy_callout(h, p, CCNST_SATISFIED);
+#endif
             consume_interest(h, p);
         }
     }
@@ -1840,6 +1852,7 @@ adjust_npe_predicted_response(struct ccnd_handle *h,
     npe->usec = t;
 }
 
+#ifndef NDNFD
 /**
  * Adjust the predicted responses for an interest.
  *
@@ -1860,6 +1873,7 @@ adjust_predicted_response(struct ccnd_handle *h,
     if (npe->parent != NULL)
         adjust_npe_predicted_response(h, npe->parent, up);
 }
+#endif
 
 /**
  * Keep a little history about where matching content comes from.
@@ -1917,7 +1931,11 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
         if (from_face != NULL && (npe->flags & CCN_FORW_LOCAL) != 0 &&
             (from_face->flags & CCN_FACE_GG) == 0)
             return(-1);
+#ifdef NDNFD
+        new_matches = consume_matching_interests(h, npe, content, pc, face, from_face);
+#else
         new_matches = consume_matching_interests(h, npe, content, pc, face);
+#endif
         if (from_face != NULL && (new_matches != 0 || ci + 1 == cm))
             note_content_from(h, npe, from_face->faceid, ci);
         if (new_matches != 0) {
@@ -3473,6 +3491,7 @@ get_fib_npe(struct ccnd_handle *h, struct interest_entry *ie)
     return(NULL);
 }
 
+#ifndef NDNFD
 /** Implementation detail for strategy_settimer */
 static int
 strategy_timer(struct ccn_schedule *sched,
@@ -3611,7 +3630,6 @@ strategy_callout(struct ccnd_handle *h,
     }
 }
 
-#ifndef NDNFD
 /**
  * Execute the next timed action on a propagating interest.
  */
@@ -3895,6 +3913,7 @@ pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
     p->expiry = h->wtnow + delta;
 }
 
+#ifndef NDNFD
 /**
  * Set the expiry of the pit face item using a time in microseconds from present
  *
@@ -3909,6 +3928,7 @@ pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
     delta = (micros + (1000000 / WTHZ - 1)) / (1000000 / WTHZ);
     p->expiry = h->wtnow + delta;
 }
+#endif
 
 /**
  * Set the nonce in a pit face item

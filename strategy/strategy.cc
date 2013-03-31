@@ -90,7 +90,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   
   std::string debug_list("pending=[");
   char debug_buf[32];
-  #define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", static_cast<FaceId>(x)); debug_list.append(debug_buf); }
+#define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", static_cast<FaceId>(x)); debug_list.append(debug_buf); }
 
   // find pending downstreams
   int pending = 0;//count of pending downstreams
@@ -151,7 +151,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
   debug_list.append("]");
-  #undef DEBUG_APPEND_FaceId
+#undef DEBUG_APPEND_FaceId
   this->Log(kLLDebug, kLCStrategy, "Strategy::DoPropagate(%" PRI_PitEntrySerial ") %s", ie->serial(), debug_list.c_str());
 
   if (upstreams == 0) {
@@ -174,6 +174,10 @@ void Strategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
 
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
+}
+
+void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream) {
+  this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
 }
 
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {

@@ -7,8 +7,6 @@
 namespace ndnfd {
 
 // A Strategy represents a forwarding strategy.
-// This is not currently used.
-// The design is taken from ndnSIM, but it seems insufficient.
 class Strategy : public Element {
  public:
   Strategy(void) {}
@@ -70,7 +68,7 @@ class Strategy : public Element {
   
   // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
   // (same as ccnd strategy_callout CCNST_SATISFIED)
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream, FaceId downstream) {}
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream);
   
   // -------- face callbacks --------
   virtual void AddFace(FaceId face) {}//currently unused
