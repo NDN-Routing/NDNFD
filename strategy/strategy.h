@@ -35,7 +35,7 @@ class Strategy : public Element {
   // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
   // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.
   // (same as ccnd strategy_callout CCNST_FIRST)
-  virtual void PropagateNewInterest(Ptr<PitEntry> ie) {}
+  virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   
   // DoPropagate is invoked when
   // * a similar Interest is received from a new/expired downstream
@@ -49,12 +49,12 @@ class Strategy : public Element {
   
   // DidExhaustForwardingOptions is invoked when there are pending downstreams,
   // but no more unexpired upstreams.
-  virtual void DidExhaustForwardingOptions(Ptr<PitEntry> ie) {}
+  virtual void DidExhaustForwardingOptions(Ptr<PitEntry> ie);
   
   // WillEraseTimedOutPendingInterest is invoked when there's no more pending downstreams
   // and no more unexpired upstreams.
   // (same as ccnd strategy_callout CCNST_TIMEOUT)
-  virtual void WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {}
+  virtual void WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie);
 
   // -------- ContentObject processing --------
 

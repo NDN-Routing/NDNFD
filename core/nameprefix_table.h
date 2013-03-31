@@ -113,10 +113,13 @@ class PitEntry : public Element {
     kDelete = 2,// delete current record
     kBreakDelete = kBreak | kDelete
   };
+  typedef uint32_t Serial;
+  #define PRI_PitEntrySerial PRIu32
   
   PitEntry(Ptr<const Name> name, interest_entry* ie);
   virtual ~PitEntry(void) {}
   
+  Serial serial(void) const { return static_cast<Serial>(this->ie()->serial); }
   Ptr<const Name> name(void) const { return this->name_; }
   interest_entry* ie(void) const { return this->ie_; }
   

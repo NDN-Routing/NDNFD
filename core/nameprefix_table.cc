@@ -47,6 +47,7 @@ Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
 Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   assert(interest != nullptr);
   assert(npe != nullptr);
+  assert(interest->name()->Equals(npe->name()));
   ccnd_handle* h = this->global()->ccndh();
   hashtb_enumerator ee; hashtb_enumerator* e = &ee;
   hashtb_start(h->interest_tab, e);
@@ -57,6 +58,7 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
     ie->serial = ++h->iserial;
     ie->strategy.birth = ie->strategy.renewed = h->wtnow;
     ie->strategy.renewals = 0;
+    this->Log(kLLDebug, kLCStrategy, "NamePrefixTable::SeekPit(%s) new PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), static_cast<uint32_t>(ie->serial));
   }
   if (ie->interest_msg == nullptr) {
     link_interest_entry_to_nameprefix(h, ie, npe->npe());
