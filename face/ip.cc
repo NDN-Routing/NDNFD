@@ -53,12 +53,7 @@ bool IpAddressVerifier::IsMcast(const NetworkAddress& addr) const {
   switch (reinterpret_cast<const sockaddr*>(&addr.who)->sa_family) {
     case AF_INET: {
       const sockaddr_in *sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
-      bool ok;
-      NetworkAddress mask;
-      NetworkAddress mcastBase;
-      std::tie(ok, mask) = Parse("255.0.0.0:0");
-      std::tie(ok, mcastBase) = Parse("224.0.0.0:0");
-      return (sa->sin_addr.s_addr & reinterpret_cast<const sockaddr_in*>(&mask.who)->sin_addr.s_addr) == reinterpret_cast<const sockaddr_in*>(&mcastBase.who)->sin_addr.s_addr;
+      return (be32toh(sa->sin_addr.s_addr) & 0xF0000000) == 0xE0000000;
     }
     case AF_INET6: {
       const sockaddr_in6 *sa6 = reinterpret_cast<const sockaddr_in6*>(&addr.who);
