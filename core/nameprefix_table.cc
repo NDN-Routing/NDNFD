@@ -102,9 +102,8 @@ void NamePrefixEntry::EnsureUpdatedFib(void) const {
 std::unordered_set<FaceId> NamePrefixEntry::LookupFib(Ptr<const InterestMessage> interest) const {
   assert(interest != nullptr);
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
-  assert(inface != nullptr);
 
-  ccn_indexbuf* outbound = get_outbound_faces(this->global()->ccndh(), inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->npe());
+  ccn_indexbuf* outbound = get_outbound_faces(this->global()->ccndh(), inface==nullptr ? nullptr : inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->npe());
 
   std::unordered_set<FaceId> s;
   for (size_t i = 0; i < outbound->n; ++i) {
