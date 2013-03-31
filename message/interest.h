@@ -10,6 +10,8 @@ class InterestMessage : public CcnbMessage {
   static const MessageType kType = 1001;
   virtual MessageType type(void) const { return InterestMessage::kType; }
   
+  InterestMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed);
+  
   // Parse parses a buffer and returns parsed InterestMessage,
   // or null if buffer is not a CCNB Interest.
   static Ptr<InterestMessage> Parse(const uint8_t* msg, size_t length);

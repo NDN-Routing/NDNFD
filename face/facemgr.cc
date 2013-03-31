@@ -12,6 +12,7 @@ FaceMgr::FaceMgr(void) {
   this->tcp_factory_ = nullptr;
   this->tcp_listener_ = nullptr;
   this->udp_channel_ = nullptr;
+  this->udp_mcast_face_ = nullptr;
   this->udp_ndnlp_channel_ = nullptr;
 }
 
@@ -24,6 +25,7 @@ FaceMgr::~FaceMgr(void) {
   this->set_tcp_factory(nullptr);
   this->set_tcp_listener(nullptr);
   this->set_udp_channel(nullptr);
+  this->set_udp_mcast_face(nullptr);
   this->set_udp_ndnlp_channel(nullptr);
 
   while (!this->ether_channels_.empty()) {

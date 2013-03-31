@@ -3,6 +3,12 @@ namespace ndnfd {
 
 const MessageType InterestMessage::kType;
 
+InterestMessage::InterestMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed)
+    : CcnbMessage(msg, length) {
+  assert(parsed != nullptr);
+  memcpy(&this->parsed_, parsed, sizeof(this->parsed_));
+}
+
 Ptr<InterestMessage> InterestMessage::Parse(const uint8_t* msg, size_t length) {
   Ptr<InterestMessage> m = new InterestMessage(msg, length);
   int res = ccn_parse_interest(msg, length, &m->parsed_, nullptr);

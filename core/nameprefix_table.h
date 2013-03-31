@@ -4,7 +4,6 @@
 extern "C" {
 #include "ccnd/ccnd_private.h"
 }
-#include "face/faceid.h"
 #include "message/interest.h"
 namespace ndnfd {
 
@@ -33,6 +32,10 @@ class NamePrefixTable : public Element {
   // or create it if it does not exist.
   Ptr<PitEntry> SeekPit(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe);
   
+  // DeletePit consumes (deletes) a PIT entry.
+  // Any reference to the PIT entry is invalidated.
+  void DeletePit(Ptr<PitEntry> ie);
+  
  private:
   Ptr<NamePrefixEntry> SeekInternal(Ptr<const Name> name, bool create);
 
@@ -53,6 +56,12 @@ class NamePrefixEntry : public Element {
   
   // FibNode returns the current or parent NamePrefixEntry that has one or more forwarding entries.
   Ptr<NamePrefixEntry> FibNode(void) const;
+  
+  // EnsureUpdatedFib ensures npe->forwarding and npe->tap are updated.
+  void EnsureUpdatedFib(void) const;
+  
+  // LookupFib returns a set of outbound faces an Interest should be forwarded to.
+  std::unordered_set<FaceId> LookupFib(Ptr<const InterestMessage> interest) const;
   
   // GetForwarding returns the forwarding entry for faceid,
   // or null if it does not exist.
@@ -98,25 +107,46 @@ class ForwardingEntry : public Element {
 // and the associated propagation states.
 class PitEntry : public Element {
  public:
-  explicit PitEntry(interest_entry* ie);
+  enum class ForeachAction {
+    kNone   = 0,
+    kBreak  = 1,// stop iterating
+    kDelete = 2,// delete current record
+    kBreakDelete = kBreak | kDelete
+  };
+  
+  PitEntry(Ptr<const Name> name, interest_entry* ie);
   virtual ~PitEntry(void) {}
   
-  Ptr<const Name> name(void) const;
+  Ptr<const Name> name(void) const { return this->name_; }
   interest_entry* ie(void) const { return this->ie_; }
   
   // related NamePrefixEntry
   Ptr<NamePrefixEntry> npe(void) const;
   
-  // Consume consumes (deletes) the PIT entry.
-  // Any reference to this PitEntry is invalidated.
-  void Consume(void);
+  // SeekUpstream returns the upstream record for face.
+  // If it does not exist, one is created.
+  pit_face_item* SeekUpstream(FaceId face);
+  
+  void ForeachUpstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_UPSTREAM); }
+
+  // SeekDownstream returns the downstream record for face.
+  // If it does not exist, one is created.
+  pit_face_item* SeekDownstream(FaceId face);
+  
+  void ForeachDownstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_DNSTREAM); }
+  
+  // NextEventDelay returns the delay until next pfi expires.
+  std::chrono::microseconds NextEventDelay(void) const;
 
  private:
   Ptr<const Name> name_;
   interest_entry* ie_;
+  
+  void ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, unsigned flag);
 
   DISALLOW_COPY_AND_ASSIGN(PitEntry);
 };
+
 
 };//namespace ndnfd
 #endif//NDNFD_CORE_NAMEPREFIX_TABLE_H_

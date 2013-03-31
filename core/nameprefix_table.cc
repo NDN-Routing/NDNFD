@@ -4,8 +4,15 @@ extern "C" {
 #include <ccn/hashtb.h>
 int nameprefix_seek(struct ccnd_handle* h, struct hashtb_enumerator* e, const uint8_t* msg, struct ccn_indexbuf* comps, int ncomps);
 struct ccn_forwarding* seek_forwarding(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid);
+void update_forward_to(struct ccnd_handle* h, struct nameprefix_entry* npe);
+struct ccn_indexbuf* get_outbound_faces(struct ccnd_handle *h, struct face* from, const uint8_t* msg, struct ccn_parsed_interest* pi, struct nameprefix_entry* npe);
 void link_interest_entry_to_nameprefix(struct ccnd_handle *h, struct interest_entry *ie, struct nameprefix_entry *npe);
+void consume_interest(struct ccnd_handle* h, struct interest_entry* ie);
+struct pit_face_item* pfi_seek(struct ccnd_handle* h, struct interest_entry* ie, unsigned faceid, unsigned pfi_flag);
+void pfi_destroy(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
+int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedtime* expiry);
 }
+#include "face/facemgr.h"
 namespace ndnfd {
 
 Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool create) {
@@ -31,7 +38,7 @@ Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool cr
 Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
   interest_entry* ie = reinterpret_cast<interest_entry*>(hashtb_lookup(this->global()->ccndh()->interest_tab, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime]));
   if (ie == nullptr) return nullptr;
-  return this->New<PitEntry>(ie);
+  return this->New<PitEntry>(interest->name(), ie);
 }
 
 Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
@@ -57,7 +64,12 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
 
   hashtb_end(e);
   if (ie == nullptr) return nullptr;
-  return this->New<PitEntry>(ie);
+  return this->New<PitEntry>(interest->name(), ie);
+}
+
+void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
+  assert(ie != nullptr);
+  consume_interest(this->global()->ccndh(), ie->ie());
 }
 
 NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* npe) : name_(name), npe_(npe) {
@@ -76,6 +88,25 @@ Ptr<NamePrefixEntry> NamePrefixEntry::FibNode(void) const {
     if (n->npe()->forwarding != nullptr) return n;
   }
   return nullptr;
+}
+
+void NamePrefixEntry::EnsureUpdatedFib(void) const {
+  update_forward_to(this->global()->ccndh(), this->npe());
+}
+
+std::unordered_set<FaceId> NamePrefixEntry::LookupFib(Ptr<const InterestMessage> interest) const {
+  assert(interest != nullptr);
+  Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
+  assert(inface != nullptr);
+
+  ccn_indexbuf* outbound = get_outbound_faces(this->global()->ccndh(), inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->npe());
+
+  std::unordered_set<FaceId> s;
+  for (size_t i = 0; i < outbound->n; ++i) {
+    s.insert(outbound->buf[i]);
+  }
+  ccn_indexbuf_destroy(&outbound);
+  return s;
 }
 
 Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool create) {
@@ -117,8 +148,42 @@ void ForwardingEntry::MakePermanent(void) {
   this->Refresh(std::chrono::seconds::max());
 }
 
-PitEntry::PitEntry(interest_entry* ie) : ie_(ie) {
+PitEntry::PitEntry(Ptr<const Name> name, interest_entry* ie) : name_(name), ie_(ie) {
+  assert(name != nullptr);
   assert(ie != nullptr);
+}
+
+Ptr<NamePrefixEntry> PitEntry::npe(void) const {
+  return this->New<NamePrefixEntry>(this->name(), this->ie()->ll.npe);
+}
+
+pit_face_item* PitEntry::SeekUpstream(FaceId face) {
+  return pfi_seek(this->global()->ccndh(), this->ie(), static_cast<unsigned>(face), CCND_PFI_UPSTREAM);
+}
+
+pit_face_item* PitEntry::SeekDownstream(FaceId face) {
+  return pfi_seek(this->global()->ccndh(), this->ie(), static_cast<unsigned>(face), CCND_PFI_DNSTREAM);
+}
+
+void PitEntry::ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, unsigned flag) {
+  pit_face_item* next = nullptr;
+  for (pit_face_item* x = this->ie()->pfl; x != nullptr; x = next) {
+    next = x->next;
+    if ((x->pfi_flags & flag) != 0) {
+      ForeachAction act = f(x);
+      if ((static_cast<int>(act) & static_cast<int>(ForeachAction::kDelete)) != 0) {
+        pfi_destroy(this->global()->ccndh(), this->ie(), x);
+      }
+      if ((static_cast<int>(act) & static_cast<int>(ForeachAction::kBreak)) != 0) {
+        return;
+      }
+    }
+  }
+}
+
+std::chrono::microseconds PitEntry::NextEventDelay(void) const {
+  int usec = ie_next_usec(this->global()->ccndh(), this->ie(), nullptr);
+  return std::chrono::microseconds(usec);
 }
 
 };//namespace ndnfd

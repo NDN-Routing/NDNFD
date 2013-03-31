@@ -63,12 +63,12 @@
 
 #ifdef NDNFD
 #include "face/ccnd_interface.h"
-#define NDNFD_EXPOSE_static ;
+#include "strategy/ccnd_interface.h"
+#define NDNFD_EXPOSE_static //NDNFD_EXPOSE_static expands to nothing, so that a ccnd static function is exposed to NDNFD.
 #else
-#define NDNFD_EXPOSE_static static
+#define NDNFD_EXPOSE_static static //NDNFD_EXPOSE_static expands to static, when NDNFD is disabled
 #endif
 #define NDNFD_FIXCCNDWARNINGS
-#define NDNFD_SELFLEARNING
 
 /** Ops for strategy callout */
 enum ccn_strategy_op {
@@ -115,7 +115,7 @@ NDNFD_EXPOSE_static int nameprefix_seek(struct ccnd_handle *h,
                            struct ccn_indexbuf *comps,
                            int ncomps);
 NDNFD_EXPOSE_static void register_new_face(struct ccnd_handle *h, struct face *face);
-static void update_forward_to(struct ccnd_handle *h,
+NDNFD_EXPOSE_static void update_forward_to(struct ccnd_handle *h,
                               struct nameprefix_entry *npe);
 static void stuff_and_send(struct ccnd_handle *h, struct face *face,
                            const unsigned char *data1, size_t size1,
@@ -129,10 +129,10 @@ static int process_incoming_link_message(struct ccnd_handle *h,
                                          struct face *face, enum ccn_dtag dtag,
                                          unsigned char *msg, size_t size);
 NDNFD_EXPOSE_static void process_internal_client_buffer(struct ccnd_handle *h);
-static void
+NDNFD_EXPOSE_static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
             struct pit_face_item *p);
-static struct pit_face_item *
+NDNFD_EXPOSE_static struct pit_face_item *
 pfi_set_nonce(struct ccnd_handle *h, struct interest_entry *ie,
              struct pit_face_item *p,
              const unsigned char *nonce, size_t noncesize);
@@ -142,19 +142,19 @@ pfi_nonce_matches(struct pit_face_item *p,
 static struct pit_face_item *
 pfi_copy_nonce(struct ccnd_handle *h, struct interest_entry *ie,
              struct pit_face_item *p, const struct pit_face_item *src);
-static int
+NDNFD_EXPOSE_static int
 pfi_unique_nonce(struct ccnd_handle *h, struct interest_entry *ie,
                  struct pit_face_item *p);
-static int wt_compare(ccn_wrappedtime, ccn_wrappedtime);
+NDNFD_EXPOSE_static int wt_compare(ccn_wrappedtime, ccn_wrappedtime);
 static void
 update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigned faceid);
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
 static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros);
-static struct pit_face_item *
+NDNFD_EXPOSE_static struct pit_face_item *
 pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
          unsigned faceid, unsigned pfi_flag);
 static void strategy_callout(struct ccnd_handle *h,
@@ -1054,7 +1054,7 @@ content_skiplist_next(struct ccnd_handle *h, struct content_entry *content)
 /**
  * Consume an interest.
  */
-static void
+NDNFD_EXPOSE_static void
 consume_interest(struct ccnd_handle *h, struct interest_entry *ie)
 {
     struct hashtb_enumerator ee;
@@ -1704,7 +1704,7 @@ Bail:
 /**
  * Queue a ContentObject to be sent on a face.
  */
-static int
+NDNFD_EXPOSE_static int
 face_send_queue_insert(struct ccnd_handle *h,
                        struct face *face, struct content_entry *content)
 {
@@ -1878,10 +1878,6 @@ note_content_from(struct ccnd_handle *h,
                  from_faceid, prefix_comps, npe->osrc, npe->src, npe->usec);
 }
 
-#ifdef NDNFD_SELFLEARNING
-#define WANT_MATCH_INTERESTS
-#include "self_learning.h"
-#else
 /**
  * Find and consume interests that match given content.
  *
@@ -1926,7 +1922,6 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     }
     return(n_matched);
 }
-#endif
 
 /**
  * Send a message in a PDU, possibly stuffing other interest messages into it.
@@ -3237,7 +3232,7 @@ Finish:
  * Recomputes the contents of npe->forward_to and npe->flags
  * from forwarding lists of npe and all of its ancestors.
  */
-static void
+NDNFD_EXPOSE_static void
 update_forward_to(struct ccnd_handle *h, struct nameprefix_entry *npe)
 {
     struct ccn_indexbuf *x = NULL;
@@ -3302,7 +3297,7 @@ update_forward_to(struct ccnd_handle *h, struct nameprefix_entry *npe)
  * @param npe should be the result of the prefix lookup
  * @result Newly allocated set of outgoing faceids (never NULL)
  */
-static struct ccn_indexbuf *
+NDNFD_EXPOSE_static struct ccn_indexbuf *
 get_outbound_faces(struct ccnd_handle *h,
     struct face *from,
     const unsigned char *msg,
@@ -3362,7 +3357,7 @@ get_outbound_faces(struct ccnd_handle *h,
 /**
  * Compute the delay until the next timed action on an interest.
  */
-static int
+NDNFD_EXPOSE_static int
 ie_next_usec(struct ccnd_handle *h, struct interest_entry *ie,
              ccn_wrappedtime *expiry)
 {
@@ -3416,7 +3411,7 @@ ie_next_usec(struct ccnd_handle *h, struct interest_entry *ie,
  *  p is upstream (the interest is to be forwarded to p).
  *  @returns p (or its reallocated replacement).
  */
-static struct pit_face_item *
+NDNFD_EXPOSE_static struct pit_face_item *
 send_interest(struct ccnd_handle *h, struct interest_entry *ie,
               struct pit_face_item *x, struct pit_face_item *p)
 {
@@ -3504,10 +3499,6 @@ strategy_settimer(struct ccnd_handle *h, struct interest_entry *ie,
     s->ev = ccn_schedule_event(h->sched, usec, strategy_timer, ie, op);
 }
 
-#ifdef NDNFD_SELFLEARNING
-#define WANT_STRATEGY_CALLOUT
-#include "self_learning.h"
-#else
 /**
  * This implements the default strategy.
  *
@@ -3608,12 +3599,7 @@ strategy_callout(struct ccnd_handle *h,
             break;
     }
 }
-#endif
 
-#ifdef NDNFD_SELFLEARNING
-#define WANT_DO_PROPAGATE
-#include "self_learning.h"
-#else
 /**
  * Execute the next timed action on a propagating interest.
  */
@@ -3728,7 +3714,6 @@ do_propagate(struct ccn_schedule *sched,
     ie->ev = ev;
     return(next_delay);
 }
-#endif
 
 /**
  * Append an interest Nonce value that is useful for debugging.
@@ -3785,7 +3770,7 @@ ccnd_plain_nonce(struct ccnd_handle *h, struct face *face, unsigned char *s) {
  *
  * @returns negative if a < b, 0 if a == b, positive if a > b
  */
-static int
+NDNFD_EXPOSE_static int
 wt_compare(ccn_wrappedtime a, ccn_wrappedtime b)
 {
     ccn_wrappedtime delta = a - b;
@@ -3822,7 +3807,7 @@ pfi_create(struct ccnd_handle *h,
 }
 
 /** Remove the pit face item from the interest entry */
-static void
+NDNFD_EXPOSE_static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
             struct pit_face_item *p)
 {
@@ -3847,7 +3832,7 @@ pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
  *
  * New items are appended to the end of the list
  */
-static struct pit_face_item *
+NDNFD_EXPOSE_static struct pit_face_item *
 pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
          unsigned faceid, unsigned pfi_flag)
 {
@@ -3875,7 +3860,7 @@ pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
  *
  * Also sets the renewed timestamp to now.
  */
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime)
 {
@@ -3917,7 +3902,7 @@ pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
  *
  * @returns the replacement value, which is p unless the nonce will not fit.
  */
-static struct pit_face_item *
+NDNFD_EXPOSE_static struct pit_face_item *
 pfi_set_nonce(struct ccnd_handle *h, struct interest_entry *ie,
              struct pit_face_item *p,
              const unsigned char *nonce, size_t noncesize)
@@ -3977,7 +3962,7 @@ pfi_copy_nonce(struct ccnd_handle *h, struct interest_entry *ie,
 /**
  * True iff the nonce in p does not occur in any of the other items of the entry
  */
-static int
+NDNFD_EXPOSE_static int
 pfi_unique_nonce(struct ccnd_handle *h, struct interest_entry *ie,
                  struct pit_face_item *p)
 {
@@ -3994,6 +3979,7 @@ pfi_unique_nonce(struct ccnd_handle *h, struct interest_entry *ie,
     return(1);
 }
 
+#ifndef NDNFD
 /**
  * Schedules the propagation of an Interest message.
  */
@@ -4090,6 +4076,7 @@ Bail:
     ccn_indexbuf_destroy(&outbound);
     return(res);
 }
+#endif
 
 /**
  * We have a FIB change - accelerate forwarding of existing interests

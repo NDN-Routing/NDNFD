@@ -4,7 +4,8 @@ static void
 strategy_callout(struct ccnd_handle *h,
                  struct interest_entry *ie,
                  enum ccn_strategy_op op)
-{
+{return;
+ccnd_msg(h, "strategy_callout %d %x", op, ie);
     struct pit_face_item *x = NULL;
     struct pit_face_item *p = NULL;
     struct nameprefix_entry *npe = NULL;
@@ -130,6 +131,7 @@ do_propagate(struct ccn_schedule *sched,
         ie->ev = NULL;
     if (flags & CCN_SCHEDULE_CANCEL)
         return(0);
+ccnd_msg(h, "do_propagate %x", ie);
     now = h->wtnow;  /* capture our reference */
     mn = 600 * WTHZ; /* keep track of when we should wake up again */
     pending = 0;
@@ -236,6 +238,7 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
                            struct ccn_parsed_ContentObject *pc,
                            struct face *face, struct face *from_face)
 {
+ccnd_msg(h, "match_interests");
     int n_matched = 0;
     int new_matches;
     int ci;
