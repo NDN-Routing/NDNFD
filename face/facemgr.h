@@ -86,14 +86,14 @@ class FaceMgr : public Element {
   // FaceMgmtNewFace executes a face management protocol newface action.
   // Caller should ensure req is trusted (eg. coming from a local face).
   // On success, it returns true and updates face_inst for the response.
-  // On failure, it reutrns false and an error message.
-  std::tuple<bool,std::string> FaceMgmtNewFace(ccn_face_instance* face_inst);
+  // On failure, it reutrns false, error number, error message.
+  std::tuple<bool,int,std::string> FaceMgmtNewFace(ccn_face_instance* face_inst);
 
   // FaceMgmtDestroyFace executes a face management protocol destroyface action.
   // Caller should ensure req is trusted (eg. coming from a local face).
   // On success, it returns true and updates face_inst for the response.
-  // On failure, it reutrns false and an error message.
-  std::tuple<bool,std::string> FaceMgmtDestroyFace(ccn_face_instance* face_inst);
+  // On failure, it reutrns false, error number, error message.
+  std::tuple<bool,int,std::string> FaceMgmtDestroyFace(ccn_face_instance* face_inst);
   
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };

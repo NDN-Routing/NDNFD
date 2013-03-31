@@ -263,7 +263,7 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtDestroyFace(ccn_face_instance*
     return std::forward_as_tuple(false, 0, "");
   }
   face->Close();
-  return std::forward_as_tuple(true, 0, "");
+  return std::forward_as_tuple(true, "");
 }
 
 

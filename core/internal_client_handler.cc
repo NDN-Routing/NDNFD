@@ -1,5 +1,6 @@
 #include "internal_client_handler.h"
 #include "face/faceid.h"
+#include "face/facemgr.h"
 extern "C" {
 #include "ccnd/ccnd_private.h"
 }
@@ -22,21 +23,25 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
   static std::string reply_str = "NDNFD/20130322";
   Ptr<Buffer> reply = new Buffer(reply_str.size());
   memcpy(reply->mutable_data(), reply_str.data(), reply->length());
-  return std::forward_as_tuple(ResponseKind::kRespond, reply);
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, reply);
 }
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqNewFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqNewFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
-  // TODO call FaceMgr::FaceMgmtReq
-  return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
+  // call FaceMgr::FaceMgmtReq
+  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> t = this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kNewFace, inface, msg, size);
+  return t;
+  // return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
 }
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqDestroyFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqDestroyFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
-  // TODO call FaceMgr::FaceMgmtReq
-  return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
+  // call FaceMgr::FaceMgmtReq
+  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> t = this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kDestroyFace, inface, msg, size);
+  return t;
+  // return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
 }
 
 

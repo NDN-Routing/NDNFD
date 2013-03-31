@@ -23,7 +23,6 @@ class IpAddressVerifier : public AddressVerifier {
   virtual bool Check(const NetworkAddress& addr);
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
   virtual bool IsLocal(const NetworkAddress& addr);
-  virtual bool IsMcast(const NetworkAddress& addr);
   virtual bool AreSameHost(const NetworkAddress& a, const NetworkAddress& b);
   std::string IpToString(const NetworkAddress& addr);
   uint16_t GetPort(const NetworkAddress& addr);
