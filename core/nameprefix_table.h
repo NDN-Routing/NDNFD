@@ -70,6 +70,9 @@ class NamePrefixEntry : public Element {
   // or create it if it does not exist.
   Ptr<ForwardingEntry> SeekForwarding(FaceId faceid) { return this->SeekForwardingInternal(faceid, true); }
   
+  // ForeachPit invokes f with each PitEntry whose name is under this prefix.
+  void ForeachPit(std::function<void(Ptr<PitEntry>)> f);
+  
  private:
   Ptr<const Name> name_;
   nameprefix_entry* npe_;
@@ -88,6 +91,7 @@ class ForwardingEntry : public Element {
   Ptr<const Name> name(void) const { return this->npe_->name(); }
   Ptr<NamePrefixEntry> npe(void) const { return this->npe_; }
   ccn_forwarding* forw(void) const { return this->forw_; }
+  FaceId face(void) const { return static_cast<FaceId>(this->forw()->faceid); }
   
   // Refresh makes the forwarding entry valid until now+expires,
   // or when face is closed.
@@ -125,17 +129,25 @@ class PitEntry : public Element {
   
   // related NamePrefixEntry
   Ptr<NamePrefixEntry> npe(void) const;
+
+  // related InterestMessage (without InterestLifetime and Nonce)
+  // note: this parses the message again
+  Ptr<const InterestMessage> interest() const;
   
+  // GetUpstream returns the upstream record for face, or null.
+  pit_face_item* GetUpstream(FaceId face) { return this->SeekPfiInternal(face, false, CCND_PFI_UPSTREAM); }
   // SeekUpstream returns the upstream record for face.
   // If it does not exist, one is created.
-  pit_face_item* SeekUpstream(FaceId face);
-  
+  pit_face_item* SeekUpstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_UPSTREAM); }
+  // ForeachUpstream invokes f with each upstream record.
   void ForeachUpstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_UPSTREAM); }
 
+  // GetDownstream returns the downstream record for face, or null.
+  pit_face_item* GetDownstream(FaceId face) { return this->SeekPfiInternal(face, false, CCND_PFI_DNSTREAM); }
   // SeekDownstream returns the downstream record for face.
   // If it does not exist, one is created.
-  pit_face_item* SeekDownstream(FaceId face);
-  
+  pit_face_item* SeekDownstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_DNSTREAM); }
+  // ForeachDownstream invokes f with each downstream record.
   void ForeachDownstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_DNSTREAM); }
   
   // NextEventDelay returns the delay until next pfi expires.
@@ -147,6 +159,7 @@ class PitEntry : public Element {
   Ptr<const Name> name_;
   interest_entry* ie_;
   
+  pit_face_item* SeekPfiInternal(FaceId face, bool create, unsigned flag);
   void ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, unsigned flag);
 
   DISALLOW_COPY_AND_ASSIGN(PitEntry);

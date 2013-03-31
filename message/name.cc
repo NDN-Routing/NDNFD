@@ -9,9 +9,8 @@ Ptr<Name> Name::FromCcnb(const uint8_t* buf, size_t length) {
   ccn_buf_decoder decoder;
   ccn_buf_decoder* d = ccn_buf_decoder_start(&decoder, buf, length);
 
-  if (!ccn_buf_match_dtag(d, CCN_DTAG_Name)) return nullptr;
-  ccn_buf_advance(d);
   Ptr<Name> n = new Name();
+  if (ccn_buf_match_dtag(d, CCN_DTAG_Name)) ccn_buf_advance(d);
   while (ccn_buf_match_dtag(d, CCN_DTAG_Component)) {
     ccn_buf_advance(d);
     const uint8_t* comp = nullptr;

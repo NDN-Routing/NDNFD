@@ -77,7 +77,11 @@ class Strategy : public Element {
   virtual void RemoveFace(FaceId face) {}//currently unused
   
   // -------- FIB callbacks --------
-  virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw) {}//currently unused
+  
+  // DidAddFibEntry is invoked when a FIB entry is created.
+  // (same as update_npe_children)
+  virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw);
+  
   virtual void WillRemoveFibEntry(Ptr<ForwardingEntry> forw) {}//currently unused
 
  protected:
