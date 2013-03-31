@@ -7,7 +7,7 @@ namespace ndnfd {
 // A FaceAddressTable records the mapping from peer address to face.
 class FaceAddressTable : public Element {
  public:
-  FaceAddressTable(Ptr<AddressVerifier> av) { assert(av != nullptr); this->av_ = av; }
+  explicit FaceAddressTable(Ptr<const AddressVerifier> av) { assert(av != nullptr); this->av_ = av; }
   virtual ~FaceAddressTable(void) {}
   
   // Add remembers peer is connected on face.
@@ -28,9 +28,10 @@ class FaceAddressTable : public Element {
   FaceId Find(const AddressHashKey& peerkey) const;
 
  private:
-  Ptr<AddressVerifier> av_;
+  Ptr<const AddressVerifier> av_;
   std::unordered_map<AddressHashKey,FaceId> table_;
   std::unordered_map<FaceId,AddressHashKey> rtable_;
+
   DISALLOW_COPY_AND_ASSIGN(FaceAddressTable);
 };
 

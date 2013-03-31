@@ -36,16 +36,16 @@ class WireProtocol : public Element {
   virtual bool IsStateful(void) const { return false; }
   
   // CreateState creates a new WireProtocolState object suitable for this wire protocol.
-  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { assert(false); return NULL; }
+  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) const { assert(false); return NULL; }
   
   // Encode gets a new message, and returns zero or more packets
   // encoded of the wire protocol.
-  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) =0;
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const =0;
   
   // Decode gets a new packet of the wire protocol,
   // and returns whether success, zero or more messages.
   // (first return value = false indicates protocol error)
-  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) =0;
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const =0;
 
  protected:
   WireProtocol(void) {}

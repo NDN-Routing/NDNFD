@@ -17,8 +17,8 @@ TEST(CoreTest, Element) {
   Ptr<Element> first = Element::MakeFirstElement(global);
   Ptr<ElementTestElement> e1 = first->New<ElementTestElement>(1, 2);
   ASSERT_EQ(global, e1->TheGlobal());
-  ASSERT_EQ(1, e1->a);
-  ASSERT_EQ(2, e1->b);
+  EXPECT_EQ(1, e1->a);
+  EXPECT_EQ(2, e1->b);
 }
 
 };//namespace ndnfd

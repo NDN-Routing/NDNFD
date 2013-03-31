@@ -18,14 +18,13 @@
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
 
-#ifndef PTR_H
-#define PTR_H
+#ifndef NDNFD_UTIL_PTR_H_
+#define NDNFD_UTIL_PTR_H_
 
-#include <iostream>
 #include <stdint.h>
 #include "assert.h"
 
-namespace ns3 {
+namespace ndnfd {
 
 /**
  * \ingroup core
@@ -114,29 +113,6 @@ public:
   operator Tester * () const;
 };
 
-template <typename T>
-Ptr<T> Create (void);
-
-template <typename T, typename T1>
-Ptr<T> Create (T1 a1);
-
-template <typename T, typename T1, typename T2>
-Ptr<T> Create (T1 a1, T2 a2);
-
-template <typename T, typename T1, typename T2, typename T3>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3);
-
-template <typename T, typename T1, typename T2, typename T3, typename T4>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4);
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5);
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6);
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6, T7 a7);
 
 /**
  * \relates Ptr
@@ -162,8 +138,6 @@ T * PeekPointer (const Ptr<T> &p);
 template <typename T>
 T * GetPointer (const Ptr<T> &p);
 
-template <typename T>
-std::ostream &operator << (std::ostream &, const Ptr<T> &p);
 
 
 // allow if (sp == 0)
@@ -190,90 +164,15 @@ bool operator == (Ptr<T1> const &lhs, Ptr<T2> const &rhs);
 template <typename T1, typename T2>
 bool operator != (Ptr<T1> const &lhs, Ptr<T2> const &rhs);
 
-template <typename T1, typename T2>
-Ptr<T1> const_pointer_cast (Ptr<T2> const&p);
 
-template <typename T>
-struct CallbackTraits;
-
-template <typename T>
-struct CallbackTraits<Ptr<T> >
-{
-  static T & GetReference (Ptr<T> const p)
-  {
-    return *PeekPointer (p);
-  }
-};
-
-template <typename T>
-struct EventMemberImplObjTraits;
-
-template <typename T>
-struct EventMemberImplObjTraits<Ptr<T> >
-{
-  static T &GetReference (Ptr<T> p) {
-    return *PeekPointer (p);
-  }
-};
+} // namespace ndnfd
 
 
-
-} // namespace ns3
-
-
-namespace ns3 {
+namespace ndnfd {
 
 /*************************************************
  *  friend non-member function implementations
  ************************************************/
-
-template <typename T>
-Ptr<T> Create (void)
-{
-  return Ptr<T> (new T (), false);
-}
-
-template <typename T, typename T1>
-Ptr<T> Create (T1 a1)
-{
-  return Ptr<T> (new T (a1), false);
-}
-
-template <typename T, typename T1, typename T2>
-Ptr<T> Create (T1 a1, T2 a2)
-{
-  return Ptr<T> (new T (a1, a2), false);
-}
-
-template <typename T, typename T1, typename T2, typename T3>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3)
-{
-  return Ptr<T> (new T (a1, a2, a3), false);
-}
-
-template <typename T, typename T1, typename T2, typename T3, typename T4>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4)
-{
-  return Ptr<T> (new T (a1, a2, a3, a4), false);
-}
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5)
-{
-  return Ptr<T> (new T (a1, a2, a3, a4, a5), false);
-}
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6)
-{
-  return Ptr<T> (new T (a1, a2, a3, a4, a5, a6), false);
-}
-
-template <typename T, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-Ptr<T> Create (T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6, T7 a7)
-{
-  return Ptr<T> (new T (a1, a2, a3, a4, a5, a6, a7), false);
-}
 
 template <typename T>
 T * PeekPointer (const Ptr<T> &p)
@@ -286,13 +185,6 @@ T * GetPointer (const Ptr<T> &p)
 {
   p.Acquire ();
   return p.m_ptr;
-}
-
-template <typename T>
-std::ostream &operator << (std::ostream &os, const Ptr<T> &p)
-{
-  os << PeekPointer (p);
-  return os;
 }
 
 template <typename T1, typename T2>
@@ -335,66 +227,6 @@ bool
 operator != (Ptr<T1> const &lhs, Ptr<T2> const &rhs)
 {
   return PeekPointer (lhs) != PeekPointer (rhs);
-}
-
-template <typename T>
-bool operator < (const Ptr<T> &lhs, const Ptr<T> &rhs)
-{
-  return PeekPointer<T> (lhs) < PeekPointer<T> (rhs);
-}
-
-template <typename T>
-bool operator <= (const Ptr<T> &lhs, const Ptr<T> &rhs)
-{
-  return PeekPointer<T> (lhs) <= PeekPointer<T> (rhs);
-}
-
-template <typename T>
-bool operator > (const Ptr<T> &lhs, const Ptr<T> &rhs)
-{
-  return PeekPointer<T> (lhs) > PeekPointer<T> (rhs);
-}
-
-template <typename T>
-bool operator >= (const Ptr<T> &lhs, const Ptr<T> &rhs)
-{
-  return PeekPointer<T> (lhs) >= PeekPointer<T> (rhs);
-}
-
-template <typename T1, typename T2>
-Ptr<T1>
-ConstCast (Ptr<T2> const&p)
-{
-  return Ptr<T1> (const_cast<T1 *> (PeekPointer (p)));
-}
-
-template <typename T1, typename T2>
-Ptr<T1>
-DynamicCast (Ptr<T2> const&p)
-{
-  return Ptr<T1> (dynamic_cast<T1 *> (PeekPointer (p)));
-}
-
-template <typename T1, typename T2>
-Ptr<T1>
-StaticCast (Ptr<T2> const&p)
-{
-  return Ptr<T1> (static_cast<T1 *> (PeekPointer (p)));
-}
-
-
-template <typename T>
-Ptr<T> Copy (Ptr<T> object)
-{
-  Ptr<T> p = Ptr<T> (new T (*PeekPointer (object)), false);
-  return p;
-}
-
-template <typename T>
-Ptr<T> Copy (Ptr<const T> object)
-{
-  Ptr<T> p = Ptr<T> (new T (*PeekPointer (object)), false);
-  return p;
 }
 
 /****************************************************
@@ -521,6 +353,6 @@ Ptr<T>::operator Tester * () const
 }
 
 
-} // namespace ns3
+} // namespace ndnfd
 
-#endif /* PTR_H */
+#endif//NDNFD_UTIL_PTR_H_

@@ -5,7 +5,6 @@
 #include "face/factory.h"
 namespace ndnfd {
 
-
 // A PcapChannel represents a socket using libpcap to send and receive Ethernet frames.
 // Run libpcap without promisc mode.
 class PcapChannel : public DgramChannel {
@@ -68,9 +67,9 @@ class EtherAddressVerifier : public AddressVerifier {
  public:
   EtherAddressVerifier(void) {}
   virtual ~EtherAddressVerifier(void) {}
-  virtual bool Check(const NetworkAddress& addr);
-  virtual AddressHashKey GetHashKey(const NetworkAddress& addr);
-  virtual std::string ToString(const NetworkAddress& addr);
+  virtual bool Check(const NetworkAddress& addr) const;
+  virtual AddressHashKey GetHashKey(const NetworkAddress& addr) const;
+  virtual std::string ToString(const NetworkAddress& addr) const;
   static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
   DISALLOW_COPY_AND_ASSIGN(EtherAddressVerifier);
@@ -84,7 +83,7 @@ class EtherFaceFactory : public FaceFactory {
   virtual ~EtherFaceFactory(void) {}
   
   // ListNICs returns a list of ifnames.
-  std::vector<std::string> ListNICs(void);
+  std::vector<std::string> ListNICs(void) const;
   
   // Channel creates a DgramChannel for Ethernet.
   Ptr<DgramChannel> Channel(const std::string& ifname, uint16_t ether_type);

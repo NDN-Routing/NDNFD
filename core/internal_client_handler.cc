@@ -8,7 +8,7 @@ extern "C" {
 #define NDNFD_DEF_REQ(op,method) \
 int ndnfd_req_##op(ccnd_handle* h, const uint8_t* msg, size_t size, ccn_charbuf* reply_body) { \
   ndnfd::Global* global = ccnd_ndnfdGlobal(h); \
-  ndnfd::InternalClientHandler::ResponseKind res; Ptr<ndnfd::Buffer> reply; \
+  ndnfd::InternalClientHandler::ResponseKind res; ndnfd::Ptr<ndnfd::Buffer> reply; \
   std::tie(res, reply) = global->internal_client_handler()->method(msg, size); \
   if (reply_body != nullptr && reply != nullptr) reply->Swap(reply_body); \
   return static_cast<int>(res); \

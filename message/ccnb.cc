@@ -1,6 +1,8 @@
 #include "ccnb.h"
 namespace ndnfd {
 
+const MessageType CcnbMessage::kType;
+
 bool CcnbMessage::Verify(void) const {
   ccn_skeleton_decoder d;
   memset(&d, 0, sizeof(d));
@@ -12,7 +14,7 @@ CcnbWireProtocol::CcnbWireProtocol(bool stream_mode) {
   this->stream_mode_ = stream_mode;
 }
 
-CcnbWireProtocol::State::State() {
+CcnbWireProtocol::State::State(void) {
   this->Clear();
 }
 
@@ -30,13 +32,13 @@ Ptr<Buffer> CcnbWireProtocol::State::GetReceiveBuffer(void) {
   return b;
 }
 
-void CcnbWireProtocol::State::Clear() {
+void CcnbWireProtocol::State::Clear(void) {
   memset(&this->d_, 0, sizeof(this->d_));
   this->msgstart_ = 0;
 }
 
-std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message) {
-  CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
+std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const {
+  const CcnbMessage* msg = static_cast<const CcnbMessage*>(PeekPointer(message));
   Ptr<Buffer> pkt = new Buffer(msg->length());
   memcpy(pkt->mutable_data(), msg->msg(), pkt->length());
 
@@ -45,14 +47,14 @@ std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAd
   return std::forward_as_tuple(true, results);
 }
 
-std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) {
+std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const {
   bool ok = true;
   State* s;
   if (this->stream_mode_) {
     assert(state != nullptr);
     s = static_cast<State*>(PeekPointer(state));
   } else {
-    s = &this->state_;
+    s = const_cast<State*>(&this->state_);
     s->Clear();
   }
   ccn_skeleton_decoder* d = &s->d_;
@@ -65,7 +67,7 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
     if (d->index > static_cast<ssize_t>(s->msgstart_)) {
       Ptr<CcnbMessage> msg = new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_);
       assert(msg->Verify());
-      msg->source_buffer_ = packet;
+      msg->set_source_buffer(packet);
       results.push_back(msg);
     }
     s->msgstart_ = d->index;

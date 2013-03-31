@@ -13,22 +13,27 @@ namespace ndnfd {
 class CcnbMessage : public Message {
  public:
   static const MessageType kType = 1099;
-  CcnbMessage(uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
+  CcnbMessage(const uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
   virtual ~CcnbMessage(void) {}
   virtual MessageType type(void) const { return CcnbMessage::kType; }
   
-  uint8_t* msg(void) const { return this->msg_; }
+  // CCNB message
+  const uint8_t* msg(void) const { return this->msg_; }
+  // length of msg
   size_t length(void) const { return this->length_; }
   
   // Verify checks whether CcnbMessage has correct CCNB format
   bool Verify(void) const;
   
-  // a BufferView that should not be released
-  Ptr<BufferView> source_buffer_;
-
+  // add reference to a BufferView so that it won't be deleted before this CcnbMessage
+  void set_source_buffer(Ptr<const BufferView> value) { this->source_buffer_ = value; }
+  
  private:
-  uint8_t* msg_;
+  const uint8_t* msg_;
   size_t length_;
+  
+  Ptr<const BufferView> source_buffer_;
+  
   DISALLOW_COPY_AND_ASSIGN(CcnbMessage);
 };
 
@@ -38,20 +43,20 @@ class CcnbWireProtocol : public WireProtocol {
   // A State remembers the skeleton decoder state of partial message.
   // This is only used in stream mode.
   struct State : public WireProtocolState {
-    State();
+    State(void);
     virtual Ptr<Buffer> GetReceiveBuffer(void);
-    void Clear();
+    void Clear(void);
     size_t msgstart_;//start position of first undelivered message in receive buffer
     ccn_skeleton_decoder d_;//skeleton decoder state
   };
   
-  CcnbWireProtocol(bool stream_mode);
+  explicit CcnbWireProtocol(bool stream_mode);
   
   virtual bool IsStateful(void) const { return this->stream_mode_; }
-  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) { return new State(); }
+  virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) const { return new State(); }
   
-  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<Message> message);
-  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet);
+  virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const;
+  virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const;
 
  private:
   bool stream_mode_;

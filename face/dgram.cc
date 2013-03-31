@@ -15,7 +15,7 @@ void DgramFace::Init(void) {
   this->global()->facemgr()->AddFace(this);
 }
 
-void DgramFace::Send(Ptr<Message> message) {
+void DgramFace::Send(Ptr<const Message> message) {
   if (!this->CanSend()) {
     this->Log(kLLError, kLCFace, "DgramFace(%" PRI_FaceId ")::Send !CanSend", this->id());
     return;
@@ -23,17 +23,26 @@ void DgramFace::Send(Ptr<Message> message) {
   this->channel()->FaceSend(this, message);
 }
 
+bool DgramFace::SendReachable(Ptr<const Face> other) const {
+  assert(other != nullptr);
+  
+  if (this->kind() == FaceKind::kMulticast && this->CanSend() && DgramFace::IsDgramFaceType(other->type())) {
+    const DgramFace* other_face = static_cast<const DgramFace*>(PeekPointer(other));
+    // Assume everyone on a channel joins the multicast group.
+    // This can be mandated for Ethernet.
+    // UDP mcast is unreliable, but it's on a separate port number (and separate channel).
+    return this->channel() == other_face->channel();
+  }
+  return false;
+}
+
 void DgramFace::Deliver(Ptr<Message> msg) {
   if (this->status() == FaceStatus::kUndecided) this->set_status(FaceStatus::kEstablished);
   this->ReceiveMessage(msg);
 }
 
-void DgramFace::Close(void) {
+void DgramFace::DoFinalize(void) {
   this->channel()->FaceClose(this);
-}
-
-void DgramFace::CloseInternal(void) {
-  this->set_status(FaceStatus::kClosed);
   this->channel_ = nullptr;
 }
 
@@ -42,11 +51,11 @@ DgramFallbackFace::DgramFallbackFace(Ptr<DgramChannel> channel)
   this->set_kind(FaceKind::kMulticast);
 }
 
-void DgramFallbackFace::Close(void) {
+void DgramFallbackFace::DoFinalize(void) {
   this->channel()->Close();
 }
 
-DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
+DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(av != nullptr);
   assert(wp != nullptr);
   this->fd_ = fd;
@@ -66,11 +75,6 @@ void DgramChannel::Init(void) {
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }
 
-DgramChannel::~DgramChannel(void) {
-  this->Close();
-  this->global()->scheduler()->Cancel(this->reap_evt_);
-}
-
 Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const NetworkAddress& peer) {
   Ptr<DgramFace> face = this->New<DgramFace>(this, peer);
   bool is_local = this->av()->IsLocal(peer) || this->av()->AreSameHost(this->local_addr(), peer);
@@ -84,6 +88,8 @@ Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const Net
 }
 
 Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, MakePeerFaceOp face_op) {
+  assert(this->av()->Check(peer));
+  
   AddressHashKey hashkey = this->av()->GetHashKey(peer);
   Ptr<PeerEntry> pe;
   auto it = this->peers_.find(hashkey);
@@ -92,7 +98,6 @@ Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, 
     if (face_op == MakePeerFaceOp::kCreate && pe->face_ == nullptr) {
       pe->face_ = this->CreateFace(hashkey, peer);
     } else if (face_op == MakePeerFaceOp::kDelete && pe->face_ != nullptr) {
-      pe->face_->CloseInternal();
       pe->face_ = nullptr;
     }
     return pe;
@@ -113,7 +118,7 @@ std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
     auto current = it++;
     Ptr<PeerEntry> pe = current->second;
     if (pe->recv_count_ == 0) {
-      if (pe->face_ != nullptr) pe->face_->CloseInternal();
+      if (pe->face_ != nullptr) pe->face_->Close();
       this->peers().erase(current);
     }
     pe->recv_count_ = 0;
@@ -121,7 +126,7 @@ std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
   return DgramChannel::kReapInterval;
 }
 
-void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<Message> message) {
+void DgramChannel::FaceSend(Ptr<DgramFace> face, Ptr<const Message> message) {
   Ptr<DgramFace> oface; Ptr<WireProtocolState> wps;
   if (face->kind() == FaceKind::kMulticast) {
     Ptr<McastEntry> entry = this->FindMcastEntry(face->peer());
@@ -221,6 +226,10 @@ Ptr<DgramChannel::McastEntry> DgramChannel::FindMcastEntryInternal(const Network
 }
 
 void DgramChannel::DeliverMcastPacket(const NetworkAddress& group, const NetworkAddress& peer, Ptr<BufferView> pkt) {
+  if (group == this->local_addr()) {
+    this->DeliverPacket(peer, pkt);
+    return;
+  }
   Ptr<McastEntry> entry = this->FindMcastEntry(group);
   this->DeliverMcastPacket(entry, peer, pkt);
 }
@@ -259,14 +268,13 @@ void DgramChannel::Close() {
   
   for (auto p : this->peers()) {
     Ptr<DgramFace> face = p.second->face_;
-    if (face != nullptr) {
-      face->CloseInternal();
-    }
+    face->Close();
   }
   this->peers().clear();
-  this->GetFallbackFace()->CloseInternal();
-  this->CloseFd();
+  this->GetFallbackFace()->Close();
   this->global()->pollmgr()->RemoveAll(this);
+  this->CloseFd();
+  this->global()->scheduler()->Cancel(this->reap_evt_);
 }
 
 

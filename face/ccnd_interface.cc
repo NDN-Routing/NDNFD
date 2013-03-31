@@ -5,6 +5,7 @@ extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
 }
+using ndnfd::Ptr;
 using ndnfd::Global;
 using ndnfd::Face;
 using ndnfd::FaceId;
@@ -37,13 +38,14 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
     Ptr<Face> uface = this->global()->facemgr()->MakeUnicastFace(in_face, message->incoming_sender());
+    in_face = uface;
     message->set_incoming_face(uface->id());
     this->Log(kLLInfo, kLCCcndFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
   }
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
   assert(msg->Verify());
-  process_input_message(this->global()->ccndh(), in_face->ccnd_face(), static_cast<unsigned char*>(msg->msg()), msg->length(), 0);
+  process_input_message(this->global()->ccndh(), in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
 }
 
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {

@@ -7,6 +7,10 @@ extern "C" {
 #include "message/message.h"
 namespace ndnfd {
 
+// FaceType indicates the type of a Face subclass.
+// Each subclass of Face must have a unique FaceType.
+typedef uint16_t FaceType;
+
 // FaceKind describes what's the peer(s) of a Face.
 enum class FaceKind {
   kNone      = 0,
@@ -28,6 +32,7 @@ enum class FaceStatus {
   kConnectError  = 11,//cannot establish connection
   kProtocolError = 12,//protocol error
   kDisconnect    = 13,//connection is reset
+  kFinalized     = 20,//finalized
 };
 std::string FaceStatus_ToString(FaceStatus status);
 // FaceStatus_IsError returns true if status represents an error condition.
@@ -38,6 +43,8 @@ bool FaceStatus_IsUsable(FaceStatus status);
 // A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {
  public:
+  virtual FaceType type(void) const =0;
+
   virtual ~Face(void) {}
   FaceId id(void) const { return this->id_; }
   FaceKind kind(void) const { return this->kind_; }
@@ -48,7 +55,12 @@ class Face : public Element {
   // CanSend returns true if this Face may be used to send messages.
   virtual bool CanSend(void) const { return false; }
   // Send enqueues a message for sending.
-  virtual void Send(Ptr<Message> message) { assert(false); }
+  virtual void Send(Ptr<const Message> message) { assert(false); }
+  // whether sending is likely blocked
+  bool send_blocked(void) const { return (this->ccnd_face()->flags & CCN_FACE_NOSEND) != 0; }
+  // SendReachable returns true if a message sent on this face
+  // is likely to reach all recipients on other face.
+  virtual bool SendReachable(Ptr<const Face> other) const { return false; }
   
   // CanReceive returns true if this Face may be used to receive messages.
   virtual bool CanReceive(void) const { return false; }
@@ -60,14 +72,15 @@ class Face : public Element {
   // Accept is called when a new connection is accepted as a new Face.
   PushPort<Ptr<Face>> Accept;
   
-  // Enroll verifies mgr is the FaceMgr of this router,
-  // and records the assigned FaceId.
-  virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
+  // Enroll verifies mgr==global()->facemgr(), and records the assigned FaceId.
+  // It's called by FaceMgr.
+  void Enroll(FaceId id, Ptr<FaceMgr> mgr);
   // Finalize cleans up a face.
-  virtual void Finalize(void);
+  // It's called by FaceMgr.
+  void Finalize(void);
   
   // Close closes the face immediately.
-  virtual void Close(void) {}
+  virtual void Close(void) { this->set_status(FaceStatus::kClosed); }
   
   // CountBytesIn, CountBytesOut update face counters.
   void CountBytesIn(size_t n) { ccnd_meter_bump(this->global()->ccndh(), this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }
@@ -78,6 +91,11 @@ class Face : public Element {
   void set_id(FaceId value);
   void set_status(FaceStatus value);
   void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
+  void set_send_blocked(bool value) { this->set_ccnd_flags(value ? CCN_FACE_NOSEND : 0, CCN_FACE_NOSEND); }
+  
+  // DoFinalize cleans up the face.
+  // It's called by Finalize, and is guaranteed to be called only once.
+  virtual void DoFinalize(void) {}
   
   // ReceiveMessage sets msg->incoming_face, then push to Receive port.
   void ReceiveMessage(Ptr<Message> msg);

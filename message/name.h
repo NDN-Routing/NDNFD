@@ -3,33 +3,51 @@
 #include "util/defs.h"
 extern "C" {
 #include <ccn/charbuf.h>
+#include <ccn/indexbuf.h>
 }
 namespace ndnfd {
 
 // A Name represents an NDN Name.
 // Name is immutable; every operation returns a new Name.
 // This is not currently used.
-class Name {
+class Name : public Object {
  public:
-  Name(const std::vector<std::string>&& components) { this->components_ = components; }
-  static Name FromCcnb(uint8_t* buf, size_t length);
-  static Name FromUri(std::string uri);
+  typedef std::basic_string<uint8_t> Component;
+  
+  // Name creates Name from components.
+  explicit Name(const std::vector<Component>& comps) { this->comps_ = comps; }
+  // FromCcnb parses Name from CCNB.
+  static Ptr<Name> FromCcnb(const uint8_t* buf, size_t length);
+  // FromUri parses Name from URI.
+  static Ptr<Name> FromUri(const std::string& uri);
 
-  const std::vector<std::string>& components(void) const { return this->components_; }
-  uint16_t n_components(void) const { return (uint16_t)this->components_.size(); }
+  // components
+  const std::vector<Component>& comps(void) const { return this->comps_; }
+  // number of components
+  uint16_t n_comps(void) const { return static_cast<uint16_t>(this->comps_.size()); }
   
-  Name Append(std::string component) const;
-  Name GetPrefix(uint16_t n_components) const;
-  Name StripSuffix(uint16_t remove_n_components) const;
+  // Append returns a new Name that is this+component
+  Ptr<Name> Append(const Component& component) const;
+  // GetPrefix returns a new Name that has the first_n components of this
+  Ptr<Name> GetPrefix(uint16_t first_n) const;
+  // StripSuffix returns a new Name that has the first (this->n_comps() - remove_n) components of this
+  Ptr<Name> StripSuffix(uint16_t remove_n) const;
   
-  void ToCcnb(ccn_charbuf* cb) const;
+  // ToCcnb returns CCNB for Name.
+  // If tag_Name is true, <Name>..</Name> tags are included; otherwise they are not included.
+  // If comps is not null, it is populated with positions of <Component> elements and beyond last </Component>.
+  std::basic_string<uint8_t> ToCcnb(bool tag_Name = true, ccn_indexbuf* comps = nullptr) const;
+  // ToUri returns URI for Name.
   std::string ToUri(void) const;
-  bool IsPrefix(Name prefix) const;
+  
+  // Equals returns true if this and other are identical.
+  bool Equals(Ptr<const Name> other) const;
+  // IsPrefixOf returns true if this is a prefix of other
+  bool IsPrefixOf(Ptr<const Name> other) const;
 
  private:
   Name(void) {}
-  std::vector<std::string> components_;
-  DISALLOW_COPY_AND_ASSIGN(Name);
+  std::vector<Component> comps_;
 };
 
 };//namespace ndnfd

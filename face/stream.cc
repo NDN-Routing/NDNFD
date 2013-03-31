@@ -4,7 +4,7 @@
 #include "message/ccnb.h"
 namespace ndnfd {
 
-StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<WireProtocol> wp) {
+StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(wp != nullptr);
   this->set_fd(fd);
@@ -25,11 +25,7 @@ void StreamFace::Init(void) {
   this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
-StreamFace::~StreamFace(void) {
-  this->Disconnect();
-}
-
-void StreamFace::Send(Ptr<Message> message) {
+void StreamFace::Send(Ptr<const Message> message) {
   if (!FaceStatus_IsUsable(this->status())) {
     this->Log(kLLError, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
     return;
@@ -52,7 +48,7 @@ void StreamFace::PollCallback(int fd, short revents) {
     if ((revents & POLLIN) != 0) {
       this->Read();
     } else {
-      this->Disconnect();
+      this->Close();
     }
     return;
   }
@@ -68,8 +64,8 @@ void StreamFace::SetClosing(void) {
   if (FaceStatus_IsUsable(this->status())) {
     this->set_status(FaceStatus::kClosing);
   }
-  if (this->status() == FaceStatus::kClosing && !this->SendBlocked()) {
-    this->Disconnect(FaceStatus::kClosed);
+  if (this->status() == FaceStatus::kClosing && this->send_queue().empty()) {
+    this->Close();
   }
 }
 
@@ -83,7 +79,7 @@ void StreamFace::Write(void) {
     ssize_t res = write(this->fd(), pkt->data(), pkt->length());
     if (res < 0) {
       if (errno != EAGAIN && errno != EWOULDBLOCK) {
-        this->Disconnect();
+        this->Close();
         return;
       }
       break;
@@ -100,18 +96,18 @@ void StreamFace::Write(void) {
       }
     }
   }
-  if (this->SendBlocked()) {
-    this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
-    this->set_ccnd_flags(CCN_FACE_NOSEND, CCN_FACE_NOSEND);
-  } else {
+  if (this->send_queue().empty()) {
     this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
-    this->set_ccnd_flags(0, CCN_FACE_NOSEND);
+    this->set_send_blocked(false);
     if (this->status() == FaceStatus::kConnecting) {
-      this->Disconnect(FaceStatus::kUndecided);
+      this->set_status(FaceStatus::kUndecided);
     }
     if (this->status() == FaceStatus::kClosing) {
-      this->Disconnect(FaceStatus::kClosed);
+      this->Close();
     }
+  } else {
+    this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
+    this->set_send_blocked(true);
   }
 }
 
@@ -128,7 +124,7 @@ Ptr<Buffer> StreamFace::GetReceiveBuffer(void) {
 void StreamFace::Read(void) {
   int sockerr = Socket_ClearError(this->fd());
   if (sockerr == ETIMEDOUT && this->status() == FaceStatus::kConnecting) {
-    this->Disconnect(FaceStatus::kConnectError);
+    this->set_status(FaceStatus::kConnectError);
     return;
   }
 
@@ -137,12 +133,12 @@ void StreamFace::Read(void) {
   ssize_t res = read(this->fd(), pkt->Reserve(bufsize), bufsize);
   if (res < 0) {
     if (errno != EAGAIN && errno != EWOULDBLOCK) {
-      this->Disconnect();
+      this->Close();
     }
     return;
   }
   if (res == 0) {
-    this->Disconnect();
+    this->Close();
     return;
   }
   this->CountBytesIn(static_cast<size_t>(res));
@@ -163,14 +159,12 @@ void StreamFace::Read(void) {
   }
 }
 
-void StreamFace::Disconnect(FaceStatus status) {
+void StreamFace::DoFinalize(void) {
   this->global()->pollmgr()->RemoveAll(this);
   close(this->fd());
-  this->set_fd(-1);
-  this->set_status(status);
 }
 
-StreamListener::StreamListener(int fd, Ptr<AddressVerifier> av, Ptr<WireProtocol> wp) {
+StreamListener::StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(av != nullptr);
   assert(wp != nullptr);
@@ -186,14 +180,10 @@ void StreamListener::Init(void) {
   this->Log(kLLInfo, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d", this, this->id(), this->fd());
 }
 
-StreamListener::~StreamListener(void) {
-  this->Disconnect();
-}
-
 void StreamListener::PollCallback(int fd, short revents) {
   assert(fd == this->fd());
   if ((revents & PollMgr::kErrors) != 0) {
-    this->Disconnect();
+    this->Close();
     return;
   }
   if ((revents & POLLIN) != 0) {
@@ -225,11 +215,9 @@ Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
   return face;
 }
 
-void StreamListener::Disconnect(FaceStatus status) {
+void StreamListener::DoFinalize(void) {
   this->global()->pollmgr()->RemoveAll(this);
   close(this->fd());
-  this->set_fd(-1);
-  this->set_status(status);
 }
 
 };//namespace ndnfd

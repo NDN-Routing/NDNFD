@@ -4,11 +4,11 @@
 #include <sys/stat.h>
 namespace ndnfd {
 
-bool UnixAddressVerifier::Check(const NetworkAddress& addr) {
+bool UnixAddressVerifier::Check(const NetworkAddress& addr) const {
   return addr.family() == AF_UNIX;
 }
 
-std::string UnixAddressVerifier::ToString(const NetworkAddress& addr) {
+std::string UnixAddressVerifier::ToString(const NetworkAddress& addr) const {
   const sockaddr_un* sa = reinterpret_cast<const sockaddr_un*>(&addr.who);
   return std::string(sa->sun_path);
 }

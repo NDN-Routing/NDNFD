@@ -1,11 +1,9 @@
 #ifndef NDNFD_STRATEGY_STRATEGY_H_
 #define NDNFD_STRATEGY_STRATEGY_H_
-extern "C" {
-#include "ccnd/ccnd_private.h"
-}
-#include "face/face.h"
+#include "ccnd_interface.h"
 #include "message/interest.h"
 #include "message/contentobject.h"
+#include "core/nameprefix_table.h"
 namespace ndnfd {
 
 // A Strategy represents a forwarding strategy.
@@ -13,27 +11,90 @@ namespace ndnfd {
 // The design is taken from ndnSIM, but it seems insufficient.
 class Strategy : public Element {
  public:
-  Strategy(void);
-  virtual ~Strategy(void);
+  Strategy(void) {}
+  virtual void Init(void);
+  virtual ~Strategy(void) {}
+  Ptr<CcndStrategyInterface> ccnd_strategy_interface(void) const { return this->ccnd_strategy_interface_; }
+
+  // -------- Interest processing --------
+
+  // OnInterest processes an incoming Interest.
+  // (same as ccnd process_incoming_interest)
+  virtual void OnInterest(Ptr<InterestMessage> interest) {}//currently unused
   
-  virtual void OnInterest(Ptr<InterestMessage> interest);
+  // SatisfyPendingInterestsOnFace satisfies all pending Interests on downstream.
+  // It's invoked when incoming Interest is satisfied in CS.
+  // (same as ccnd match_interests with face=downstream)
+  virtual void SatisfyPendingInterestsOnFace(Ptr<const ContentObjectMessage> content, FaceId downstream) {}//currently unused
   
-  virtual void OnContentObject(Ptr<ContentObjectMessage> content);
+  // PropagateInterest propagates an Interest.
+  // It's known that interest cannot be satisfied in CS.
+  // (same as ccnd propagate_interest)
+  virtual void PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe);
+
+  // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
+  // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.
+  // (same as ccnd strategy_callout CCNST_FIRST)
+  virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   
-  virtual void WillEraseTimedOutPendingInterest(interest_entry* ie);
+  // DoPropagate is invoked when
+  // * a similar Interest is received from a new/expired downstream
+  // * a downstream expires
+  // * an upstream expires
+  // It returns the delay until next time it should be called.
+  // It should continue propagating until there's no more unexpired upstream,
+  // in that case it should call DidExhaustForwardingOptions or WillEraseTimedOutPendingInterest.
+  // (same as ccnd do_propagate)
+  virtual std::chrono::microseconds DoPropagate(Ptr<PitEntry> ie);
   
-  virtual void AddFace(FaceId face);
+  // DidExhaustForwardingOptions is invoked when there are pending downstreams,
+  // but no more unexpired upstreams.
+  virtual void DidExhaustForwardingOptions(Ptr<PitEntry> ie);
   
-  virtual void RemoveFace(FaceId face);
+  // WillEraseTimedOutPendingInterest is invoked when there's no more pending downstreams
+  // and no more unexpired upstreams.
+  // (same as ccnd strategy_callout CCNST_TIMEOUT)
+  virtual void WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie);
+
+  // -------- ContentObject processing --------
+
+  // OnContentObject processes an incoming ContentObject.
+  // (same as ccnd process_incoming_content)
+  virtual void OnContentObject(Ptr<ContentObjectMessage> content) { assert(false); }//currently unused
   
-  virtual void DidAddFibEntry(nameprefix_entry* npe, ccn_forwarding* forw);
+  // SatisfyPendingInterests satisfies pending Interests in npe that match content.
+  // WillSatisfyPendingInterest is called before satisfying each Interest.
+  // It returns downstream => number of Interests satisfied on that downtream; the caller should send content to them.
+  // (same as ccnd match_interests with face=null)
+  virtual std::unordered_map<FaceId,int> SatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const ContentObjectMessage> content) { return std::unordered_map<FaceId,int>(); }//currently unused
   
-  virtual void WillRemoveFibEntry(nameprefix_entry* npe, ccn_forwarding* forw);
+  // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
+  // (same as ccnd strategy_callout CCNST_SATISFIED)
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream, FaceId downstream) {}
   
+  // -------- face callbacks --------
+  virtual void AddFace(FaceId face) {}//currently unused
+  virtual void RemoveFace(FaceId face) {}//currently unused
+  
+  // -------- FIB callbacks --------
+  virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw) {}//currently unused
+  virtual void WillRemoveFibEntry(Ptr<ForwardingEntry> forw) {}//currently unused
+
  protected:
-  virtual void DoPropagateInterest(Ptr<InterestMessage> interest) =0;
- 
+  // -------- Interest service --------
+  
+  // SendInterest sends an Interest to upstream on behalf of downstram.
+  void SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream);
+  
+  // -------- ContentObject service --------
+
+  // SendContentObject sends a ContentObject to downstream.
+  // co is placed into the face send queue if there's no duplicate.
+  void SendContentObject(FaceId downstream, content_entry* content) { assert(false); }//currently unused
+
  private:
+  Ptr<CcndStrategyInterface> ccnd_strategy_interface_;
+
   DISALLOW_COPY_AND_ASSIGN(Strategy);
 };
 

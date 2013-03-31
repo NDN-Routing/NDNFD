@@ -1,0 +1,46 @@
+import os
+
+def options(opt):
+    opt.add_option('--with-ndnfd',
+		   help=('Path to NDNFD source'),
+		   default='', dest='with_ndnfd')
+
+def configure(conf):
+    conf.env.append_unique('CXXFLAGS', ['-Wall', '-Werror', '-Wpointer-arith', '-std=c++0x'])
+
+    ndnfd_path = None
+    if conf.options.with_ndnfd:
+        if os.path.isdir(conf.options.with_ndnfd):
+            conf.msg("Checking for NDNFD location", ("%s" % conf.options.with_ndnfd))
+            ndnfd_path = os.path.abspath(conf.options.with_ndnfd)
+            conf.env['WITH_NDNFD'] = ndnfd_path
+    if ndnfd_path is None:
+        conf.msg("Checking for NDNFD location", False)
+        conf.report_optional_feature('NDNFD','NDNFD',False,'see option --with-ndnfd')
+        conf.env['MODULES_NOT_BUILT'].append('NDNFD')
+    else:
+        conf.report_optional_feature('NDNFD','NDNFD',True,'')
+        conf.env['INCLUDES_NDNFD'] = [ndnfd_path]
+        conf.env['LIBPATH_NDNFD'] = os.path.join(ndnfd_path, 'build')
+        conf.env['LIB_NDNFD'] = ['ndnfdsim','ccn','pcap','crypto']
+
+def build(bld):
+    module = bld.create_ns3_module('NDNFD', ['ndnSIM'])
+    module.module = 'NDNFD'
+    module.uselib = 'NDNFD'
+    module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc'], excl=['**/*_test*.cc'])
+    module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
+
+    headers = bld.new_task_gen(features=['ns3header'])
+    headers.module = module.module
+    headers.source = [
+        'model/ndnfd-l3protocol.h',
+        'helper/ndnfd-stack-helper.h',
+        ]
+
+    unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD','csma'])
+    unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.add_subdirs('examples')
+

@@ -32,7 +32,7 @@ TEST(FaceTest, StreamFace) {
   ASSERT_TRUE(m1->Verify());
   
   int sent = 0;
-  while (!f1->SendBlocked()) {
+  while (!f1->send_blocked()) {
     ++sent;
     f1->Send(m1);
   }
@@ -55,7 +55,7 @@ TEST(FaceTest, StreamFace) {
   }
 
   f1->SetClosing();
-  EXPECT_EQ(FaceStatus::kClosed, f1->status());
+  EXPECT_EQ(FaceStatus::kFinalized, f1->status());
   EXPECT_FALSE(f1->CanSend());
   EXPECT_FALSE(f1->CanReceive());
 }

@@ -10,11 +10,11 @@ class FaceFactory : public Element {
 
  protected:
   FaceFactory(void) { this->wp_ = nullptr; }
-  FaceFactory(Ptr<WireProtocol> wp) { assert(wp != nullptr); this->wp_ = wp; }
-  Ptr<WireProtocol> wp(void) const { return this->wp_; }
+  FaceFactory(Ptr<const WireProtocol> wp) { assert(wp != nullptr); this->wp_ = wp; }
+  Ptr<const WireProtocol> wp(void) const { return this->wp_; }
 
  private:
-  Ptr<WireProtocol> wp_;
+  Ptr<const WireProtocol> wp_;
 
   DISALLOW_COPY_AND_ASSIGN(FaceFactory);
 };
