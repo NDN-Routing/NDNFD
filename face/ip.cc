@@ -49,7 +49,7 @@ bool IpAddressVerifier::IsLocal(const NetworkAddress& addr) const {
   return false;
 }
 
-bool IpAddressVerifier::IsMcast(const NetworkAddress& addr) {
+bool IpAddressVerifier::IsMcast(const NetworkAddress& addr) const {
   switch (reinterpret_cast<const sockaddr*>(&addr.who)->sa_family) {
     case AF_INET: {
       const sockaddr_in *sa = reinterpret_cast<const sockaddr_in*>(&addr.who);
