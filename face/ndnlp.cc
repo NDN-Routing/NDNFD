@@ -41,6 +41,7 @@ std::tuple<bool,std::list<Ptr<Buffer>>> NdnlpWireProtocol::Encode(const NetworkA
       results.push_back(new Buffer(pkt_buf, pkt_length));
     }
     NdnlpPktA_dtor(pkts, false);
+    CcnbMsg_dtor(msg);
   }
   return std::forward_as_tuple(true, results);
 }

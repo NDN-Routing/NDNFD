@@ -55,7 +55,7 @@ TEST(FaceTest, StreamFace) {
   }
 
   f1->SetClosing();
-  EXPECT_EQ(FaceStatus::kClosed, f1->status());
+  EXPECT_EQ(FaceStatus::kFinalized, f1->status());
   EXPECT_FALSE(f1->CanSend());
   EXPECT_FALSE(f1->CanReceive());
 }

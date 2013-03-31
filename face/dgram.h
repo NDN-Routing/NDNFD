@@ -30,10 +30,8 @@ class DgramFace : public Face {
   virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
   void Deliver(Ptr<Message> msg);
 
-  virtual void Close(void);
-  // CloseInternal closes the face immediately,
-  // but does not notify DgramChannel.
-  void CloseInternal(void);
+ protected:
+  virtual void DoFinalize(void);
   
  private:
   NetworkAddress peer_;
@@ -54,8 +52,9 @@ class DgramFallbackFace : public DgramFace {
   
   virtual bool CanSend(void) const { return false; }
   
-  // Close closes the fallback face, and the DgramChannel.
-  virtual void Close(void);
+ protected:
+  // closing fallback face will close the channel
+  virtual void DoFinalize(void);
   
  private:
   DISALLOW_COPY_AND_ASSIGN(DgramFallbackFace);
@@ -67,7 +66,7 @@ class DgramChannel : public Element, public IPollClient {
   // fd: fd of the socket, after bind(local_addr)
   DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
-  virtual ~DgramChannel(void);
+  virtual ~DgramChannel(void) {}
   
   // GetFallbackFace returns the fallback face: "unsolicited" messages
   // (from peers without a DgramFace) are received on this face.

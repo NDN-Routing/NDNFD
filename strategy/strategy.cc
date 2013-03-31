@@ -6,7 +6,6 @@ struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry
 int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
 int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
-
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -74,7 +73,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
     this->PropagateNewInterest(ie);
   }
   this->global()->scheduler()->Cancel(ie->ie()->ev);
-  ie->ie()->ev = this->global()->scheduler()->Schedule(ie->NextEventDelay(), std::bind(&Strategy::DoPropagate, this, ie));
+  ie->ie()->ev = this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie));
 }
 
 std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
@@ -145,7 +144,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
     this->DidExhaustForwardingOptions(ie);
   }
   
-  return ie->NextEventDelay();
+  return ie->NextEventDelay(false);
 }
 
 };//namespace ndnfd

@@ -7,6 +7,7 @@ namespace ndnfd {
 class SimLogging : public Logging {
  public:
   SimLogging(uint32_t nodeid);
+  virtual ~SimLogging(void) {}
 
  protected:
   virtual void WriteLine(LoggingLevel level, LoggingComponent component, const char* s);

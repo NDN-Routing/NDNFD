@@ -136,7 +136,9 @@ class PitEntry : public Element {
   void ForeachDownstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_DNSTREAM); }
   
   // NextEventDelay returns the delay until next pfi expires.
-  std::chrono::microseconds NextEventDelay(void) const;
+  // If include_expired is true, all pfi are considered;
+  // otherwise, only pending downstream and unexpired upstream are considered.
+  std::chrono::microseconds NextEventDelay(bool include_expired) const;
 
  private:
   Ptr<const Name> name_;

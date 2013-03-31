@@ -1,7 +1,9 @@
 #include "nameprefix_table.h"
+#include <algorithm>
 #include <limits>
 extern "C" {
 #include <ccn/hashtb.h>
+uint32_t WTHZ_value(void);
 int nameprefix_seek(struct ccnd_handle* h, struct hashtb_enumerator* e, const uint8_t* msg, struct ccn_indexbuf* comps, int ncomps);
 struct ccn_forwarding* seek_forwarding(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid);
 void update_forward_to(struct ccnd_handle* h, struct nameprefix_entry* npe);
@@ -11,6 +13,7 @@ void consume_interest(struct ccnd_handle* h, struct interest_entry* ie);
 struct pit_face_item* pfi_seek(struct ccnd_handle* h, struct interest_entry* ie, unsigned faceid, unsigned pfi_flag);
 void pfi_destroy(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedtime* expiry);
+int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 }
 #include "face/facemgr.h"
 namespace ndnfd {
@@ -181,9 +184,29 @@ void PitEntry::ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, u
   }
 }
 
-std::chrono::microseconds PitEntry::NextEventDelay(void) const {
-  int usec = ie_next_usec(this->global()->ccndh(), this->ie(), nullptr);
-  return std::chrono::microseconds(usec);
+std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
+  if (include_expired) {
+    int usec = ie_next_usec(this->global()->ccndh(), this->ie(), nullptr);
+    return std::chrono::microseconds(usec);
+  }
+
+  ccn_wrappedtime now = this->global()->ccndh()->wtnow;
+  ccn_wrappedtime mn = 600 * WTHZ_value();
+
+  const_cast<PitEntry*>(this)->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
+    if ((p->pfi_flags & CCND_PFI_PENDING) != 0) {
+      mn = std::min(mn, p->expiry-now);
+    }
+    return ForeachAction::kNone;
+  });
+  const_cast<PitEntry*>(this)->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
+    if (wt_compare(now+1, p->expiry) < 0) {
+      mn = std::min(mn, p->expiry-now);
+    }
+    return ForeachAction::kNone;
+  });
+  
+  return std::chrono::microseconds(mn * (1000000 / WTHZ_value()));
 }
 
 };//namespace ndnfd

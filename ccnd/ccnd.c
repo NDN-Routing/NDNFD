@@ -169,6 +169,9 @@ static void strategy_callout(struct ccnd_handle *h,
  * timekeeping too coarse.
  */
 #define WTHZ 500U
+#ifdef NDNFD
+uint32_t WTHZ_value(void) { return WTHZ; }
+#endif
 
 #ifndef NDNFD
 /**

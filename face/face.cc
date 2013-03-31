@@ -60,6 +60,8 @@ Face::Face(void) {
 
 void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
   assert(mgr == this->global()->facemgr());
+  assert(this->id_ == FaceId_none);
+
   this->set_id(id);
   // update ccnd_face, like ccnd_enroll_face
   this->ccnd_face()->meter[FM_BYTI] = ccnd_meter_create(this->global()->ccndh(), "bytein");
@@ -71,7 +73,10 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 }
 
 void Face::Finalize(void) {
+  if (this->status_ == FaceStatus::kFinalized) return;
+  this->DoFinalize();
   finalize_face(this->global()->ccndh(), this->ccnd_face());
+  this->status_ = FaceStatus::kFinalized;
 }
 
 void Face::set_id(FaceId value) {
@@ -95,8 +100,9 @@ void Face::set_kind(FaceKind value) {
 }
 
 void Face::set_status(FaceStatus value) {
+  assert(value != FaceStatus::kFinalized);
   FaceStatus old_status = this->status_;
-  if (old_status == value) return;
+  if (old_status == value || old_status == FaceStatus::kFinalized) return;
   this->status_ = value;
 
   // let process_input_message unset UNDECIDED and call register_new_face
@@ -127,16 +133,5 @@ void Face::ReceiveMessage(Ptr<Message> msg) {
   msg->set_incoming_face(this->id());
   this->Receive(msg);
 }
-
-/*
-void Face::UpdateCcndFlags(void) {
-  const int mask = CCN_FACE_LINK | CCN_FACE_DGRAM | CCN_FACE_GG | CCN_FACE_LOCAL | CCN_FACE_INET | CCN_FACE_MCAST | CCN_FACE_INET6 | CCN_FACE_NOSEND | CCN_FACE_UNDECIDED | CCN_FACE_CONNECTING | CCN_FACE_LOOPBACK | CCN_FACE_CLOSING | CCN_FACE_PASSIVE;
-  int flags = this->ccnd_face()->flags & ~mask;
-  // not relevant: LINK, DGRAM
-  // TODO
-  //   unix sockets: set LOCAL, and GG when kEstablished
-  //   loopback: set LOOPBACK, and GG when kEstablished
-}
-*/
 
 };//namespace ndnfd

@@ -17,7 +17,7 @@ class StreamFace : public Face, public IPollClient {
   // fd: fd of the socket, after connect() or accept()
   StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const WireProtocol> wp);
   virtual void Init(void);
-  virtual ~StreamFace(void);
+  virtual ~StreamFace(void) {}
 
   virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
   virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
@@ -36,8 +36,6 @@ class StreamFace : public Face, public IPollClient {
   // so that face is closed after queued messages are sent.
   void SetClosing(void);
   
-  virtual void Close(void) { this->Disconnect(FaceStatus::kClosed); }
-
  protected:
   int fd(void) const { return this->fd_; }
   void set_fd(int value) { this->fd_ = value; }
@@ -66,8 +64,7 @@ class StreamFace : public Face, public IPollClient {
   // and writes them to Receive port.
   virtual void Read(void);
   
-  // Disconnect closes fd and unregisters from pollmgr.
-  void Disconnect(FaceStatus status = FaceStatus::kDisconnect);
+  virtual void DoFinalize(void);
 
  private:
   int fd_;
@@ -92,15 +89,13 @@ class StreamListener : public Face, public IPollClient {
   // fd: fd of the socket, after bind() and listen()
   StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
-  virtual ~StreamListener(void);
+  virtual ~StreamListener(void) {}
   
   virtual bool CanAccept(void) const { return true; }
   
   // PollCallback is invoked with POLLIN when there are
   // connection requests on the socket to accept.
   virtual void PollCallback(int fd, short revents);
-
-  virtual void Close(void) { this->Disconnect(FaceStatus::kClosed); }
 
  protected:
   int fd(void) const { return this->fd_; }
@@ -114,10 +109,9 @@ class StreamListener : public Face, public IPollClient {
   void AcceptConnection(void);
   // MakeFace makes a StreamFace from an accepted connection.
   virtual Ptr<StreamFace> MakeFace(int fd, const NetworkAddress& peer);
-  
-  // Disconnect closes fd and unregisters from pollmgr.
-  void Disconnect(FaceStatus status = FaceStatus::kDisconnect);
 
+  virtual void DoFinalize(void);
+  
  private:
   int fd_;
   Ptr<const AddressVerifier> av_;

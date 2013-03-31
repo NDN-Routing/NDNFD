@@ -27,6 +27,8 @@ const LoggingComponent kLCSim        = 0x0800;
 class Logging {
  public:
   Logging(void);
+  virtual ~Logging(void) {}
+  
   LoggingLevel min_level(void) const { return this->min_level_; }
   void set_min_level(LoggingLevel value) { this->min_level_ = value; }
   LoggingComponent components(void) const { return this->components_; }

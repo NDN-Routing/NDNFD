@@ -32,6 +32,7 @@ enum class FaceStatus {
   kConnectError  = 11,//cannot establish connection
   kProtocolError = 12,//protocol error
   kDisconnect    = 13,//connection is reset
+  kFinalized     = 20,//finalized
 };
 std::string FaceStatus_ToString(FaceStatus status);
 // FaceStatus_IsError returns true if status represents an error condition.
@@ -71,11 +72,12 @@ class Face : public Element {
   // Accept is called when a new connection is accepted as a new Face.
   PushPort<Ptr<Face>> Accept;
   
-  // Enroll verifies mgr is the FaceMgr of this router,
-  // and records the assigned FaceId.
-  virtual void Enroll(FaceId id, Ptr<FaceMgr> mgr);
+  // Enroll verifies mgr==global()->facemgr(), and records the assigned FaceId.
+  // It's called by FaceMgr.
+  void Enroll(FaceId id, Ptr<FaceMgr> mgr);
   // Finalize cleans up a face.
-  virtual void Finalize(void);
+  // It's called by FaceMgr.
+  void Finalize(void);
   
   // Close closes the face immediately.
   virtual void Close(void) { this->set_status(FaceStatus::kClosed); }
@@ -90,6 +92,10 @@ class Face : public Element {
   void set_status(FaceStatus value);
   void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
   void set_send_blocked(bool value) { this->set_ccnd_flags(value ? CCN_FACE_NOSEND : 0, CCN_FACE_NOSEND); }
+  
+  // DoFinalize cleans up the face.
+  // It's called by Finalize, and is guaranteed to be called only once.
+  virtual void DoFinalize(void) {}
   
   // ReceiveMessage sets msg->incoming_face, then push to Receive port.
   void ReceiveMessage(Ptr<Message> msg);

@@ -41,12 +41,8 @@ void DgramFace::Deliver(Ptr<Message> msg) {
   this->ReceiveMessage(msg);
 }
 
-void DgramFace::Close(void) {
+void DgramFace::DoFinalize(void) {
   this->channel()->FaceClose(this);
-}
-
-void DgramFace::CloseInternal(void) {
-  this->set_status(FaceStatus::kClosed);
   this->channel_ = nullptr;
 }
 
@@ -55,7 +51,7 @@ DgramFallbackFace::DgramFallbackFace(Ptr<DgramChannel> channel)
   this->set_kind(FaceKind::kMulticast);
 }
 
-void DgramFallbackFace::Close(void) {
+void DgramFallbackFace::DoFinalize(void) {
   this->channel()->Close();
 }
 
@@ -77,11 +73,6 @@ void DgramChannel::Init(void) {
   this->reap_evt_ = this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this));
 
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
-}
-
-DgramChannel::~DgramChannel(void) {
-  this->Close();
-  this->global()->scheduler()->Cancel(this->reap_evt_);
 }
 
 Ptr<DgramFace> DgramChannel::CreateFace(const AddressHashKey& hashkey, const NetworkAddress& peer) {
@@ -107,7 +98,6 @@ Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, 
     if (face_op == MakePeerFaceOp::kCreate && pe->face_ == nullptr) {
       pe->face_ = this->CreateFace(hashkey, peer);
     } else if (face_op == MakePeerFaceOp::kDelete && pe->face_ != nullptr) {
-      pe->face_->CloseInternal();
       pe->face_ = nullptr;
     }
     return pe;
@@ -128,7 +118,7 @@ std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
     auto current = it++;
     Ptr<PeerEntry> pe = current->second;
     if (pe->recv_count_ == 0) {
-      if (pe->face_ != nullptr) pe->face_->CloseInternal();
+      if (pe->face_ != nullptr) pe->face_->Close();
       this->peers().erase(current);
     }
     pe->recv_count_ = 0;
@@ -278,14 +268,13 @@ void DgramChannel::Close() {
   
   for (auto p : this->peers()) {
     Ptr<DgramFace> face = p.second->face_;
-    if (face != nullptr) {
-      face->CloseInternal();
-    }
+    face->Close();
   }
   this->peers().clear();
-  this->GetFallbackFace()->CloseInternal();
-  this->CloseFd();
+  this->GetFallbackFace()->Close();
   this->global()->pollmgr()->RemoveAll(this);
+  this->CloseFd();
+  this->global()->scheduler()->Cancel(this->reap_evt_);
 }
 
 
