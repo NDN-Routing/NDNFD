@@ -29,6 +29,10 @@ class CcndFaceInterface : public Element {
   // Send sends a CCNB message through a face.
   void Send(FaceId faceid, uint8_t* msg, size_t length);
   
+  // last message passed to process_input_message,
+  // in case strategy wants to inspect (eg. to get incoming_sender)
+  Ptr<Message> last_received_message_;
+  
  private:
   // Receive is bound to face.Receive port.
   // When a message is received, it is handed over to ccnd core

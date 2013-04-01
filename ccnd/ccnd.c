@@ -1837,6 +1837,7 @@ consume_matching_interests(struct ccnd_handle *h,
     return(matches);
 }
 
+#ifndef NDNFD
 /**
  * Adjust the predicted response associated with a name prefix entry.
  *
@@ -1860,7 +1861,6 @@ adjust_npe_predicted_response(struct ccnd_handle *h,
     npe->usec = t;
 }
 
-#ifndef NDNFD
 /**
  * Adjust the predicted responses for an interest.
  *
@@ -1881,7 +1881,6 @@ adjust_predicted_response(struct ccnd_handle *h,
     if (npe->parent != NULL)
         adjust_npe_predicted_response(h, npe->parent, up);
 }
-#endif
 
 /**
  * Keep a little history about where matching content comes from.
@@ -1904,6 +1903,7 @@ note_content_from(struct ccnd_handle *h,
         ccnd_msg(h, "sl.%d %u ci=%d osrc=%u src=%u usec=%d", __LINE__,
                  from_faceid, prefix_comps, npe->osrc, npe->src, npe->usec);
 }
+#endif
 
 /**
  * Find and consume interests that match given content.
@@ -1923,7 +1923,9 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     int n_matched = 0;
     int new_matches;
     int ci;
+#ifndef NDNFD
     int cm = 0;
+#endif
     unsigned c0 = content->comps[0];
     const unsigned char *key = content->key + c0;
     struct nameprefix_entry *npe = NULL;
@@ -1941,13 +1943,18 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
             return(-1);
 #ifdef NDNFD
         new_matches = consume_matching_interests(h, npe, content, pc, face, from_face);
+        if (from_face != NULL && new_matches != 0) {
+            note_content_from2(h, npe, from_face->faceid, content->key + content->comps[0], content->comps[ci] - content->comps[0]);
+        }
 #else
         new_matches = consume_matching_interests(h, npe, content, pc, face);
-#endif
         if (from_face != NULL && (new_matches != 0 || ci + 1 == cm))
             note_content_from(h, npe, from_face->faceid, ci);
+#endif
         if (new_matches != 0) {
+#ifndef NDNFD
             cm = ci; /* update stats for this prefix and one shorter */
+#endif
             n_matched += new_matches;
         }
     }

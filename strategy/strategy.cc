@@ -180,6 +180,10 @@ void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
 }
 
+void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream) {
+  this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId "", npe->name()->ToUri().c_str(), upstream);
+}
+
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
   assert(forw != nullptr);
   Ptr<NamePrefixEntry> npe = forw->npe();

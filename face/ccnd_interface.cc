@@ -43,6 +43,8 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
     this->Log(kLLInfo, kLCCcndFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
   }
   
+  this->last_received_message_ = message;
+  
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
   assert(msg->Verify());
   process_input_message(this->global()->ccndh(), in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
