@@ -27,7 +27,7 @@ void PcapChannel::Init(void) {
   
   int res;
   char filter_text[256];
-  snprintf(filter_text, sizeof(filter_text), "ether proto 0x%" PRIx16 "", this->ether_type_);
+  snprintf(filter_text, sizeof(filter_text), "ether proto 0x%" PRIx16 " && !(ether src %s)", this->ether_type_, this->av()->ToString(this->local_addr()).c_str());
   res = pcap_compile(this->p_, &this->filter_, filter_text, 1, 0);
   if (res == -1) {
     this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::Init pcap_compile %s", this->ifname_.c_str(), pcap_geterr(this->p_));

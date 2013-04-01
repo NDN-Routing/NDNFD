@@ -83,16 +83,16 @@ void FaceMgr::StartDefaultListeners(void) {
   std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:9695"); assert(ok);
   this->set_udp_channel(udp_factory->Channel(addr));
 
-  std::tie(ok, addr) = IpAddressVerifier::Parse("224.0.23.170:59695"); assert(ok);
-  for (NetworkAddress local_addr : udp_factory->ListLocalAddresses()) {
-    reinterpret_cast<sockaddr_in*>(&local_addr.who)->sin_port = htobe16(59695);
-    Ptr<DgramFace> mcast_face = udp_factory->McastFace(local_addr, addr, 1);
-    if (mcast_face != nullptr) this->add_udp_mcast_face(mcast_face);
-  }
+  //std::tie(ok, addr) = IpAddressVerifier::Parse("224.0.23.170:59695"); assert(ok);
+  //for (NetworkAddress local_addr : udp_factory->ListLocalAddresses()) {
+  //  reinterpret_cast<sockaddr_in*>(&local_addr.who)->sin_port = htobe16(59695);
+  //  Ptr<DgramFace> mcast_face = udp_factory->McastFace(local_addr, addr, 1);
+  //  if (mcast_face != nullptr) this->add_udp_mcast_face(mcast_face);
+  //}
   
-  Ptr<UdpFaceFactory> udp_ndnlp_factory = this->New<UdpFaceFactory>(this->New<NdnlpWireProtocol>(1460));
-  std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695"); assert(ok);
-  this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
+  //Ptr<UdpFaceFactory> udp_ndnlp_factory = this->New<UdpFaceFactory>(this->New<NdnlpWireProtocol>(1460));
+  //std::tie(ok, addr) = IpAddressVerifier::Parse("0.0.0.0:29695"); assert(ok);
+  //this->set_udp_ndnlp_channel(udp_ndnlp_factory->Channel(addr));
   
   std::tie(ok, addr) = EtherAddressVerifier::Parse("01:00:5E:00:17:AA"); assert(ok);
   Ptr<EtherFaceFactory> ether_factory = this->New<EtherFaceFactory>();

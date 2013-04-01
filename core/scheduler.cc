@@ -10,6 +10,7 @@ SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb,
   assert(cb != nullptr);
   if (this->sched() == nullptr) {
     this->Log(kLLError, kLCScheduler, "Scheduler::Schedule sched is null");
+    if (evt_ptr != nullptr) *evt_ptr = nullptr;
     return nullptr;
   }
 
