@@ -113,16 +113,21 @@ Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, 
 constexpr std::chrono::microseconds DgramChannel::kReapInterval;
 
 std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
-  this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
+  int closed = 0;
+  
   for (auto it = this->peers().begin(); it != this->peers().end();) {
     auto current = it++;
     Ptr<PeerEntry> pe = current->second;
     if (pe->recv_count_ == 0) {
+      if (++closed == 1) {
+        this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
+      }
       if (pe->face_ != nullptr) pe->face_->Close();
       this->peers().erase(current);
     }
     pe->recv_count_ = 0;
   }
+  
   return DgramChannel::kReapInterval;
 }
 

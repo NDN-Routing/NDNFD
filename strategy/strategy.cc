@@ -20,7 +20,7 @@ void Strategy::Init(void) {
 }
 
 void Strategy::SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream) {
-  this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
+  //this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
   pit_face_item* downstream_pfi = ie->GetDownstream(downstream);
   pit_face_item* upstream_pfi = ie->GetUpstream(upstream);
   assert(downstream_pfi != nullptr);
@@ -62,7 +62,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
     // duplicate nonce
     // record inface as a downstream, but don't send ContentObject (because lack of CCND_PFI_PENDING flag)
     p->pfi_flags |= CCND_PFI_SUPDATA;
-    this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateInterest(%" PRI_PitEntrySerial ") duplicate nonce", ie->serial());
+    this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateInterest(%" PRI_PitEntrySerial ") duplicate nonce from %" PRI_FaceId "", ie->serial(), interest->incoming_face());
   }
   
   // set expiry time according to InterestLifetime
@@ -78,7 +78,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
     }
   }
   
-  // strategy_callout / do_propagate
+  // schedule DoPropagate
   if (is_new_ie) {
     this->PropagateNewInterest(ie);
   }
