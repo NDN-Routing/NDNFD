@@ -153,11 +153,9 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
 NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
-#ifndef NDNFD
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros);
-#endif
 NDNFD_EXPOSE_static struct pit_face_item *
 pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
          unsigned faceid, unsigned pfi_flag);
@@ -1837,7 +1835,6 @@ consume_matching_interests(struct ccnd_handle *h,
     return(matches);
 }
 
-#ifndef NDNFD
 /**
  * Adjust the predicted response associated with a name prefix entry.
  *
@@ -1845,7 +1842,7 @@ consume_matching_interests(struct ccnd_handle *h,
  * previous predicted value, and increased by a larger fraction if not.
  *
  */
-static void
+NDNFD_EXPOSE_static void
 adjust_npe_predicted_response(struct ccnd_handle *h,
                               struct nameprefix_entry *npe, int up)
 {
@@ -1868,7 +1865,7 @@ adjust_npe_predicted_response(struct ccnd_handle *h,
  * at the leaves.
  *
  */
-static void
+NDNFD_EXPOSE_static void
 adjust_predicted_response(struct ccnd_handle *h,
                           struct interest_entry *ie, int up)
 {
@@ -1882,6 +1879,7 @@ adjust_predicted_response(struct ccnd_handle *h,
         adjust_npe_predicted_response(h, npe->parent, up);
 }
 
+#ifndef NDNFD
 /**
  * Keep a little history about where matching content comes from.
  */
@@ -3928,13 +3926,12 @@ pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
     p->expiry = h->wtnow + delta;
 }
 
-#ifndef NDNFD
 /**
  * Set the expiry of the pit face item using a time in microseconds from present
  *
  * Does not set the renewed timestamp.
  */
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros)
 {
@@ -3943,7 +3940,6 @@ pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
     delta = (micros + (1000000 / WTHZ - 1)) / (1000000 / WTHZ);
     p->expiry = h->wtnow + delta;
 }
-#endif
 
 /**
  * Set the nonce in a pit face item

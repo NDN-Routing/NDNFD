@@ -5,8 +5,11 @@ struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry
 struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
 int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
+void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
 uint32_t WTHZ_value(void);
 int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
+void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
+void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -17,8 +20,12 @@ void Strategy::Init(void) {
 }
 
 void Strategy::SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream) {
-  //this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
-  send_interest(this->global()->ccndh(), ie->ie(), ie->SeekDownstream(downstream), ie->SeekUpstream(upstream));
+  this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
+  pit_face_item* downstream_pfi = ie->GetDownstream(downstream);
+  pit_face_item* upstream_pfi = ie->GetUpstream(upstream);
+  assert(downstream_pfi != nullptr);
+  assert(upstream_pfi != nullptr);
+  send_interest(this->global()->ccndh(), ie->ie(), downstream_pfi, upstream_pfi);
 }
 
 void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
@@ -76,12 +83,96 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
     this->PropagateNewInterest(ie);
   }
   std::chrono::microseconds next_evt = outbounds.empty() ? std::chrono::microseconds(0) : ie->NextEventDelay(true);
-  this->global()->scheduler()->Cancel(ie->ie()->ev);
-  ie->ie()->ev = this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie));
+  this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
 }
 
 void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
-  this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateNewInterest(%" PRI_PitEntrySerial ")", ie->serial());
+  Ptr<NamePrefixEntry> npe = ie->npe();
+
+  // find downstream
+  pit_face_item* downstream = nullptr;
+  ie->ForeachDownstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+    downstream = p;
+    return PitEntry::ForeachAction::kBreak;
+  });
+  assert(downstream != nullptr && (downstream->pfi_flags & CCND_PFI_PENDING) != 0);
+  
+  // get tap list: Interest is immediately sent to these faces; they are used for monitoring purpose and shouldn't respond
+  ccn_indexbuf* tap = nullptr;
+  Ptr<NamePrefixEntry> npe_fib = npe->FibNode();
+  if (npe_fib != nullptr) {
+    tap = npe_fib->npe()->tap;
+  }
+  
+  // read the known best face
+  unsigned best = npe->npe()->src;
+  if (best == CCN_NOFACEID) {
+    best = npe->npe()->src = npe->npe()->osrc;
+  }
+  bool use_first;// whether to send interest immediately to the first upstream
+  uint32_t defer_min, defer_range;// defer time for all but best and tap faces is within [defer_min,defer_min+defer_range) microseconds
+  if (best == CCN_NOFACEID) {
+    use_first = true;
+    defer_min = 4000;
+    defer_range = 75000;
+  } else {
+    use_first = false;
+    defer_min = static_cast<uint32_t>(npe->npe()->usec);
+    defer_range = (defer_min + 1) / 2;
+  }
+
+  std::string debug_list;
+  char debug_buf[32];
+#define DEBUG_APPEND_FaceTime(face,s,time) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ":%s%" PRIu32 ",", static_cast<FaceId>(face),s,time); debug_list.append(debug_buf); }
+  
+  // send interest to best and tap faces,
+  // set expiry time for first face if use_first, and previous best face,
+  // mark other faces as CCND_PFI_SENDUPST and ++n_upst
+  int n_upst = 0;
+  ie->ForeachUpstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+    if (p->faceid == best) {
+      this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie](void){
+        adjust_predicted_response(this->global()->ccndh(), ie->ie(), 1);
+        return Scheduler::kNoMore;
+      }, &ie->ie()->strategy.ev, true);
+      DEBUG_APPEND_FaceTime(p->faceid,"best+",defer_min);
+      this->SendInterest(ie, static_cast<FaceId>(downstream->faceid), static_cast<FaceId>(p->faceid));
+      p = nullptr;//SendInterest might relocate p
+    } else if (ccn_indexbuf_member(tap, p->faceid) >= 0) {
+      DEBUG_APPEND_FaceTime(p->faceid,"tap+",0);
+      this->SendInterest(ie, static_cast<FaceId>(downstream->faceid), static_cast<FaceId>(p->faceid));
+      p = nullptr;//SendInterest might relocate p
+    } else if (use_first) {
+      use_first = false;
+      // DoPropagate will send interest to this face;
+      // since we don't know who is the best, just pick the first one
+      pfi_set_expiry_from_micros(this->global()->ccndh(), ie->ie(), p, 0);
+      DEBUG_APPEND_FaceTime(p->faceid,"first",0);
+    } else if (p->faceid == npe->npe()->osrc) {
+      pfi_set_expiry_from_micros(this->global()->ccndh(), ie->ie(), p, defer_min);
+      DEBUG_APPEND_FaceTime(p->faceid,"osrc",defer_min);
+    } else {
+      ++n_upst;
+      p->pfi_flags |= CCND_PFI_SENDUPST;
+    }
+    return PitEntry::ForeachAction::kNone;
+  });
+
+  if (n_upst > 0) {
+    uint32_t defer_max_inc = std::max(1U, (2 * defer_range + n_upst - 1) / n_upst);// max increment between defer times
+    uint32_t defer = defer_min;
+    ie->ForeachUpstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+      if ((p->pfi_flags & CCND_PFI_SENDUPST) == 0) return PitEntry::ForeachAction::kNone;
+      pfi_set_expiry_from_micros(this->global()->ccndh(), ie->ie(), p, defer);
+      DEBUG_APPEND_FaceTime(p->faceid,"",defer);
+      defer += nrand48(this->global()->ccndh()->seed) % defer_max_inc;
+      return PitEntry::ForeachAction::kNone;
+    });
+  }
+
+#undef DEBUG_APPEND_FaceTime
+  if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
+  this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateNewInterest(%" PRI_PitEntrySerial ") {%s}", ie->serial(), debug_list.c_str());
 }
 
 std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
@@ -182,6 +273,17 @@ void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream) {
 
 void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId "", npe->name()->ToUri().c_str(), upstream);
+  int limit = 2;
+  for (; npe != nullptr && --limit >= 0; npe = npe->Parent()) {
+    if (npe->npe()->src == static_cast<unsigned>(upstream)) {
+      adjust_npe_predicted_response(this->global()->ccndh(), npe->npe(), 0);
+      continue;
+    }
+    if (npe->npe()->src != CCN_NOFACEID) {
+      npe->npe()->osrc = npe->npe()->src;
+    }
+    npe->npe()->src = static_cast<unsigned>(upstream);
+  }
 }
 
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
@@ -212,8 +314,7 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
     
     p->expiry = this->global()->ccndh()->wtnow + defer.count() / (1000000 / WTHZ_value());
     defer += std::chrono::microseconds(200);
-    this->global()->scheduler()->Cancel(ie->ie()->ev);
-    ie->ie()->ev = this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie));
+    this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
   });
 }
 

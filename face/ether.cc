@@ -10,7 +10,6 @@
 #include <net/if_dl.h>
 #endif
 #include "util/endian.h"
-#include "core/scheduler.h"
 #include "face/ndnlp.h"
 
 namespace ndnfd {
@@ -41,11 +40,12 @@ void PcapChannel::Init(void) {
   
 #ifdef __FreeBSD__
   // on FreeBSD, poll() does not return when multicast frame arrives
-  this->global()->scheduler()->Schedule(std::chrono::microseconds(1000), std::bind(&PcapChannel::ScheduledReceive, this));
+  this->global()->scheduler()->Schedule(std::chrono::microseconds(1000), std::bind(&PcapChannel::ScheduledReceive, this), &this->recv_evt_);
 #endif
 }
 
 void PcapChannel::CloseFd(void) {
+  this->global()->scheduler()->Cancel(this->recv_evt_);
   pcap_close(this->p_);
   pcap_freecode(&this->filter_);
   if (this->ip_mcast_fd_ != -1) close(this->ip_mcast_fd_);

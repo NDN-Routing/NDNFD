@@ -70,7 +70,7 @@ void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
   if (this->fd() >= 0) this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->reap_evt_ = this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this));
+  this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this), &this->reap_evt_);
 
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }

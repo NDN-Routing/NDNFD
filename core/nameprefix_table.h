@@ -56,7 +56,7 @@ class NamePrefixEntry : public Element {
   
   // FibNode returns the current or parent NamePrefixEntry that has one or more forwarding entries.
   Ptr<NamePrefixEntry> FibNode(void) const;
-  
+
   // EnsureUpdatedFib ensures npe->forwarding and npe->tap are updated.
   void EnsureUpdatedFib(void) const;
   
