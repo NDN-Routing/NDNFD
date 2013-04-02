@@ -11,15 +11,6 @@ void Strategy::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
 }
 
-void Strategy::SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream) {
-  //this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
-  pit_face_item* downstream_pfi = ie->GetDownstream(downstream);
-  pit_face_item* upstream_pfi = ie->GetUpstream(upstream);
-  assert(downstream_pfi != nullptr);
-  assert(upstream_pfi != nullptr);
-  send_interest(this->global()->ccndh(), ie->ie(), downstream_pfi, upstream_pfi);
-}
-
 void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   ccnd_handle* h = this->global()->ccndh();
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
@@ -61,14 +52,8 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   pfi_set_expiry_from_lifetime(h, ie->ie(), p, ccn_interest_lifetime(interest->msg(), interest->parsed()));
   
   // lookup FIB and populate upstream pfi
-  std::unordered_set<FaceId> outbounds = npe->LookupFib(interest);
-  for (FaceId face : outbounds) {
-    pit_face_item* upstream = ie->SeekUpstream(face);
-    if (wt_compare(upstream->expiry, h->wtnow) < 0) {
-      p->expiry = h->wtnow + 1;
-      p->pfi_flags &= ~CCND_PFI_UPHUNGRY;
-    }
-  }
+  std::unordered_set<FaceId> outbounds = this->LookupOutbounds(npe, interest, ie);
+  this->PopulateOutbounds(ie, outbounds);
   
   // schedule DoPropagate
   if (is_new_ie) {
@@ -76,6 +61,21 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   }
   std::chrono::microseconds next_evt = outbounds.empty() ? std::chrono::microseconds(0) : ie->NextEventDelay(true);
   this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+}
+
+std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie) {
+  return npe->LookupFib(interest);
+}
+
+void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds) {
+  ccnd_handle* h = this->global()->ccndh();
+  for (FaceId face : outbounds) {
+    pit_face_item* p = ie->SeekUpstream(face);
+    if (wt_compare(p->expiry, h->wtnow) < 0) {
+      p->expiry = h->wtnow + 1;
+      p->pfi_flags &= ~CCND_PFI_UPHUNGRY;
+    }
+  }
 }
 
 void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
@@ -171,8 +171,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   assert(ie != nullptr);
   ccn_wrappedtime now = this->global()->ccndh()->wtnow;
   
-  std::string debug_list("pending=[");
-  char debug_buf[32];
+  std::string debug_list("pending=["); char debug_buf[32];
 #define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", static_cast<FaceId>(x)); debug_list.append(debug_buf); }
 
   // find pending downstreams
@@ -237,6 +236,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
 #undef DEBUG_APPEND_FaceId
   this->Log(kLLDebug, kLCStrategy, "Strategy::DoPropagate(%" PRI_PitEntrySerial ") %s", ie->serial(), debug_list.c_str());
 
+  bool include_expired_in_next_evt = false;
   if (upstreams == 0) {
     if (pending == 0) {
       this->WillEraseTimedOutPendingInterest(ie);
@@ -245,14 +245,24 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       ie = nullptr;
       return Scheduler::kNoMore;
     }
-    this->DidExhaustForwardingOptions(ie);
+    include_expired_in_next_evt = this->DidExhaustForwardingOptions(ie);
   }
   
-  return ie->NextEventDelay(false);
+  return ie->NextEventDelay(include_expired_in_next_evt);
 }
 
-void Strategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
+void Strategy::SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream) {
+  //this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
+  pit_face_item* downstream_pfi = ie->GetDownstream(downstream);
+  pit_face_item* upstream_pfi = ie->GetUpstream(upstream);
+  assert(downstream_pfi != nullptr);
+  assert(upstream_pfi != nullptr);
+  send_interest(this->global()->ccndh(), ie->ie(), downstream_pfi, upstream_pfi);
+}
+
+bool Strategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidExhaustForwardingOptions(%" PRI_PitEntrySerial ")", ie->serial());
+  return false;
 }
 
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {

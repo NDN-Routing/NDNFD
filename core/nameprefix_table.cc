@@ -81,6 +81,8 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
     const_cast<uint8_t*>(ie->interest_msg) [ie->size-1] = '\0';//set last byte to </Interest>
     Ptr<InterestMessage> interest2 = InterestMessage::Parse(ie->interest_msg, ie->size);
     assert(interest2 != nullptr);
+    interest2->set_incoming_face(interest->incoming_face());
+    interest2->set_incoming_sender(interest->incoming_sender());
     ie->ndnfd_interest = GetPointer(interest2);
   }
 
@@ -230,7 +232,7 @@ void PitEntry::ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, u
 std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
   if (include_expired) {
     int usec = ie_next_usec(this->global()->ccndh(), this->ie(), nullptr);
-    return std::chrono::microseconds(usec);
+    return std::chrono::microseconds(std::max(1, usec));
   }
 
   ccn_wrappedtime now = this->global()->ccndh()->wtnow;
@@ -243,6 +245,7 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
     FOREACH_OK;
   });
   const_cast<PitEntry*>(this)->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
+    printf("ned %u %u %u\n", p->faceid, now+1, p->expiry);
     if (wt_compare(now+1, p->expiry) < 0) {
       mn = std::min(mn, p->expiry-now);
     }

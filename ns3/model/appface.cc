@@ -3,6 +3,7 @@
 namespace ndnfd {
 
 void SimAppFace::Init(void) {
+  this->set_kind(FaceKind::kApp);
   this->global()->facemgr()->AddFace(this);
 }
 

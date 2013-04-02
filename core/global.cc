@@ -7,8 +7,8 @@ extern "C" {
 #include "face/facemgr.h"
 #include "core/internal_client_handler.h"
 #include "core/nameprefix_table.h"
-#include "strategy/bcast.h"
-#define STRATEGY_TYPE BcastStrategy
+#include "strategy/selflearn.h"
+#define STRATEGY_TYPE SelfLearnStrategy
 
 namespace ndnfd {
 

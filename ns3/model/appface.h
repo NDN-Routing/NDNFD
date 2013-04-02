@@ -6,7 +6,7 @@ namespace ndnfd {
 
 class SimAppFace : public Face {
  public:
-  static const FaceType kType = 110;
+  static const FaceType kType = 901;
   virtual FaceType type(void) const { return SimAppFace::kType; }
 
   explicit SimAppFace(Ptr<L3Protocol> l3) { this->l3_ = l3; }

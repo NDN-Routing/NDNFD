@@ -223,6 +223,8 @@ Ptr<DgramChannel::McastEntry> DgramChannel::FindMcastEntryInternal(const Network
   if (!create) return nullptr;
   Ptr<DgramFace> face = this->CreateMcastFace(hashkey, group);
   if (face == nullptr) return nullptr;
+  this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::CreateMcastFace id=%" PRI_FaceId " group=%s", this, this->fd(), face->id(), this->av()->ToString(group).c_str());
+
   Ptr<McastEntry> entry = new McastEntry(hashkey);
   entry->face_ = face;
   if (this->wp()->IsStateful()) entry->outstate_ = this->wp()->CreateState(group);

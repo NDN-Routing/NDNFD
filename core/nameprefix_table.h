@@ -121,7 +121,7 @@ class ForwardingEntry : public Element {
 class PitEntry : public Element {
  public:
   typedef uint32_t Serial;
-  #define PRI_PitEntrySerial PRIu32
+#define PRI_PitEntrySerial PRIu32
   
   explicit PitEntry(interest_entry* ie);
   virtual ~PitEntry(void) {}
