@@ -1,14 +1,14 @@
 #include "selflearn.h"
+#include <algorithm>
 #include "face/facemgr.h"
 namespace ndnfd {
 
 std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie) {
   // collect downstreams
   std::vector<Ptr<Face>> downstreams;
-  ie->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
-    Ptr<Face> downstream = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
+  std::for_each(ie->beginDownstream(), ie->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
+    Ptr<Face> downstream = this->global()->facemgr()->GetFace(p->faceid());
     if (downstream != nullptr) downstreams.push_back(downstream);
-    FOREACH_OK;
   });
 
   // lookup FIB
@@ -45,16 +45,14 @@ bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
 
   // collect downstreams and upstreams
   std::vector<Ptr<Face>> downstreams;
-  ie->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
-    Ptr<Face> downstream = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
+  std::for_each(ie->beginDownstream(), ie->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
+    Ptr<Face> downstream = this->global()->facemgr()->GetFace(p->faceid());
     if (downstream != nullptr) downstreams.push_back(downstream);
-    FOREACH_OK;
   });
   std::unordered_map<FaceId, Ptr<Face>> upstreams;
-  ie->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
-    Ptr<Face> upstream = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
-    if (upstream != nullptr && upstream->CanSend()) upstreams[upstream->id()] = upstream;
-    FOREACH_OK;
+  std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
+    Ptr<Face> upstream = this->global()->facemgr()->GetFace(p->faceid());
+    if (upstream != nullptr) upstreams[upstream->id()] = upstream;
   });
   
   std::string debug_list; char debug_buf[32];

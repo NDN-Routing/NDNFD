@@ -19,6 +19,8 @@ namespace ndnfd {
 class NamePrefixEntry;
 class ForwardingEntry;
 class PitEntry;
+class PitUpstreamRecord;
+class PitDownstreamRecord;
 
 // A NamePrefixTable provides access to PIT and FIB.
 class NamePrefixTable : public Element {
@@ -59,13 +61,17 @@ class NamePrefixEntry : public Element {
   
   Ptr<const Name> name(void) const { return this->name_; }
   nameprefix_entry* npe(void) const { return this->npe_; }
+
+  FaceId best_faceid(void);
+  void set_best_faceid(FaceId value) { this->npe()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
+  FaceId prev_best_faceid(void) const { return this->npe()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->osrc); }
   
   // Parent returns the NamePrefixEntry for next shorter prefix.
   Ptr<NamePrefixEntry> Parent(void) const;
   
   // FibNode returns the current or parent NamePrefixEntry that has one or more forwarding entries.
   Ptr<NamePrefixEntry> FibNode(void) const;
-
+  
   // EnsureUpdatedFib ensures npe->forwarding and npe->tap are updated.
   void EnsureUpdatedFib(void) const;
   
@@ -120,6 +126,54 @@ class ForwardingEntry : public Element {
 // and the associated propagation states.
 class PitEntry : public Element {
  public:
+  class PitFaceItem : public Element {
+   public:
+    PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p);
+    virtual ~PitFaceItem(void) {}
+    Ptr<PitEntry> ie(void) const { return this->ie_; }
+    FaceId faceid(void) const { return this->p_->faceid == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->p_->faceid); }
+    
+    pit_face_item* p(void) const { return this->p_; }
+    void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
+    
+    virtual bool IsExpired(void) const =0;
+    // CompareExpiry returns -1,0,1 if a expires earlier/same/later than b.
+    static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
+
+   protected:
+    bool GetFlag(unsigned flag) const { return 0 != (this->p_->pfi_flags & flag); }
+    void SetFlag(unsigned flag, bool value) { if (value) this->p_->pfi_flags |= flag; else this->p_->pfi_flags &= ~flag; }
+    
+   private:
+    Ptr<PitEntry> ie_;
+    pit_face_item* p_;
+    DISALLOW_COPY_AND_ASSIGN(PitFaceItem);
+  };
+  
+  template <typename TPfi>
+  class PitFaceItemIterator : public std::iterator<std::forward_iterator_tag, Ptr<TPfi>> {
+   public:
+    explicit PitFaceItemIterator(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie) { assert(ie != nullptr); this->Update(p); }
+    PitFaceItemIterator(const PitFaceItemIterator& other) : ie_(other.ie_), p_(other.p_), next_(other.next_) {}
+    PitFaceItemIterator& operator++(void) { this->Update(this->next_); return *this; }
+    PitFaceItemIterator operator++(int) { PitFaceItemIterator tmp(*this); this->operator++(); return tmp; }
+    bool operator==(const PitFaceItemIterator& rhs) { return this->p_ == rhs.p_; }
+    bool operator!=(const PitFaceItemIterator& rhs) { return this->p_ != rhs.p_; }
+    Ptr<TPfi>& operator*(void) { assert(this->p_ != nullptr); return this->p_; }
+    
+    // Delete destroys the current record.
+    // This iterator is still usable for advancing to the next record.
+    void Delete(void);
+    
+   private:
+    Ptr<PitEntry> ie_;
+    Ptr<TPfi> p_;
+    pit_face_item* next_;
+    void Update(pit_face_item* p);
+  };
+  typedef PitFaceItemIterator<PitUpstreamRecord> UpstreamIterator;
+  typedef PitFaceItemIterator<PitDownstreamRecord> DownstreamIterator;
+  
   typedef uint32_t Serial;
 #define PRI_PitEntrySerial PRIu32
   
@@ -136,23 +190,30 @@ class PitEntry : public Element {
   // related InterestMessage (without InterestLifetime and Nonce)
   Ptr<const InterestMessage> interest() const { return ie_ndnfdInterest(this->ie()); }
   
+  // IsNonceUnique returns true if there's no other upstream/downstream record with same nonce as p.
+  bool IsNonceUnique(Ptr<const PitFaceItem> p);
+  
   // GetUpstream returns the upstream record for face, or null.
-  pit_face_item* GetUpstream(FaceId face) { return this->SeekPfiInternal(face, false, CCND_PFI_UPSTREAM); }
+  Ptr<PitUpstreamRecord> GetUpstream(FaceId face) { return this->MakePfi<PitUpstreamRecord>(this->SeekPfiInternal(face, false, CCND_PFI_UPSTREAM)); }
   // SeekUpstream returns the upstream record for face.
   // If it does not exist, one is created.
-  pit_face_item* SeekUpstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_UPSTREAM); }
-  // ForeachUpstream invokes f with each upstream record.
-  // ForeachAction::kDelete is supported.
-  void ForeachUpstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_UPSTREAM); }
+  Ptr<PitUpstreamRecord> SeekUpstream(FaceId face) { return this->MakePfi<PitUpstreamRecord>(this->SeekPfiInternal(face, true, CCND_PFI_UPSTREAM)); }
+  // beginUpstream and endUpstream iterates over upstream records.
+  UpstreamIterator beginUpstream(void) { return UpstreamIterator(this, this->ie()->pfl); }
+  UpstreamIterator endUpstream(void) { return UpstreamIterator(this, nullptr); }
 
   // GetDownstream returns the downstream record for face, or null.
-  pit_face_item* GetDownstream(FaceId face) { return this->SeekPfiInternal(face, false, CCND_PFI_DNSTREAM); }
+  Ptr<PitDownstreamRecord> GetDownstream(FaceId face) { return this->MakePfi<PitDownstreamRecord>(this->SeekPfiInternal(face, false, CCND_PFI_DNSTREAM)); }
   // SeekDownstream returns the downstream record for face.
   // If it does not exist, one is created.
-  pit_face_item* SeekDownstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_DNSTREAM); }
-  // ForeachDownstream invokes f with each downstream record.
-  // ForeachAction::kDelete is supported.
-  void ForeachDownstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_DNSTREAM); }
+  Ptr<PitDownstreamRecord> SeekDownstream(FaceId face) { return this->MakePfi<PitDownstreamRecord>(this->SeekPfiInternal(face, true, CCND_PFI_DNSTREAM)); }
+  // beginDownstream and endDownstream iterates over downstream records.
+  DownstreamIterator beginDownstream(void) { return DownstreamIterator(this, this->ie()->pfl); }
+  DownstreamIterator endDownstream(void) { return DownstreamIterator(this, nullptr); }
+  
+  // Delete pit_face_item.
+  // Called by PitFaceItemIterator::Delete.
+  void DeletePfiInternal(pit_face_item* p);
   
   // NextEventDelay returns the delay until next pfi expires.
   // If include_expired is true, all pfi are considered;
@@ -164,11 +225,79 @@ class PitEntry : public Element {
   interest_entry* ie_;
   
   pit_face_item* SeekPfiInternal(FaceId face, bool create, unsigned flag);
-  void ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, unsigned flag);
-
+  template <typename TPfi> Ptr<TPfi> MakePfi(pit_face_item* p) { if (p == nullptr) return nullptr; return this->New<TPfi>(this, p); }
+  
   DISALLOW_COPY_AND_ASSIGN(PitEntry);
 };
 
+// A PitUpstreamRecord represents an upstream in PIT entry.
+class PitUpstreamRecord : public PitEntry::PitFaceItem {
+ public:
+  static const unsigned ccnd_pfi_flag = CCND_PFI_UPSTREAM;
+
+  PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* p);
+  virtual ~PitUpstreamRecord(void) {}
+  
+  bool pending(void) const { return this->GetFlag(CCND_PFI_UPENDING); }
+  void set_pending(bool value) { this->SetFlag(CCND_PFI_UPENDING, value); }
+  
+  virtual bool IsExpired(void) const;
+  
+  void SetExpiry(std::chrono::microseconds t);
+  
+ private:
+  DISALLOW_COPY_AND_ASSIGN(PitUpstreamRecord);
+};
+
+
+// A PitDownstreamRecord represents a downstream in PIT entry.
+class PitDownstreamRecord : public PitEntry::PitFaceItem {
+ public:
+  static const unsigned ccnd_pfi_flag = CCND_PFI_DNSTREAM;
+
+  PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* p);
+  virtual ~PitDownstreamRecord(void) {}
+  
+  bool pending(void) const { return this->GetFlag(CCND_PFI_PENDING); }
+  void set_pending(bool value) { this->SetFlag(CCND_PFI_PENDING, value); }
+  
+  bool suppress(void) const { return this->GetFlag(CCND_PFI_SUPDATA); }
+  void set_suppress(bool value) { this->SetFlag(CCND_PFI_SUPDATA, value); }
+
+  virtual bool IsExpired(void) const;
+  
+  // UpdateNonce sets pfi nonce to Interest's nonce, or generate a nonce.
+  void UpdateNonce(Ptr<const InterestMessage> interest);
+  
+  // SetExpiryToLifetime sets pfi expiry time to InterestLifetime.
+  void SetExpiryToLifetime(Ptr<const InterestMessage> interest);
+  
+ private:
+  DISALLOW_COPY_AND_ASSIGN(PitDownstreamRecord);
+};
+
+
+template <typename TPfi>
+void PitEntry::PitFaceItemIterator<TPfi>::Delete(void) {
+  assert(this->p_ != nullptr);
+  this->ie_->DeletePfiInternal(this->p_->p());
+  this->p_ = nullptr;
+}
+
+template <typename TPfi>
+void PitEntry::PitFaceItemIterator<TPfi>::Update(pit_face_item* p) {
+  while (p != nullptr && (p->pfi_flags & TPfi::ccnd_pfi_flag) == 0) {
+    p = p->next;
+  }
+  if (p == nullptr) {
+    this->p_ = nullptr;
+    this->next_ = nullptr;
+  }
+  else {
+    this->p_ = this->ie_->New<TPfi>(this->ie_, p);
+    this->next_ = p->next;
+  }
+}
 
 };//namespace ndnfd
 #endif//NDNFD_CORE_NAMEPREFIX_TABLE_H_

@@ -98,7 +98,7 @@ class Strategy : public Element {
   void PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds);
   
   // SendInterest sends an Interest to upstream on behalf of downstram.
-  void SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream);
+  void SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream);
   
   // -------- ContentObject service --------
 
