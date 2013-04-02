@@ -6,6 +6,7 @@ extern "C" {
 #include "face/face.h"
 #include "face/ccnd_interface.h"
 #include "core/internal_client_handler.h"
+#include "util/foreach.h"
 namespace ndnfd {
 
 class CcndFaceInterface;
@@ -34,6 +35,9 @@ class FaceMgr : public Element {
   
   // GetFace finds a Face by FaceId.
   Ptr<Face> GetFace(FaceId id) const;
+  // ForeachFace invokes f for each face.
+  void ForeachFace(std::function<ForeachAction(Ptr<Face>)> f);
+
   // AddFace assigns FaceId to a new Face, and puts it in the table.
   // This is called by Face::Init.
   void AddFace(Ptr<Face> face);

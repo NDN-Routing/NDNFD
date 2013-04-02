@@ -146,16 +146,20 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
   return this->New<ForwardingEntry>(this, f);
 }
 
-void NamePrefixEntry::ForeachPit(std::function<void(Ptr<PitEntry>)> f) {
+void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) {
   hashtb_enumerator ee; hashtb_enumerator* e = &ee;
   hashtb_start(this->global()->ccndh()->interest_tab, e);
   for (interest_entry* ie = static_cast<interest_entry*>(e->data); ie != nullptr; ie = static_cast<interest_entry*>(e->data)) {
+    ForeachAction act = ForeachAction::kNone;
     for (nameprefix_entry* x = ie->ll.npe; x != nullptr; x = x->parent) {
       if (x == this->npe()) {
         Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
-        f(ie1);
+        act = f(ie1);
         break;
       }
+    }
+    if (ForeachAction_break(act)) {
+      break;
     }
     hashtb_next(e);
   }
@@ -213,10 +217,10 @@ void PitEntry::ForeachInternal(std::function<ForeachAction(pit_face_item*)> f, u
     next = x->next;
     if ((x->pfi_flags & flag) != 0) {
       ForeachAction act = f(x);
-      if ((static_cast<int>(act) & static_cast<int>(ForeachAction::kDelete)) != 0) {
+      if (ForeachAction_delete(act)) {
         pfi_destroy(this->global()->ccndh(), this->ie(), x);
       }
-      if ((static_cast<int>(act) & static_cast<int>(ForeachAction::kBreak)) != 0) {
+      if (ForeachAction_break(act)) {
         return;
       }
     }
@@ -236,13 +240,13 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
     if ((p->pfi_flags & CCND_PFI_PENDING) != 0) {
       mn = std::min(mn, p->expiry-now);
     }
-    return ForeachAction::kNone;
+    FOREACH_OK;
   });
   const_cast<PitEntry*>(this)->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
     if (wt_compare(now+1, p->expiry) < 0) {
       mn = std::min(mn, p->expiry-now);
     }
-    return ForeachAction::kNone;
+    FOREACH_OK;
   });
   
   return std::chrono::microseconds(mn * (1000000 / WTHZ_value()));

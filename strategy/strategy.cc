@@ -83,9 +83,9 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 
   // find downstream
   pit_face_item* downstream = nullptr;
-  ie->ForeachDownstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+  ie->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
     downstream = p;
-    return PitEntry::ForeachAction::kBreak;
+    FOREACH_BREAK;
   });
   assert(downstream != nullptr && (downstream->pfi_flags & CCND_PFI_PENDING) != 0);
   
@@ -121,7 +121,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   // set expiry time for first face if use_first, and previous best face,
   // mark other faces as CCND_PFI_SENDUPST and ++n_upst
   int n_upst = 0;
-  ie->ForeachUpstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+  ie->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
     if (p->faceid == best) {
       this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie](void){
         adjust_predicted_response(this->global()->ccndh(), ie->ie(), 1);
@@ -147,18 +147,18 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       ++n_upst;
       p->pfi_flags |= CCND_PFI_SENDUPST;
     }
-    return PitEntry::ForeachAction::kNone;
+    FOREACH_OK;
   });
 
   if (n_upst > 0) {
     uint32_t defer_max_inc = std::max(1U, (2 * defer_range + n_upst - 1) / n_upst);// max increment between defer times
     uint32_t defer = defer_min;
-    ie->ForeachUpstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
-      if ((p->pfi_flags & CCND_PFI_SENDUPST) == 0) return PitEntry::ForeachAction::kNone;
+    ie->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
+      if ((p->pfi_flags & CCND_PFI_SENDUPST) == 0) FOREACH_CONTINUE;
       pfi_set_expiry_from_micros(this->global()->ccndh(), ie->ie(), p, defer);
       DEBUG_APPEND_FaceTime(p->faceid,"",defer);
       defer += nrand48(this->global()->ccndh()->seed) % defer_max_inc;
-      return PitEntry::ForeachAction::kNone;
+      FOREACH_OK;
     });
   }
 
@@ -178,20 +178,20 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   // find pending downstreams
   int pending = 0;//count of pending downstreams
   std::vector<pit_face_item*> downstreams;//pending downstreams that does not expire soon
-  ie->ForeachDownstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+  ie->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
     if (wt_compare(p->expiry, now) <= 0) {// expired
-      return PitEntry::ForeachAction::kDelete;
+      return ForeachAction::kDelete;
     }
     if ((p->pfi_flags & CCND_PFI_PENDING) == 0) {
-      return PitEntry::ForeachAction::kNone;
+      FOREACH_CONTINUE;
     }
     ++pending;
     DEBUG_APPEND_FaceId(p->faceid);
     if ((p->expiry - now) * 8 <= (p->expiry - p->renewed)) {// will expire soon (less than 1/8 remaining lifetime)
-      return PitEntry::ForeachAction::kNone;
+      FOREACH_CONTINUE;
     }
     downstreams.push_back(p);
-    return PitEntry::ForeachAction::kNone;
+    FOREACH_OK;
   });
   // keep at most two downstreams with longest lifetime; interests will be sent on their behalf (with their nonces)
   if (downstreams.size() > 2) {
@@ -202,15 +202,15 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   debug_list.append("] upstreams=[");
   
   int upstreams = 0;//count of unexpired upstreams
-  ie->ForeachUpstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+  ie->ForeachUpstream([&] (pit_face_item* p) ->ForeachAction {
     Ptr<Face> face = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
     if (face == nullptr || !face->CanSend() || face->send_blocked()) {// cannot send on face
-      return PitEntry::ForeachAction::kDelete;
+      return ForeachAction::kDelete;
     }
     if (wt_compare(now+1, p->expiry) < 0) {// not expired: an Interest was sent earlier
       ++upstreams;
       DEBUG_APPEND_FaceId(p->faceid);
-      return PitEntry::ForeachAction::kNone;
+      FOREACH_CONTINUE;
     }
     // find a downstream that is different from this upstream; Interest will be sent with that nonce
     FaceId interest_from = FaceId_none;
@@ -229,7 +229,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
     } else {
       p->pfi_flags |= CCND_PFI_UPHUNGRY;
     }
-    return PitEntry::ForeachAction::kNone;
+    FOREACH_OK;
   });
   
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
@@ -285,28 +285,29 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
   
   std::chrono::microseconds defer(6000);
 
-  npe->ForeachPit([&] (Ptr<PitEntry> ie) {
-    if (ie->GetUpstream(faceid) != nullptr) return;
+  npe->ForeachPit([&] (Ptr<PitEntry> ie) ->ForeachAction {
+    if (ie->GetUpstream(faceid) != nullptr) FOREACH_CONTINUE;
     
     Ptr<Face> downstream = nullptr;
-    ie->ForeachDownstream([&] (pit_face_item* p) ->PitEntry::ForeachAction {
+    ie->ForeachDownstream([&] (pit_face_item* p) ->ForeachAction {
       if (downstream == nullptr || downstream->kind() != FaceKind::kApp) {
         downstream = this->global()->facemgr()->GetFace(static_cast<FaceId>(p->faceid));
       }
-      return PitEntry::ForeachAction::kNone;
+      FOREACH_OK;
     });
-    if (downstream == nullptr) return;
+    if (downstream == nullptr) FOREACH_CONTINUE;
     
     Ptr<const InterestMessage> interest = ie->interest();
     std::unordered_set<FaceId> outbound = npe->LookupFib(interest);
-    if (outbound.find(faceid) == outbound.end()) return;
+    if (outbound.find(faceid) == outbound.end()) FOREACH_CONTINUE;
     
     pit_face_item* p = ie->SeekUpstream(faceid);
-    if ((p->pfi_flags & CCND_PFI_UPENDING) != 0) return;
+    if ((p->pfi_flags & CCND_PFI_UPENDING) != 0) FOREACH_CONTINUE;
     
     p->expiry = this->global()->ccndh()->wtnow + defer.count() / (1000000 / WTHZ_value());
     defer += std::chrono::microseconds(200);
     this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+    FOREACH_OK;
   });
 }
 

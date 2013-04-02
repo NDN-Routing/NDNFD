@@ -1,6 +1,5 @@
 #ifndef NDNFD_CORE_NAMEPREFIX_TABLE_H_
 #define NDNFD_CORE_NAMEPREFIX_TABLE_H_
-#include "core/element.h"
 extern "C" {
 #include "ccnd/ccnd_private.h"
 struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
@@ -12,6 +11,8 @@ int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
 void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
+#include "core/element.h"
+#include "util/foreach.h"
 #include "message/interest.h"
 namespace ndnfd {
 
@@ -79,7 +80,7 @@ class NamePrefixEntry : public Element {
   Ptr<ForwardingEntry> SeekForwarding(FaceId faceid) { return this->SeekForwardingInternal(faceid, true); }
   
   // ForeachPit invokes f with each PitEntry whose name is under this prefix.
-  void ForeachPit(std::function<void(Ptr<PitEntry>)> f);
+  void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
  private:
   Ptr<const Name> name_;
@@ -119,12 +120,6 @@ class ForwardingEntry : public Element {
 // and the associated propagation states.
 class PitEntry : public Element {
  public:
-  enum class ForeachAction {
-    kNone   = 0,
-    kBreak  = 1,// stop iterating
-    kDelete = 2,// delete current record
-    kBreakDelete = kBreak | kDelete
-  };
   typedef uint32_t Serial;
   #define PRI_PitEntrySerial PRIu32
   
@@ -147,6 +142,7 @@ class PitEntry : public Element {
   // If it does not exist, one is created.
   pit_face_item* SeekUpstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_UPSTREAM); }
   // ForeachUpstream invokes f with each upstream record.
+  // ForeachAction::kDelete is supported.
   void ForeachUpstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_UPSTREAM); }
 
   // GetDownstream returns the downstream record for face, or null.
@@ -155,6 +151,7 @@ class PitEntry : public Element {
   // If it does not exist, one is created.
   pit_face_item* SeekDownstream(FaceId face) { return this->SeekPfiInternal(face, true, CCND_PFI_DNSTREAM); }
   // ForeachDownstream invokes f with each downstream record.
+  // ForeachAction::kDelete is supported.
   void ForeachDownstream(std::function<ForeachAction(pit_face_item*)> f) { this->ForeachInternal(f, CCND_PFI_DNSTREAM); }
   
   // NextEventDelay returns the delay until next pfi expires.
