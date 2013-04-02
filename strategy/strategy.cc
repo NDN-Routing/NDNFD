@@ -2,14 +2,6 @@
 #include <algorithm>
 extern "C" {
 struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* x, struct pit_face_item* p);
-struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
-int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
-void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
-void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
-uint32_t WTHZ_value(void);
-int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
-void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
-void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"

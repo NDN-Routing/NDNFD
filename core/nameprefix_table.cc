@@ -13,7 +13,6 @@ void consume_interest(struct ccnd_handle* h, struct interest_entry* ie);
 struct pit_face_item* pfi_seek(struct ccnd_handle* h, struct interest_entry* ie, unsigned faceid, unsigned pfi_flag);
 void pfi_destroy(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedtime* expiry);
-int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
