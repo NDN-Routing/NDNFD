@@ -29,19 +29,13 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqNewFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqNewFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
-  // call FaceMgr::FaceMgmtReq
-  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> t = this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kNewFace, inface, msg, size);
-  return t;
-  // return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
+  return this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kNewFace, inface, msg, size);
 }
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqDestroyFace(const uint8_t* msg, size_t size) {
   FaceId inface = static_cast<FaceId>(this->global()->ccndh()->interest_faceid);
   this->Log(kLLDebug, kLCIntClientH, "InternalClientHandler::ReqDestroyFace(msg,%" PRIuMAX ") inface=%" PRI_FaceId "", (uintmax_t)size, inface);
-  // call FaceMgr::FaceMgmtReq
-  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> t = this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kDestroyFace, inface, msg, size);
-  return t;
-  // return std::forward_as_tuple(ResponseKind::kSilent, nullptr);
+  return this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kDestroyFace, inface, msg, size);
 }
 
 

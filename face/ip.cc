@@ -316,26 +316,29 @@ Ptr<StreamFace> TcpFaceFactory::FindFace(const NetworkAddress& remote_addr) cons
 
 Ptr<StreamFace> TcpFaceFactory::Connect(const NetworkAddress& remote_addr) {
   Ptr<StreamFace> face = this->FindFace(remote_addr);
+  bool existing = true;
   if (face == nullptr) {
+    existing = false;
     face = this->DoConnect(remote_addr);
   }
+  this->Log(kLLInfo, kLCFace, "TcpFaceFactory::Connect(%s) %s face %" PRI_FaceId "", this->av_->ToString(remote_addr).c_str(), existing?"existing":"new", face==nullptr?FaceId_none:face->id());
   return face;
 }
 
 Ptr<StreamFace> TcpFaceFactory::DoConnect(const NetworkAddress& remote_addr) {
   int fd = socket(remote_addr.family(), SOCK_STREAM, 0);
   if (fd < 0) {
-    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect socket(): %s", Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::DoConnect socket(): %s", Logging::ErrorString().c_str());
     return nullptr;
   }
 
   int res = fcntl(fd, F_SETFL, O_NONBLOCK);
   if (res == -1) {
-    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect fcntl(O_NONBLOCK) %s", Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::DoConnect fcntl(O_NONBLOCK) %s", Logging::ErrorString().c_str());
   }
   res = connect(fd, reinterpret_cast<const sockaddr*>(&remote_addr.who), remote_addr.wholen);
   if (res == -1 && errno != EINPROGRESS) {
-    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::Connect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
+    this->Log(kLLWarn, kLCFace, "TcpFaceFactory::DoConnect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
   }
   Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->wp());
   this->fat_->Add(remote_addr, face->id());
