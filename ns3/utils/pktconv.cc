@@ -57,7 +57,7 @@ Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interes
     ccnb_append_tagged_binary_number(c, CCN_DTAG_InterestLifetime, static_cast<uint32_t>(lifetime.GetSeconds() * 4) * 1024);
   }
   
-  // <Nonce> is not converted: Apps typically don't generate Nonce
+  ccnb_append_tagged_binary_number(c, CCN_DTAG_Nonce, header.GetNonce());
 
   ccnb_element_end(c);//</Interest>
   
@@ -76,7 +76,8 @@ Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::nd
   ccn_charbuf_append_tt(c, 3, CCN_UDATA);
   ccn_charbuf_append_string(c, "NOP");
   ccnb_element_end(c);//</DigestAlgorithm>
-  ccnb_append_tagged_blob(c, CCN_DTAG_SignatureBits, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+  uint64_t signature_bits[2]; signature_bits[0] = signature_bits[1] = ++const_cast<NdnsimPacketConverter*>(this)->s_;
+  ccnb_append_tagged_blob(c, CCN_DTAG_SignatureBits, signature_bits, 16);
   ccnb_element_end(c);//</Signature>
 
   std::basic_string<uint8_t> name_ccnb = this->NameFrom(header.GetName())->ToCcnb();
@@ -94,14 +95,12 @@ Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::nd
   ccnb_element_begin(c, CCN_DTAG_Timestamp);
   ccnb_append_timestamp_blob(c, CCN_MARKER_NONE, static_cast<intmax_t>(timestamp.GetSeconds()), static_cast<int>(timestamp.GetMicroSeconds() % 1000000));
   ccnb_element_end(c);//</Timestamp>
-  //ccnb_append_tagged_binary_number(c, CCN_DTAG_Timestamp, static_cast<uint32_t>(timestamp.GetSeconds() * 4096));
   
   ns3::Time freshness = header.GetFreshness();
   if (freshness.IsStrictlyPositive()) {
     ccnb_element_begin(c, CCN_DTAG_FreshnessSeconds);
     ccnb_append_number(c, static_cast<int>(freshness.GetSeconds()));
     ccnb_element_end(c);//</FreshnessSeconds>
-    //ccnb_append_tagged_binary_number(c, CCN_DTAG_FreshnessSeconds, static_cast<uint32_t>(freshness.GetSeconds()));
   }
 
   ccnb_element_end(c);//</SignedInfo>
@@ -165,7 +164,15 @@ ns3::Ptr<ns3::Packet> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessag
     header.SetInterestLifetime(ns3::Seconds(lifetime / 4096.0));
   }
 
-  // <Nonce> is not converted: Apps typically don't generate Nonce
+  const uint8_t* nonce_blob; size_t nonce_size;
+  if (0 == ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, msg->msg(), msg->parsed()->offset[CCN_PI_B_Nonce], msg->parsed()->offset[CCN_PI_E_Nonce], &nonce_blob, &nonce_size)) {
+    uint32_t nonce = 0;
+    const uint8_t* nonce_end = nonce_blob + nonce_size;
+    for (const uint8_t* nonce_p = nonce_blob; nonce_p < nonce_end; ++nonce_p) {
+      nonce = (nonce << 8) + *nonce_p;
+    }
+    header.SetNonce(nonce);
+  }
   
   ns3::Ptr<ns3::Packet> p = ns3::Create<ns3::Packet>();
   p->AddHeader(header);

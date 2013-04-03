@@ -70,7 +70,7 @@ void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
   if (this->fd() >= 0) this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->reap_evt_ = this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this));
+  this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this), &this->reap_evt_);
 
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }
@@ -113,16 +113,21 @@ Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, 
 constexpr std::chrono::microseconds DgramChannel::kReapInterval;
 
 std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
-  this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
+  int closed = 0;
+  
   for (auto it = this->peers().begin(); it != this->peers().end();) {
     auto current = it++;
     Ptr<PeerEntry> pe = current->second;
     if (pe->recv_count_ == 0) {
+      if (++closed == 1) {
+        this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
+      }
       if (pe->face_ != nullptr) pe->face_->Close();
       this->peers().erase(current);
     }
     pe->recv_count_ = 0;
   }
+  
   return DgramChannel::kReapInterval;
 }
 
@@ -218,6 +223,8 @@ Ptr<DgramChannel::McastEntry> DgramChannel::FindMcastEntryInternal(const Network
   if (!create) return nullptr;
   Ptr<DgramFace> face = this->CreateMcastFace(hashkey, group);
   if (face == nullptr) return nullptr;
+  this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::CreateMcastFace id=%" PRI_FaceId " group=%s", this, this->fd(), face->id(), this->av()->ToString(group).c_str());
+
   Ptr<McastEntry> entry = new McastEntry(hashkey);
   entry->face_ = face;
   if (this->wp()->IsStateful()) entry->outstate_ = this->wp()->CreateState(group);

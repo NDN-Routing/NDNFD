@@ -7,8 +7,6 @@
 namespace ndnfd {
 
 // A Strategy represents a forwarding strategy.
-// This is not currently used.
-// The design is taken from ndnSIM, but it seems insufficient.
 class Strategy : public Element {
  public:
   Strategy(void) {}
@@ -31,6 +29,10 @@ class Strategy : public Element {
   // It's known that interest cannot be satisfied in CS.
   // (same as ccnd propagate_interest)
   virtual void PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe);
+  
+  // LookupOutbounds returns a list of upstreams for an Interest,
+  // usually from FIB.
+  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie);
 
   // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
   // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.
@@ -49,7 +51,9 @@ class Strategy : public Element {
   
   // DidExhaustForwardingOptions is invoked when there are pending downstreams,
   // but no more unexpired upstreams.
-  virtual void DidExhaustForwardingOptions(Ptr<PitEntry> ie);
+  // It returns true if new upstreams are added and DoPropagate should be
+  // scheduled immediately to send Interest to them, or false otherwise.
+  virtual bool DidExhaustForwardingOptions(Ptr<PitEntry> ie);
   
   // WillEraseTimedOutPendingInterest is invoked when there's no more pending downstreams
   // and no more unexpired upstreams.
@@ -70,7 +74,10 @@ class Strategy : public Element {
   
   // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
   // (same as ccnd strategy_callout CCNST_SATISFIED)
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream, FaceId downstream) {}
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co);
+  // DidSatisfyPendingInterests is invoked after some PIT entries are satisfied in npe.
+  // (similar to ccnd note_content_from but is not called for one shorter prefix)
+  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
   
   // -------- face callbacks --------
   virtual void AddFace(FaceId face) {}//currently unused
@@ -87,8 +94,11 @@ class Strategy : public Element {
  protected:
   // -------- Interest service --------
   
+  // PopulateOutbounds creates or updates a set of upstreams, and set their expiry time to zero.
+  void PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds);
+  
   // SendInterest sends an Interest to upstream on behalf of downstram.
-  void SendInterest(Ptr<PitEntry> ie, FaceId downstream, FaceId upstream);
+  void SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream);
   
   // -------- ContentObject service --------
 

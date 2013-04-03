@@ -10,7 +10,6 @@
 #include <net/if_dl.h>
 #endif
 #include "util/endian.h"
-#include "core/scheduler.h"
 #include "face/ndnlp.h"
 
 namespace ndnfd {
@@ -28,7 +27,7 @@ void PcapChannel::Init(void) {
   
   int res;
   char filter_text[256];
-  snprintf(filter_text, sizeof(filter_text), "ether proto 0x%" PRIx16 "", this->ether_type_);
+  snprintf(filter_text, sizeof(filter_text), "ether proto 0x%" PRIx16 " && !(ether src %s)", this->ether_type_, this->av()->ToString(this->local_addr()).c_str());
   res = pcap_compile(this->p_, &this->filter_, filter_text, 1, 0);
   if (res == -1) {
     this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::Init pcap_compile %s", this->ifname_.c_str(), pcap_geterr(this->p_));
@@ -41,11 +40,12 @@ void PcapChannel::Init(void) {
   
 #ifdef __FreeBSD__
   // on FreeBSD, poll() does not return when multicast frame arrives
-  this->global()->scheduler()->Schedule(std::chrono::microseconds(1000), std::bind(&PcapChannel::ScheduledReceive, this));
+  this->global()->scheduler()->Schedule(std::chrono::microseconds(1000), std::bind(&PcapChannel::ScheduledReceive, this), &this->recv_evt_);
 #endif
 }
 
 void PcapChannel::CloseFd(void) {
+  this->global()->scheduler()->Cancel(this->recv_evt_);
   pcap_close(this->p_);
   pcap_freecode(&this->filter_);
   if (this->ip_mcast_fd_ != -1) close(this->ip_mcast_fd_);

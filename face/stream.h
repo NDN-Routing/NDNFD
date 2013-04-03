@@ -80,7 +80,8 @@ class StreamFace : public Face, public IPollClient {
 // A StreamListener listens for new connections on a stream socket.
 class StreamListener : public Face, public IPollClient {
  public:
-  static const FaceType kType = 201;
+  static const FaceType kType = 300;
+  static bool IsStreamListenerFaceType(FaceType t) { return 300 <= t && t <= 399; }
   virtual FaceType type(void) const { return StreamListener::kType; }
 
   FaceKind accepted_kind(void) const { return this->accepted_kind_; }

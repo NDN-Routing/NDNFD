@@ -24,7 +24,10 @@ class Scheduler : public Element {
   
   // Schedule schedules an event.
   // cb must remain valid until event happens or is cancelled.
-  SchedulerEvent Schedule(std::chrono::microseconds delay, Callback cb);
+  // If evt_ptr is not null, SchedulerEvent will be written to *evt_ptr,
+  // and *evt_ptr will be cleared to nullptr when the event is no longer scheduled.
+  // If cancel_old is true, the event at *evt_ptr is first cancelled.
+  SchedulerEvent Schedule(std::chrono::microseconds delay, Callback cb, SchedulerEvent* evt_ptr = nullptr, bool cancel_old = false);
   
   // Cancel cancels an event. evt becomes invalid after this call.
   void Cancel(SchedulerEvent evt);
@@ -37,6 +40,7 @@ class Scheduler : public Element {
   struct EvData {
     Scheduler* scheduler;
     Callback cb;
+    SchedulerEvent* evt_ptr;
   };
 
   ccn_schedule* sched() { return this->global()->ccndh()->sched; };

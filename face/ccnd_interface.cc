@@ -38,10 +38,12 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   }
   if (in_face->kind() == FaceKind::kMulticast && !in_face->CanSend()) {
     Ptr<Face> uface = this->global()->facemgr()->MakeUnicastFace(in_face, message->incoming_sender());
+    this->Log(kLLInfo, kLCCcndFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
     in_face = uface;
     message->set_incoming_face(uface->id());
-    this->Log(kLLInfo, kLCCcndFace, "CcndFaceInterface::Receive fallback face %" PRI_FaceId ", creating unicast face %" PRI_FaceId "", in_face->id(), uface->id());
   }
+  
+  this->last_received_message_ = message;
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
   assert(msg->Verify());

@@ -169,11 +169,13 @@ struct ccnd_handle {
     void* ndnfd_global;//ndnfd::Global*
 #endif
 };
+#ifdef NDNFD
 #ifdef __cplusplus
 namespace ndnfd {
 class Global;
 };//namespace ndnfd
 inline ndnfd::Global* ccnd_ndnfdGlobal(ccnd_handle* h) { return reinterpret_cast<ndnfd::Global*>(h->ndnfd_global); }
+#endif
 #endif
 
 /**
@@ -341,7 +343,21 @@ struct interest_entry {
     const unsigned char *interest_msg; /**< pending interest message */
     unsigned size;                  /**< size of interest message */
     unsigned serial;                /**< used for logging */
+#ifdef NDNFD
+    void* ndnfd_interest;//InterestMessage*; this includes ccn_parsed_interest, so that no reparse is needed when matching incoming ContentObject
+#endif
 };
+#ifdef NDNFD
+#ifdef __cplusplus
+namespace ndnfd {
+class InterestMessage;
+};//namespace ndnfd
+inline ndnfd::InterestMessage* ie_ndnfdInterest(const interest_entry* ie) { return reinterpret_cast<ndnfd::InterestMessage*>(ie->ndnfd_interest); }
+#endif
+void ndnfd_finalize_interest(struct interest_entry* ie);
+struct ccn_parsed_interest;
+const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie);
+#endif
 
 /**
  * The guest hash table is keyed by the faceid of the requestor

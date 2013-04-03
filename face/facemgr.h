@@ -26,7 +26,21 @@ class FaceMgr : public Element {
     kNewFace     = 1,
     kDestroyFace = 2
   };
-
+  
+  class FaceIterator : public std::iterator<std::forward_iterator_tag,Ptr<Face>> {
+   public:
+    explicit FaceIterator(std::map<FaceId,Ptr<Face>>::iterator map_it) : map_it_(map_it) {}
+    FaceIterator(const FaceIterator& other) : map_it_(other.map_it_) {}
+    FaceIterator& operator++(void) { ++this->map_it_; return *this; }
+    FaceIterator operator++(int) { FaceIterator tmp(*this); this->operator++(); return tmp; }
+    bool operator==(const FaceIterator& rhs) { return this->map_it_ == rhs.map_it_; }
+    bool operator!=(const FaceIterator& rhs) { return this->map_it_ != rhs.map_it_; }
+    Ptr<Face> operator*(void) { return this->map_it_->second; }
+    
+   private:
+    std::map<FaceId,Ptr<Face>>::iterator map_it_;
+  };
+  
   FaceMgr(void);
   virtual void Init(void);
   virtual ~FaceMgr(void);
@@ -34,6 +48,10 @@ class FaceMgr : public Element {
   
   // GetFace finds a Face by FaceId.
   Ptr<Face> GetFace(FaceId id) const;
+  // ForeachFace invokes f for each face.
+  FaceIterator begin(void) { return FaceIterator(this->table_.begin()); }
+  FaceIterator end(void) { return FaceIterator(this->table_.end()); }
+
   // AddFace assigns FaceId to a new Face, and puts it in the table.
   // This is called by Face::Init.
   void AddFace(Ptr<Face> face);
@@ -51,7 +69,7 @@ class FaceMgr : public Element {
   TcpFaceFactory* tcp_factory(void) const { return this->tcp_factory_; }
   StreamListener* tcp_listener(void) const { return this->tcp_listener_; }
   DgramChannel* udp_channel(void) const { return this->udp_channel_; }
-  DgramFace* udp_mcast_face(void) const { return this->udp_mcast_face_; }
+  const std::vector<DgramFace*>& udp_mcast_faces(void) const { return this->udp_mcast_faces_; }
   DgramChannel* udp_ndnlp_channel(void) const { return this->udp_ndnlp_channel_; }
   const std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>>& ether_channels(void) const { return this->ether_channels_; }
   DgramChannel* ether_channel(std::string ifname) const;
@@ -68,7 +86,7 @@ class FaceMgr : public Element {
   void set_tcp_factory(Ptr<TcpFaceFactory> value);
   void set_tcp_listener(Ptr<StreamListener> value);
   void set_udp_channel(Ptr<DgramChannel> value);
-  void set_udp_mcast_face(Ptr<DgramFace> value);
+  void add_udp_mcast_face(Ptr<DgramFace> value);
   void set_udp_ndnlp_channel(Ptr<DgramChannel> value);
   void add_ether_channel(const std::string& ifname, Ptr<DgramChannel> channel, Ptr<DgramFace> mcast_face);
 
@@ -81,7 +99,7 @@ class FaceMgr : public Element {
   TcpFaceFactory* tcp_factory_;
   StreamListener* tcp_listener_;
   DgramChannel* udp_channel_;
-  DgramFace* udp_mcast_face_;
+  std::vector<DgramFace*> udp_mcast_faces_;
   DgramChannel* udp_ndnlp_channel_;
   std::vector<std::tuple<std::string,DgramChannel*,DgramFace*>> ether_channels_;//Ethernet ifname,channel,mcast_face
 

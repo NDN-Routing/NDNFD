@@ -6,16 +6,26 @@ namespace ndnfd {
 
 constexpr std::chrono::microseconds Scheduler::kNoMore;
 
-SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb) {
+SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb, SchedulerEvent* evt_ptr, bool cancel_old) {
   assert(cb != nullptr);
   if (this->sched() == nullptr) {
     this->Log(kLLError, kLCScheduler, "Scheduler::Schedule sched is null");
+    if (evt_ptr != nullptr) *evt_ptr = nullptr;
     return nullptr;
   }
+
+  if (cancel_old) {
+    assert(evt_ptr != nullptr);
+    this->Cancel(*evt_ptr);
+  }
+  
   EvData* evdata = new EvData();
   evdata->scheduler = this;
   evdata->cb = cb;
-  return ccn_schedule_event(this->sched(), static_cast<int>(delay.count()), &Scheduler::ScheduledAction, evdata, 0);
+  evdata->evt_ptr = evt_ptr;
+  SchedulerEvent evt = ccn_schedule_event(this->sched(), static_cast<int>(delay.count()), &Scheduler::ScheduledAction, evdata, 0);
+  if (evt_ptr != nullptr) *evt_ptr = evt;
+  return evt;
 }
 
 void Scheduler::Cancel(SchedulerEvent evt) {
@@ -37,6 +47,7 @@ int Scheduler::ScheduledAction(ccn_schedule* sched, void* clienth, ccn_scheduled
       return static_cast<int>(delay.count());
     }
   }
+  if (evdata->evt_ptr != nullptr) *(evdata->evt_ptr) = nullptr;
   delete evdata;
   return -1;
 }

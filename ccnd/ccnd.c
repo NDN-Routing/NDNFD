@@ -70,6 +70,7 @@
 #endif
 #define NDNFD_FIXCCNDWARNINGS
 
+#ifndef NDNFD
 /** Ops for strategy callout */
 enum ccn_strategy_op {
     CCNST_NOP,      /* no-operation */
@@ -79,7 +80,6 @@ enum ccn_strategy_op {
     CCNST_TIMEOUT,  /* all downstreams timed out, pit entry will go away */
 };
 
-#ifndef NDNFD
 static void cleanup_at_exit(void);
 static void unlink_at_exit(const char *path);
 static int create_local_listener(struct ccnd_handle *h, const char *sockname, int backlog);
@@ -153,15 +153,17 @@ update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigne
 NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros);
 NDNFD_EXPOSE_static struct pit_face_item *
 pfi_seek(struct ccnd_handle *h, struct interest_entry *ie,
          unsigned faceid, unsigned pfi_flag);
+#ifndef NDNFD
 static void strategy_callout(struct ccnd_handle *h,
                              struct interest_entry *ie,
                              enum ccn_strategy_op op);
+#endif
 
 /**
  * Frequency of wrapped timer
@@ -1144,6 +1146,9 @@ finalize_interest(struct hashtb_enumerator *e)
     }
     ie->pfl = NULL;
     ie->interest_msg = NULL; /* part of hashtb, don't free this */
+#ifdef NDNFD
+    ndnfd_finalize_interest(ie);
+#endif
 }
 
 /**
@@ -1781,7 +1786,11 @@ consume_matching_interests(struct ccnd_handle *h,
                            struct nameprefix_entry *npe,
                            struct content_entry *content,
                            struct ccn_parsed_ContentObject *pc,
+#ifdef NDNFD
+                           struct face *face, struct face* from_face)
+#else
                            struct face *face)
+#endif
 {
     int matches = 0;
     struct ielinks *head;
@@ -1802,15 +1811,24 @@ consume_matching_interests(struct ccnd_handle *h,
             continue;
         if (face != NULL && is_pending_on(h, p, face->faceid) == 0)
             continue;
+#ifdef NDNFD
+        if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
+                                         p->interest_msg, p->size, ndnfd_ie_pi(p))) {
+#else
         if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
                                          p->interest_msg, p->size, NULL)) {
+#endif
             for (x = p->pfl; x != NULL; x = x->next) {
                 if ((x->pfi_flags & CCND_PFI_PENDING) != 0)
                     face_send_queue_insert(h, face_from_faceid(h, x->faceid),
                                            content);
             }
             matches += 1;
+#ifdef NDNFD
+            strategy_callout2_SATISFIED(h, p, from_face);
+#else
             strategy_callout(h, p, CCNST_SATISFIED);
+#endif
             consume_interest(h, p);
         }
     }
@@ -1824,7 +1842,7 @@ consume_matching_interests(struct ccnd_handle *h,
  * previous predicted value, and increased by a larger fraction if not.
  *
  */
-static void
+NDNFD_EXPOSE_static void
 adjust_npe_predicted_response(struct ccnd_handle *h,
                               struct nameprefix_entry *npe, int up)
 {
@@ -1847,7 +1865,7 @@ adjust_npe_predicted_response(struct ccnd_handle *h,
  * at the leaves.
  *
  */
-static void
+NDNFD_EXPOSE_static void
 adjust_predicted_response(struct ccnd_handle *h,
                           struct interest_entry *ie, int up)
 {
@@ -1861,6 +1879,7 @@ adjust_predicted_response(struct ccnd_handle *h,
         adjust_npe_predicted_response(h, npe->parent, up);
 }
 
+#ifndef NDNFD
 /**
  * Keep a little history about where matching content comes from.
  */
@@ -1882,6 +1901,7 @@ note_content_from(struct ccnd_handle *h,
         ccnd_msg(h, "sl.%d %u ci=%d osrc=%u src=%u usec=%d", __LINE__,
                  from_faceid, prefix_comps, npe->osrc, npe->src, npe->usec);
 }
+#endif
 
 /**
  * Find and consume interests that match given content.
@@ -1901,7 +1921,9 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     int n_matched = 0;
     int new_matches;
     int ci;
+#ifndef NDNFD
     int cm = 0;
+#endif
     unsigned c0 = content->comps[0];
     const unsigned char *key = content->key + c0;
     struct nameprefix_entry *npe = NULL;
@@ -1917,11 +1939,20 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
         if (from_face != NULL && (npe->flags & CCN_FORW_LOCAL) != 0 &&
             (from_face->flags & CCN_FACE_GG) == 0)
             return(-1);
+#ifdef NDNFD
+        new_matches = consume_matching_interests(h, npe, content, pc, face, from_face);
+        if (from_face != NULL && new_matches != 0) {
+            note_content_from2(h, npe, from_face->faceid, content->key + content->comps[0], content->comps[ci] - content->comps[0]);
+        }
+#else
         new_matches = consume_matching_interests(h, npe, content, pc, face);
         if (from_face != NULL && (new_matches != 0 || ci + 1 == cm))
             note_content_from(h, npe, from_face->faceid, ci);
+#endif
         if (new_matches != 0) {
+#ifndef NDNFD
             cm = ci; /* update stats for this prefix and one shorter */
+#endif
             n_matched += new_matches;
         }
     }
@@ -3473,6 +3504,7 @@ get_fib_npe(struct ccnd_handle *h, struct interest_entry *ie)
     return(NULL);
 }
 
+#ifndef NDNFD
 /** Implementation detail for strategy_settimer */
 static int
 strategy_timer(struct ccn_schedule *sched,
@@ -3611,7 +3643,6 @@ strategy_callout(struct ccnd_handle *h,
     }
 }
 
-#ifndef NDNFD
 /**
  * Execute the next timed action on a propagating interest.
  */
@@ -3900,7 +3931,7 @@ pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
  *
  * Does not set the renewed timestamp.
  */
-static void
+NDNFD_EXPOSE_static void
 pfi_set_expiry_from_micros(struct ccnd_handle *h, struct interest_entry *ie,
                            struct pit_face_item *p, unsigned micros)
 {

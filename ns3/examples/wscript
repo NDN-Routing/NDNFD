@@ -2,3 +2,6 @@ def build(bld):
     simple = bld.create_ns3_program('ndnfd-simple', ['NDNFD','point-to-point'])
     simple.source = 'ndnfd-simple.cc'
 
+    sl_failover = bld.create_ns3_program('ndnfd-selflearn-failover', ['NDNFD','csma'])
+    sl_failover.source = 'ndnfd-selflearn-failover.cc'
+

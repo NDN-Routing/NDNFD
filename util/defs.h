@@ -20,6 +20,12 @@
 #include <chrono>
 #include "ptr.h"
 
+namespace std {
+template <typename T> struct hash<ndnfd::Ptr<T>> {
+  size_t operator()(ndnfd::Ptr<T> ptr) const { std::hash<T*> hasher; return hasher(ndnfd::PeekPointer(ptr)); }
+};
+};
+
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&); \
   void operator=(const TypeName&)

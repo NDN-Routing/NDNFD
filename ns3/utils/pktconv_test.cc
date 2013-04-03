@@ -15,6 +15,7 @@ TEST(SimTest, NdnsimPacketConverter) {
 
   ns3::ndn::Interest si1;
   si1.SetName(sn2);
+  si1.SetNonce(0x99999999);
   Ptr<InterestMessage> i1 = npc->InterestFrom(si1);
   ASSERT_NE(nullptr, i1);
   EXPECT_TRUE(n1->Equals(i1->name()));
@@ -23,6 +24,7 @@ TEST(SimTest, NdnsimPacketConverter) {
   ns3::ndn::Interest si2;
   si2p->RemoveHeader(si2);
   EXPECT_EQ(si1.GetName(), si2.GetName());
+  EXPECT_EQ(0x99999999U, si2.GetNonce());
   
   ns3::ndn::ContentObject sco1;
   sco1.SetName(sn2);

@@ -56,5 +56,7 @@ class Global {
   DISALLOW_COPY_AND_ASSIGN(Global);
 };
 
+#define CCNDH (this->global()->ccndh())
+
 };//namespace ndnfd
 #endif//NDNFD_CORE_GLOBAL_H

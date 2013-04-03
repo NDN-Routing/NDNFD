@@ -3,6 +3,7 @@
 #include <pcap/pcap.h>
 #include "face/dgram.h"
 #include "face/factory.h"
+#include "core/scheduler.h"
 namespace ndnfd {
 
 // A PcapChannel represents a socket using libpcap to send and receive Ethernet frames.
@@ -47,6 +48,7 @@ class PcapChannel : public DgramChannel {
   bpf_program filter_;
   uint32_t local_ip_;
   int ip_mcast_fd_;
+  SchedulerEvent recv_evt_;
   
   // DispatchHandler is called by libpcap when a packet is captured.
   // user is PcapChannel*.

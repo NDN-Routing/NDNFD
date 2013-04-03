@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <cstdio>
+#include <ifaddrs.h>
 #include <ccn/sockcreate.h>
 #include "util/endian.h"
 #include "util/socket_helper.h"
@@ -202,6 +203,29 @@ Ptr<DgramChannel> UdpFaceFactory::Channel(const NetworkAddress& local_addr) {
   return channel;
 }
 
+std::vector<NetworkAddress> UdpFaceFactory::ListLocalAddresses(void) const {
+  std::vector<NetworkAddress> ips;
+  std::unordered_set<std::string> ifnames;
+
+  ifaddrs* ifa_list;
+  int res = getifaddrs(&ifa_list);
+  if (res != 0) return ips;
+  
+  for (ifaddrs* ifa = ifa_list; ifa != nullptr; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr->sa_family != AF_INET) continue;
+
+    auto ifname_insert = ifnames.insert(ifa->ifa_name);
+    if (!ifname_insert.second) continue;//another IP address of same NIC is already included
+    
+    ips.emplace_back();
+    ips.back().wholen = sizeof(sockaddr_in);
+    memcpy(&ips.back().who, ifa->ifa_addr, ips.back().wholen);
+  }
+  freeifaddrs(ifa_list);
+  
+  return ips;
+}
+
 Ptr<DgramFace> UdpFaceFactory::McastFace(const NetworkAddress& local_addr, const NetworkAddress& group_addr, uint8_t ttl) {
   std::string local_address = this->av_->IpToString(local_addr);
   uint16_t local_port = this->av_->GetPort(local_addr);
@@ -221,7 +245,7 @@ Ptr<DgramFace> UdpFaceFactory::McastFace(const NetworkAddress& local_addr, const
   char logbuf[200];
   int res = ccn_setup_socket(&descr, reinterpret_cast<void (*)(void*, const char*, ...)>(&sprintf), logbuf, nullptr, nullptr, &socks);
   if (res != 0) {
-    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::McastFace %s", logbuf);
+    this->Log(kLLWarn, kLCFace, "UdpFaceFactory::McastFace(%s,%s) %s", this->av_->ToString(local_addr).c_str(), this->av_->ToString(group_addr).c_str(), logbuf);
     return nullptr;
   }
   Ptr<DgramChannel> channel = this->New<UdpSingleMcastChannel>(socks.recving, socks.sending, local_addr, group_addr, this->av_, this->wp());

@@ -11,7 +11,7 @@ namespace ndnfd {
 //   so that we can operate on ns3::Packet without going through ndnfd::Buffer.
 class NdnsimPacketConverter : public Object {
  public:
-  NdnsimPacketConverter(void) {}
+  NdnsimPacketConverter(void) : s_(0) {}
   virtual ~NdnsimPacketConverter(void) {}
   
   Ptr<CcnbMessage> MessageFrom(ns3::Ptr<ns3::Packet> p) const;
@@ -25,6 +25,7 @@ class NdnsimPacketConverter : public Object {
   ns3::Ptr<ns3::Packet> ContentObjectTo(Ptr<const ContentObjectMessage> msg) const;
   
  private:
+  uint64_t s_;
   DISALLOW_COPY_AND_ASSIGN(NdnsimPacketConverter);
 };
 

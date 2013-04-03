@@ -7,7 +7,11 @@ extern "C" {
 #include "face/facemgr.h"
 #include "core/internal_client_handler.h"
 #include "core/nameprefix_table.h"
-#include "strategy/strategy.h"
+//#include "strategy/strategy.h"
+//#define STRATEGY_TYPE Strategy
+#include "strategy/selflearn.h"
+#define STRATEGY_TYPE SelfLearnStrategy
+
 namespace ndnfd {
 
 Global::Global(void) {
@@ -29,7 +33,7 @@ void Global::Init(void) {
   this->set_facemgr(first->New<FaceMgr>());
   this->set_internal_client_handler(first->New<InternalClientHandler>());
   this->set_npt(first->New<NamePrefixTable>());
-  this->set_strategy(first->New<Strategy>());
+  this->set_strategy(first->New<STRATEGY_TYPE>());
 }
 
 Global::~Global(void) {

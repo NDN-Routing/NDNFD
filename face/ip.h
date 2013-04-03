@@ -39,9 +39,12 @@ class UdpFaceFactory : public FaceFactory {
  public:
   UdpFaceFactory(Ptr<WireProtocol> wp);
   virtual ~UdpFaceFactory(void) {}
-  
+
   // Channel creates a DgramChannel for UDP over IPv4 or IPv6.
   Ptr<DgramChannel> Channel(const NetworkAddress& local_addr);
+  
+  // ListLocalAddresses returns a list of local NIC addresses.
+  std::vector<NetworkAddress> ListLocalAddresses(void) const;
   
   // McastFace joins a UDP multicast group.
   // Each unique local_addr can only join one group,

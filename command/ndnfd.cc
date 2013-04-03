@@ -34,7 +34,11 @@ void NdnfdProgram::Init(void) {
   //Ptr<Face> ether_vm102 = this->global()->facemgr()->ether_channel()->GetFace(addr);
   //this->ccndc_add(ether_vm102->id(), "/vm102");
 
-  this->ccndc_add(this->global()->facemgr()->udp_mcast_face()->id(), "/");
+  //this->ccndc_add(this->global()->facemgr()->udp_mcast_face()->id(), "/");
+
+  for (DgramFace* udp_mcast_face : this->global()->facemgr()->udp_mcast_faces()) {
+    this->ccndc_add(udp_mcast_face->id(), "/");
+  }
 
   for (auto ether_tuple : this->global()->facemgr()->ether_channels()) {
     Ptr<DgramFace> ether_mcast_face = std::get<2>(ether_tuple);
