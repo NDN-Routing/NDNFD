@@ -13,7 +13,7 @@ class SelfLearnStrategy : public Strategy {
 
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie);
   virtual bool DidExhaustForwardingOptions(Ptr<PitEntry> ie);
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream);
+  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(SelfLearnStrategy);

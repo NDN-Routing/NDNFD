@@ -12,11 +12,13 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<NamePrefixEntr
   });
 
   // lookup FIB
-  std::unordered_set<FaceId> fib_outbounds = npe->LookupFib(interest);
+  std::unordered_set<FaceId> candidates = npe->LookupFib(interest);
+  FaceId inherit_best = npe->GetBestFace();// also include inherited best face
+  if (inherit_best != FaceId_none) candidates.insert(inherit_best);
   std::unordered_set<FaceId> outbounds;
 
   // select outbounds
-  for (FaceId outbound : fib_outbounds) {
+  for (FaceId outbound : candidates) {
     Ptr<Face> upstream = this->global()->facemgr()->GetFace(outbound);
     if (upstream == nullptr || !upstream->CanSend()) continue;
     bool reach = false;
@@ -116,18 +118,19 @@ bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
   return !outbounds.empty();
 }
 
-void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream) {
-  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId "", npe->name()->ToUri().c_str(), upstream);
-  int limit = 2;//TODO consider increase this value
-  for (; npe != nullptr && --limit >= 0; npe = npe->Parent()) {
-    if (npe->npe()->src == static_cast<unsigned>(upstream)) {
-      adjust_npe_predicted_response(this->global()->ccndh(), npe->npe(), 0);
-      continue;
-    }
-    if (npe->npe()->src != CCN_NOFACEID) {
-      npe->npe()->osrc = npe->npe()->src;
-    }
-    npe->npe()->src = static_cast<unsigned>(upstream);
+void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co) {
+  Ptr<Face> inface = this->global()->facemgr()->GetFace(co->incoming_face());
+  if (inface == nullptr) return;
+  Ptr<Face> peer = inface;
+  if (inface->kind() == FaceKind::kMulticast) {
+    peer = this->global()->facemgr()->MakeUnicastFace(inface, co->incoming_sender());
+  }
+
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " peer=%" PRI_FaceId "", npe->name()->ToUri().c_str(), inface->id(), peer->id());
+  
+  // update best face all the way to the top
+  for (Ptr<NamePrefixEntry> npe1 = npe; npe1 != nullptr; npe1 = npe1->Parent()) {
+    npe1->UpdateBestFace(peer->id());
   }
 }
 

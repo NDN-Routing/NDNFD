@@ -74,10 +74,10 @@ class Strategy : public Element {
   
   // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
   // (same as ccnd strategy_callout CCNST_SATISFIED)
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream);
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co);
   // DidSatisfyPendingInterests is invoked after some PIT entries are satisfied in npe.
   // (similar to ccnd note_content_from but is not called for one shorter prefix)
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream);
+  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
   
   // -------- face callbacks --------
   virtual void AddFace(FaceId face) {}//currently unused

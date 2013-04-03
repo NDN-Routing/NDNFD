@@ -1,5 +1,6 @@
 #include "ccnd_interface.h"
 #include "strategy.h"
+#include "face/facemgr.h"
 using ndnfd::Global;
 
 int propagate_interest(struct ccnd_handle* h, struct face* face, uint8_t* msg, struct ccn_parsed_interest* pi, struct nameprefix_entry* npe) {
@@ -33,13 +34,25 @@ int CcndStrategyInterface::PropagateInterest(face* face, uint8_t* msg, ccn_parse
 }
 
 void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream) {
+  Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
+  // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
+  // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
+  // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
+  if (co == nullptr || co->incoming_face() != upstream) return;
+
   Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
-  this->global()->strategy()->WillSatisfyPendingInterest(ie1, upstream);
+  this->global()->strategy()->WillSatisfyPendingInterest(ie1, co);
 }
 
 void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name) {
+  Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
+  // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
+  // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
+  // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
+  if (co == nullptr || co->incoming_face() != upstream) return;
+
   Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
-  this->global()->strategy()->DidSatisfyPendingInterests(npe1, upstream);
+  this->global()->strategy()->DidSatisfyPendingInterests(npe1, co);
 }
 
 void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name) {

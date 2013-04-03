@@ -139,7 +139,9 @@ Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& p
   
   DgramFace* dface = static_cast<DgramFace*>(PeekPointer(mcast_face));
   Ptr<DgramChannel> channel = dface->channel();
-  return channel->GetFace(peer);
+  Ptr<Face> face = channel->GetFace(peer);
+  assert(face != nullptr && face->kind() == FaceKind::kUnicast);
+  return face;
 }
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size) {

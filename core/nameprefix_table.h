@@ -62,10 +62,6 @@ class NamePrefixEntry : public Element {
   Ptr<const Name> name(void) const { return this->name_; }
   nameprefix_entry* npe(void) const { return this->npe_; }
 
-  FaceId best_faceid(void);
-  void set_best_faceid(FaceId value) { this->npe()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
-  FaceId prev_best_faceid(void) const { return this->npe()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->osrc); }
-  
   // Parent returns the NamePrefixEntry for next shorter prefix.
   Ptr<NamePrefixEntry> Parent(void) const;
   
@@ -88,10 +84,24 @@ class NamePrefixEntry : public Element {
   // ForeachPit invokes f with each PitEntry whose name is under this prefix.
   void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
+  FaceId best_faceid(void) { return this->npe()->src == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->src); }
+  FaceId prev_faceid(void) const { return this->npe()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->osrc); }
+  // GetBestFace returns best_faceid.
+  // If it's FaceId_none, it returns prev_faceid and writes that to best_faceid.
+  FaceId GetBestFace(void);
+  // UpdateBestFace updates best_faceid.
+  // If best_faceid is same as value, it also adjusts down predicted response time.
+  void UpdateBestFace(FaceId value);
+  // AdjustPredictUp adjusts up predicted response time.
+  void AdjustPredictUp(void);
+  
  private:
   Ptr<const Name> name_;
   nameprefix_entry* npe_;
 
+  void set_best_faceid(FaceId value) { this->npe()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
+  void set_prev_faceid(FaceId value) { this->npe()->osrc = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
+  
   Ptr<ForwardingEntry> SeekForwardingInternal(FaceId faceid, bool create);
   
   DISALLOW_COPY_AND_ASSIGN(NamePrefixEntry);

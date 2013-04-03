@@ -82,7 +82,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   }
   
   // read the known best face
-  FaceId best = npe->best_faceid();
+  FaceId best = npe->GetBestFace();
   bool use_first;// whether to send interest immediately to the first upstream
   uint32_t defer_min, defer_range;// defer time for all but best and tap faces is within [defer_min,defer_min+defer_range) microseconds
   if (best == FaceId_none) {
@@ -120,7 +120,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       // since we don't know who is the best, just pick the first one
       p->SetExpiry(std::chrono::microseconds::zero());
       DEBUG_APPEND_FaceTime(p->faceid(),"first",0);
-    } else if (p->faceid() == npe->prev_best_faceid()) {
+    } else if (p->faceid() == npe->prev_faceid()) {
       p->SetExpiry(std::chrono::microseconds(defer_min));
       DEBUG_APPEND_FaceTime(p->faceid(),"osrc",defer_min);
     } else {
@@ -247,22 +247,17 @@ void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
 }
 
-void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, FaceId upstream) {
+void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co) {
+  FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
 }
 
-void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, FaceId upstream) {
+void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co) {
+  FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId "", npe->name()->ToUri().c_str(), upstream);
   int limit = 2;
-  for (; npe != nullptr && --limit >= 0; npe = npe->Parent()) {
-    if (npe->npe()->src == static_cast<unsigned>(upstream)) {
-      adjust_npe_predicted_response(CCNDH, npe->npe(), 0);
-      continue;
-    }
-    if (npe->npe()->src != CCN_NOFACEID) {
-      npe->npe()->osrc = npe->npe()->src;
-    }
-    npe->npe()->src = static_cast<unsigned>(upstream);
+  for (Ptr<NamePrefixEntry> npe1 = npe; npe1 != nullptr && --limit >= 0; npe1 = npe1->Parent()) {
+    npe1->UpdateBestFace(upstream);
   }
 }
 

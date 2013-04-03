@@ -100,18 +100,10 @@ NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* npe) : 
   assert(npe != nullptr);
 }
 
-FaceId NamePrefixEntry::best_faceid(void) {
-  unsigned best = this->npe()->src;
-  if (best == CCN_NOFACEID) {
-    best = this->npe()->src = this->npe()->osrc;
-  }
-  return best == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(best);
-}
-
 Ptr<NamePrefixEntry> NamePrefixEntry::Parent(void) const {
   nameprefix_entry* parent = this->npe()->parent;
   if (parent == nullptr) return nullptr;
-  return new NamePrefixEntry(this->name()->StripSuffix(1), parent);
+  return this->New<NamePrefixEntry>(this->name()->StripSuffix(1), parent);
 }
   
 Ptr<NamePrefixEntry> NamePrefixEntry::FibNode(void) const {
@@ -156,6 +148,7 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
 }
 
 void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) {
+  // ForeachPit cannot be replaced with STL iterator due to the use of hashtb_enumerator.
   hashtb_enumerator ee; hashtb_enumerator* e = &ee;
   hashtb_start(CCNDH->interest_tab, e);
   for (interest_entry* ie = static_cast<interest_entry*>(e->data); ie != nullptr; ie = static_cast<interest_entry*>(e->data)) {
@@ -173,6 +166,30 @@ void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) 
     hashtb_next(e);
   }
   hashtb_end(e);
+}
+
+FaceId NamePrefixEntry::GetBestFace(void) {
+  FaceId best = this->best_faceid();
+  if (best == FaceId_none) {
+    best = this->prev_faceid();
+    this->set_best_faceid(best);
+  }
+  return best;
+}
+
+void NamePrefixEntry::UpdateBestFace(FaceId value) {
+  if (this->best_faceid() == value) {
+    adjust_npe_predicted_response(CCNDH, this->npe(), 0);
+  } else if (this->best_faceid() == FaceId_none) {
+    this->set_best_faceid(value);
+  } else {
+    this->set_prev_faceid(this->best_faceid());
+    this->set_best_faceid(value);
+  }
+}
+
+void NamePrefixEntry::AdjustPredictUp(void) {
+  adjust_npe_predicted_response(CCNDH, this->npe(), 1);
 }
 
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* forw) : npe_(npe), forw_(forw) {
