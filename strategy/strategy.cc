@@ -58,8 +58,8 @@ std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<NamePrefixEntry> npe, P
 void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds) {
   for (FaceId face : outbounds) {
     Ptr<PitUpstreamRecord> p = ie->SeekUpstream(face);
-    if (wt_compare(p->p()->expiry, CCNDH->wtnow) < 0) {
-      p->p()->expiry = CCNDH->wtnow + 1;
+    if (p->IsExpired()) {
+      p->SetExpiry(std::chrono::microseconds::zero());
       p->p()->pfi_flags &= ~CCND_PFI_UPHUNGRY;
     }
   }
@@ -106,7 +106,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
     if (p->faceid() == best) {
       this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie](void){
-        adjust_predicted_response(CCNDH, ie->ie(), 1);
+        ie->npe()->AdjustPredictUp();
         return Scheduler::kNoMore;
       }, &ie->ie()->strategy.ev, true);
       DEBUG_APPEND_FaceTime(p->faceid(),"best+",defer_min);
@@ -142,15 +142,16 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 
 #undef DEBUG_APPEND_FaceTime
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
-  this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateNewInterest(%" PRI_PitEntrySerial ") {%s}", ie->serial(), debug_list.c_str());
+  this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateNewInterest(%" PRI_PitEntrySerial ") best=%" PRI_FaceId " pending=%" PRI_FaceId " [%s]", ie->serial(), best, downstream->faceid(), debug_list.c_str());
 }
 
 std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   assert(ie != nullptr);
+  Ptr<NamePrefixEntry> npe = ie->npe();
   ccn_wrappedtime now = CCNDH->wtnow;
   
-  std::string debug_list("pending=["); char debug_buf[32];
-#define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", static_cast<FaceId>(x)); debug_list.append(debug_buf); }
+  std::string debug_list("downstreams=["); char debug_buf[32];
+#define DEBUG_APPEND_FaceId(c,p) { snprintf(debug_buf, sizeof(debug_buf), "%c%" PRI_FaceId ",", c, p->faceid()); debug_list.append(debug_buf); }
 
   // find pending downstreams
   int pending = 0;//count of pending downstreams
@@ -158,15 +159,17 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   for (auto it = ie->beginDownstream(); it != ie->endDownstream(); ++it) {
     Ptr<PitDownstreamRecord> p = *it;
     if (p->IsExpired()) { 
+      DEBUG_APPEND_FaceId('-',p);
       it.Delete();
       continue;
     }
     if (!p->pending()) continue;
     ++pending;
-    DEBUG_APPEND_FaceId(p->faceid());
     if ((p->p()->expiry - now) * 8 <= (p->p()->expiry - p->p()->renewed)) {// will expire soon (less than 1/8 remaining lifetime)
+      DEBUG_APPEND_FaceId('~',p);
       continue;
     }
+    DEBUG_APPEND_FaceId('_',p);
     downstreams.push_back(p);
   };
   // keep at most two downstreams with longest lifetime; interests will be sent on their behalf (with their nonces)
@@ -188,10 +191,22 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       it.Delete();
       continue;
     }
-    if (!p->IsExpired()) {// in defer period
+    if (!p->IsExpired()) {
+      if (p->pending()) {// Interest sent
+        DEBUG_APPEND_FaceId('_',p);
+      } else {// defer
+        DEBUG_APPEND_FaceId('.',p);
+      }
       ++upstreams;
       continue;
     }
+    
+    if (p->pending()) {// Interest sent but no response
+      DEBUG_APPEND_FaceId('-',p);
+      if (npe->best_faceid() == p->faceid() || npe->prev_faceid() == p->faceid()) npe->UpdateBestFace(FaceId_none);
+      continue;// don't send another Interest
+    }
+    
     // find a downstream that is different from this upstream; Interest will be sent with that nonce
     Ptr<PitDownstreamRecord> interest_from = nullptr;
     for (Ptr<PitDownstreamRecord> downstream : downstreams) {
@@ -201,11 +216,11 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       }
     }
     if (interest_from != nullptr) {
-      debug_list.push_back('+');
-      DEBUG_APPEND_FaceId(p->faceid());
+      DEBUG_APPEND_FaceId('+',p);
       this->SendInterest(ie, interest_from, p);
       ++upstreams;
     } else {
+      DEBUG_APPEND_FaceId('~',p);
       p->p()->pfi_flags |= CCND_PFI_UPHUNGRY;
     }
   }

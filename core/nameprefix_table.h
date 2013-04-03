@@ -2,14 +2,6 @@
 #define NDNFD_CORE_NAMEPREFIX_TABLE_H_
 extern "C" {
 #include "ccnd/ccnd_private.h"
-struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
-int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
-void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
-void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
-uint32_t WTHZ_value(void);
-int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
-void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
-void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
 #include "core/element.h"
 #include "util/foreach.h"
@@ -146,7 +138,7 @@ class PitEntry : public Element {
     pit_face_item* p(void) const { return this->p_; }
     void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
     
-    virtual bool IsExpired(void) const =0;
+    bool IsExpired(void) const;
     // CompareExpiry returns -1,0,1 if a expires earlier/same/later than b.
     static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
 
@@ -251,8 +243,6 @@ class PitUpstreamRecord : public PitEntry::PitFaceItem {
   bool pending(void) const { return this->GetFlag(CCND_PFI_UPENDING); }
   void set_pending(bool value) { this->SetFlag(CCND_PFI_UPENDING, value); }
   
-  virtual bool IsExpired(void) const;
-  
   void SetExpiry(std::chrono::microseconds t);
   
  private:
@@ -274,8 +264,6 @@ class PitDownstreamRecord : public PitEntry::PitFaceItem {
   bool suppress(void) const { return this->GetFlag(CCND_PFI_SUPDATA); }
   void set_suppress(bool value) { this->SetFlag(CCND_PFI_SUPDATA, value); }
 
-  virtual bool IsExpired(void) const;
-  
   // UpdateNonce sets pfi nonce to Interest's nonce, or generate a nonce.
   void UpdateNonce(Ptr<const InterestMessage> interest);
   

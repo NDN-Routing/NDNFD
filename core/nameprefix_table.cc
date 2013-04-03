@@ -13,6 +13,14 @@ void consume_interest(struct ccnd_handle* h, struct interest_entry* ie);
 struct pit_face_item* pfi_seek(struct ccnd_handle* h, struct interest_entry* ie, unsigned faceid, unsigned pfi_flag);
 void pfi_destroy(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedtime* expiry);
+struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
+int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
+void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
+void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
+uint32_t WTHZ_value(void);
+int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
+void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
+void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -178,6 +186,11 @@ FaceId NamePrefixEntry::GetBestFace(void) {
 }
 
 void NamePrefixEntry::UpdateBestFace(FaceId value) {
+  if (value == FaceId_none) {
+    this->set_prev_faceid(value);
+    this->set_best_faceid(value);
+    return;
+  }
   if (this->best_faceid() == value) {
     adjust_npe_predicted_response(CCNDH, this->npe(), 0);
   } else if (this->best_faceid() == FaceId_none) {
@@ -258,11 +271,13 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
   std::for_each(that->beginDownstream(), that->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
     if (p->pending()) {
       mn = std::min(mn, p->p()->expiry-now);
+      //that->Log(kLLDebug, kLCStrategy, "PitEntry(%" PRI_PitEntrySerial ")::NextEventDelay downstream %" PRI_FaceId " %" PRIuMAX "", this->serial(), p->faceid(), static_cast<uintmax_t>((p->p()->expiry-now) * (1000000 / WTHZ_value())));
     }
   });
   std::for_each(that->beginUpstream(), that->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
     if (!p->IsExpired()) {
       mn = std::min(mn, p->p()->expiry-now);
+      //that->Log(kLLDebug, kLCStrategy, "PitEntry(%" PRI_PitEntrySerial ")::NextEventDelay upstream %" PRI_FaceId " %" PRIuMAX "", this->serial(), p->faceid(), static_cast<uintmax_t>((p->p()->expiry-now) * (1000000 / WTHZ_value())));
     }
   });
   
@@ -274,16 +289,16 @@ PitEntry::PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie)
   assert(p != nullptr);
 }
 
+bool PitEntry::PitFaceItem::IsExpired(void) const {
+  return wt_compare(this->p()->expiry, CCNDH->wtnow) <= 0;
+}
+
 int PitEntry::PitFaceItem::CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b) {
   return wt_compare(a->p()->expiry, b->p()->expiry);
 }
 
 PitUpstreamRecord::PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* p) : PitFaceItem(ie, p) {
   assert((p->pfi_flags & CCND_PFI_UPSTREAM) != 0);
-}
-
-bool PitUpstreamRecord::IsExpired(void) const {
-  return wt_compare(this->p()->expiry, CCNDH->wtnow+1) <= 0;
 }
 
 void PitUpstreamRecord::SetExpiry(std::chrono::microseconds t) {
@@ -306,10 +321,6 @@ void PitDownstreamRecord::UpdateNonce(Ptr<const InterestMessage> interest) {
   }
   
   this->set_p(pfi_set_nonce(CCNDH, this->ie()->ie(), this->p(), nonce, nonce_size));
-}
-
-bool PitDownstreamRecord::IsExpired(void) const {
-  return wt_compare(this->p()->expiry, CCNDH->wtnow) <= 0;
 }
 
 void PitDownstreamRecord::SetExpiryToLifetime(Ptr<const InterestMessage> interest) {

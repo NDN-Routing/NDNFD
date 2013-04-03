@@ -13,8 +13,10 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<NamePrefixEntr
 
   // lookup FIB
   std::unordered_set<FaceId> candidates = npe->LookupFib(interest);
-  FaceId inherit_best = npe->GetBestFace();// also include inherited best face
-  if (inherit_best != FaceId_none) candidates.insert(inherit_best);
+  // also include (inherited) best face
+  candidates.insert(npe->GetBestFace());
+  candidates.insert(npe->prev_faceid());
+  candidates.erase(FaceId_none);
   std::unordered_set<FaceId> outbounds;
 
   // select outbounds
