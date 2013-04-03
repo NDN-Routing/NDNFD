@@ -153,7 +153,7 @@ class PitEntry : public Element {
   template <typename TPfi>
   class PitFaceItemIterator : public std::iterator<std::forward_iterator_tag, Ptr<TPfi>> {
    public:
-    explicit PitFaceItemIterator(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie) { assert(ie != nullptr); this->Update(p); }
+    PitFaceItemIterator(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie) { assert(ie != nullptr); this->Update(p); }
     PitFaceItemIterator(const PitFaceItemIterator& other) : ie_(other.ie_), p_(other.p_), next_(other.next_) {}
     PitFaceItemIterator& operator++(void) { this->Update(this->next_); return *this; }
     PitFaceItemIterator operator++(int) { PitFaceItemIterator tmp(*this); this->operator++(); return tmp; }

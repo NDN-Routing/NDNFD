@@ -61,16 +61,16 @@ bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
   // find faces to broadcast
   std::vector<Ptr<Face>> mcast_outbound, unicast_outbound;
   std::unordered_set<FaceId> outbounds;
-  this->global()->facemgr()->ForeachFace([&] (Ptr<Face> face) ->ForeachAction {
+  for (Ptr<Face> face : *this->global()->facemgr()) {
     if (!face->CanSend() || upstreams.count(face->id()) != 0) {
       // exclude no-send faces, and faces already tried earlier
-      FOREACH_CONTINUE;
+      continue;
     }
     switch (face->kind()) {
       case FaceKind::kInternal:
       case FaceKind::kApp:
         // exclude local faces: they always register prefix
-        FOREACH_CONTINUE;
+        continue;
       case FaceKind::kMulticast:
         // include mcast faces
         mcast_outbound.push_back(face);
@@ -84,8 +84,7 @@ bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
       default:
         assert(false);
     }
-    FOREACH_OK;
-  });
+  };
   
   // exclude unicast peers reachable on mcast group
   for (Ptr<Face> face : unicast_outbound) {

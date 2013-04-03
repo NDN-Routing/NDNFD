@@ -51,15 +51,6 @@ Ptr<Face> FaceMgr::GetFace(FaceId id) const {
   return it->second;
 }
 
-void FaceMgr::ForeachFace(std::function<ForeachAction(Ptr<Face>)> f) {
-  for (auto pair : this->table_) {
-    ForeachAction act = f(pair.second);
-    if (ForeachAction_break(act)) {
-      break;
-    }
-  }
-}
-
 void FaceMgr::AddFace(Ptr<Face> face) {
   FaceId id = 0;
   if (face->kind() != FaceKind::kInternal) id = ++this->next_id_;

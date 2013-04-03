@@ -6,7 +6,6 @@ extern "C" {
 #include "face/face.h"
 #include "face/ccnd_interface.h"
 #include "core/internal_client_handler.h"
-#include "util/foreach.h"
 namespace ndnfd {
 
 class CcndFaceInterface;
@@ -27,7 +26,21 @@ class FaceMgr : public Element {
     kNewFace     = 1,
     kDestroyFace = 2
   };
-
+  
+  class FaceIterator : public std::iterator<std::forward_iterator_tag,Ptr<Face>> {
+   public:
+    explicit FaceIterator(std::map<FaceId,Ptr<Face>>::iterator map_it) : map_it_(map_it) {}
+    FaceIterator(const FaceIterator& other) : map_it_(other.map_it_) {}
+    FaceIterator& operator++(void) { ++this->map_it_; return *this; }
+    FaceIterator operator++(int) { FaceIterator tmp(*this); this->operator++(); return tmp; }
+    bool operator==(const FaceIterator& rhs) { return this->map_it_ == rhs.map_it_; }
+    bool operator!=(const FaceIterator& rhs) { return this->map_it_ != rhs.map_it_; }
+    Ptr<Face> operator*(void) { return this->map_it_->second; }
+    
+   private:
+    std::map<FaceId,Ptr<Face>>::iterator map_it_;
+  };
+  
   FaceMgr(void);
   virtual void Init(void);
   virtual ~FaceMgr(void);
@@ -36,7 +49,8 @@ class FaceMgr : public Element {
   // GetFace finds a Face by FaceId.
   Ptr<Face> GetFace(FaceId id) const;
   // ForeachFace invokes f for each face.
-  void ForeachFace(std::function<ForeachAction(Ptr<Face>)> f);
+  FaceIterator begin(void) { return FaceIterator(this->table_.begin()); }
+  FaceIterator end(void) { return FaceIterator(this->table_.end()); }
 
   // AddFace assigns FaceId to a new Face, and puts it in the table.
   // This is called by Face::Init.
