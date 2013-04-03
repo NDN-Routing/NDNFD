@@ -140,7 +140,7 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq
   res = ccn_parse_ContentObject(msg, size, &pco, NULL);
   if (res < 0)
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
-  const unsigned char *req;
+  const uint8_t *req;
   size_t req_size;
   res = ccn_content_get_value(msg, size, &pco, &req, &req_size);
   if (res < 0)
@@ -183,7 +183,7 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
   }
   struct ccn_charbuf* cb_face_inst = ccn_charbuf_create();
-  ccn_charbuf_append(cb_face_inst, face_instance, sizeof(*face_instance));
+  ccnb_append_face_instance(cb_face_inst, face_instance);
   Ptr<Buffer> b = new Buffer(0);
   b->Swap(cb_face_inst);
   ccn_charbuf_destroy(&cb_face_inst);
@@ -213,20 +213,27 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* fac
       return std::forward_as_tuple(false, res, "error: getaddrinfo");
     }
     NetworkAddress addr;
-    if (addrinfo->ai_family == AF_INET)  {
-      addr.wholen = sizeof(sockaddr_in);//or sockaddr_in6 for IPv6
-      sockaddr_in* sa = reinterpret_cast<sockaddr_in*>(&addr.who);
-      sa->sin_family = AF_INET;
-      sa->sin_port = ((struct sockaddr_in *) addrinfo->ai_addr)->sin_port;
-      sa->sin_addr.s_addr = ((struct sockaddr_in *) addrinfo->ai_addr)->sin_addr.s_addr;
-    } else if (addrinfo->ai_family == AF_INET6) {
-      addr.wholen = sizeof(sockaddr_in6);
-      sockaddr_in6* sa = reinterpret_cast<sockaddr_in6*>(&addr.who);
-      sa->sin6_family = AF_INET6;
-      sa->sin6_port = ((struct sockaddr_in6 *) addrinfo->ai_addr)->sin6_port;
-      memcpy(sa->sin6_addr.s6_addr, ((struct sockaddr_in6 *) addrinfo->ai_addr)->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
-    } else {
-      return std::forward_as_tuple(false, 0, "address is not IPv4 nor IPv6");
+    switch (addrinfo->ai_family) {
+      case AF_INET: {
+        addr.wholen = sizeof(sockaddr_in);//or sockaddr_in6 for IPv6
+        sockaddr_in* sa = reinterpret_cast<sockaddr_in*>(&addr.who);
+        sa->sin_family = AF_INET;
+        sa->sin_port = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_port;
+        sa->sin_addr.s_addr = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_addr.s_addr;
+      } 
+      break;
+      case AF_INET6: {
+        addr.wholen = sizeof(sockaddr_in6);
+        sockaddr_in6* sa = reinterpret_cast<sockaddr_in6*>(&addr.who);
+        sa->sin6_family = AF_INET6;
+        sa->sin6_port = (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_port;
+        memcpy(sa->sin6_addr.s6_addr, (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
+      }
+      break;
+      default: {
+        return std::forward_as_tuple(false, 0, "unknown address type");
+      }
+      break;
     }
     if (face_inst->descr.ipproto == IPPROTO_TCP) {
       //   TCP: this->tcp_factory()->Connect(addr)
@@ -237,7 +244,7 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* fac
       Ptr<IpAddressVerifier> av = new IpAddressVerifier();
       if (av->IsMcast(addr)) {
         //  UDP multicast: fail, not supported
-        return std::forward_as_tuple(false, 0, "UDP Multicast not Supported");
+        return std::forward_as_tuple(false, 0, "UDP Multicast is not Supported");
       } else {
         //   UDP unicast: this->udp_channel()->GetFace(addr)
         Ptr<Face> face = this->udp_channel()->GetFace(addr);
