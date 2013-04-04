@@ -28,7 +28,7 @@ class InternalClientFace : public Face {
   void Grab(void);
   
  private:
-  ccn* internal_client(void) const { return const_cast<ccn*>(this->global()->ccndh()->internal_client); }
+  ccn* internal_client(void) const { return const_cast<ccn*>(CCNDH->internal_client); }
   DISALLOW_COPY_AND_ASSIGN(InternalClientFace);
 };
 

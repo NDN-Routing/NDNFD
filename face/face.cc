@@ -64,18 +64,18 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 
   this->set_id(id);
   // update ccnd_face, like ccnd_enroll_face
-  this->ccnd_face()->meter[FM_BYTI] = ccnd_meter_create(this->global()->ccndh(), "bytein");
-  this->ccnd_face()->meter[FM_BYTO] = ccnd_meter_create(this->global()->ccndh(), "byteout");
-  this->ccnd_face()->meter[FM_INTI] = ccnd_meter_create(this->global()->ccndh(), "intrin");
-  this->ccnd_face()->meter[FM_INTO] = ccnd_meter_create(this->global()->ccndh(), "introut");
-  this->ccnd_face()->meter[FM_DATI] = ccnd_meter_create(this->global()->ccndh(), "datain");
-  this->ccnd_face()->meter[FM_DATO] = ccnd_meter_create(this->global()->ccndh(), "dataout");
+  this->ccnd_face()->meter[FM_BYTI] = ccnd_meter_create(CCNDH, "bytein");
+  this->ccnd_face()->meter[FM_BYTO] = ccnd_meter_create(CCNDH, "byteout");
+  this->ccnd_face()->meter[FM_INTI] = ccnd_meter_create(CCNDH, "intrin");
+  this->ccnd_face()->meter[FM_INTO] = ccnd_meter_create(CCNDH, "introut");
+  this->ccnd_face()->meter[FM_DATI] = ccnd_meter_create(CCNDH, "datain");
+  this->ccnd_face()->meter[FM_DATO] = ccnd_meter_create(CCNDH, "dataout");
 }
 
 void Face::Finalize(void) {
   if (this->status_ == FaceStatus::kFinalized) return;
   this->DoFinalize();
-  finalize_face(this->global()->ccndh(), this->ccnd_face());
+  finalize_face(CCNDH, this->ccnd_face());
   this->status_ = FaceStatus::kFinalized;
 }
 
