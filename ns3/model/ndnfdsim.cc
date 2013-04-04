@@ -53,6 +53,8 @@ void NdnfdSim::Start(void) {
 
 void NdnfdSim::ScheduleOnNextRun(std::function<void()> action) {
   this->next_run_actions_.push(action);
+  this->run_evt_.Cancel();
+  ns3::Simulator::ScheduleNow(&NdnfdSim::RunOnce, this);
 }
 
 void NdnfdSim::RunOnce(void) {
@@ -70,7 +72,7 @@ void NdnfdSim::RunOnce(void) {
   std::chrono::microseconds next_scheduler_evt = this->global()->scheduler()->Run();
   this->internal_client_->Grab();
 
-  uint64_t next_us = 5000;
+  uint64_t next_us = 10000;
   if (next_scheduler_evt != Scheduler::kNoMore) {
     next_us = std::min(next_us, static_cast<uint64_t>(next_scheduler_evt.count()));
   }
