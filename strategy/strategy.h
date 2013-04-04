@@ -32,13 +32,13 @@ class Strategy : public Element {
   
   // LookupOutbounds returns a list of upstreams for an Interest,
   // usually from FIB.
-  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie);
+  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest);
 
   // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
   // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.
   // (same as ccnd strategy_callout CCNST_FIRST)
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  
+
   // DoPropagate is invoked when
   // * a similar Interest is received from a new/expired downstream
   // * a downstream expires
@@ -49,11 +49,10 @@ class Strategy : public Element {
   // (same as ccnd do_propagate)
   virtual std::chrono::microseconds DoPropagate(Ptr<PitEntry> ie);
   
-  // DidExhaustForwardingOptions is invoked when there are pending downstreams,
-  // but no more unexpired upstreams.
-  // It returns true if new upstreams are added and DoPropagate should be
-  // scheduled immediately to send Interest to them, or false otherwise.
-  virtual bool DidExhaustForwardingOptions(Ptr<PitEntry> ie);
+  // DidnotArriveOnBestFace is invoked when ContentObject didn't arrived on best face
+  // in predicted time.
+  // (same as ccnd strategy_callout CCNST_TIMER)
+  virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
   
   // WillEraseTimedOutPendingInterest is invoked when there's no more pending downstreams
   // and no more unexpired upstreams.
