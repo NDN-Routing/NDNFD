@@ -119,11 +119,10 @@ bool PollMgr::Poll(std::chrono::milliseconds timeout) {
 }
 
 void PollMgr::PollSuccess(void) {
-  ccnd_handle* h = this->global()->ccndh();
-  if (h->ticktock.gettime == nullptr) return;//in unittest
+  if (CCNDH->ticktock.gettime == nullptr) return;//in unittest
   // refresh ccnd time
   ccn_timeval dummy;
-  h->ticktock.gettime(&h->ticktock, &dummy);
+  CCNDH->ticktock.gettime(&CCNDH->ticktock, &dummy);
 }
 
 };//namespace ndnfd

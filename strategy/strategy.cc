@@ -40,7 +40,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   p->SetExpiryToLifetime(interest);
   
   // lookup FIB and populate upstream pfi
-  std::unordered_set<FaceId> outbounds = this->LookupOutbounds(npe, interest, ie);
+  std::unordered_set<FaceId> outbounds = this->LookupOutbounds(ie, interest);
   this->PopulateOutbounds(ie, outbounds);
   
   // schedule DoPropagate
@@ -51,8 +51,8 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
 }
 
-std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie) {
-  return npe->LookupFib(interest);
+std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest) {
+  return ie->npe()->LookupFib(interest);
 }
 
 void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds) {
@@ -105,8 +105,9 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   int n_upst = 0;
   std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
     if (p->faceid() == best) {
-      this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie](void){
-        ie->npe()->AdjustPredictUp();
+      this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie,best](void){
+        assert(ie->npe()->best_faceid() == best);
+        this->DidnotArriveOnBestFace(ie);
         return Scheduler::kNoMore;
       }, &ie->ie()->strategy.ev, true);
       DEBUG_APPEND_FaceTime(p->faceid(),"best+",defer_min);
@@ -230,19 +231,15 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
 #undef DEBUG_APPEND_FaceId
   this->Log(kLLDebug, kLCStrategy, "Strategy::DoPropagate(%" PRI_PitEntrySerial ") %s", ie->serial(), debug_list.c_str());
 
-  bool include_expired_in_next_evt = false;
-  if (upstreams == 0) {
-    if (pending == 0) {
-      this->WillEraseTimedOutPendingInterest(ie);
-      ie->ie()->ev = nullptr;
-      this->global()->npt()->DeletePit(ie);
-      ie = nullptr;
-      return Scheduler::kNoMore;
-    }
-    include_expired_in_next_evt = this->DidExhaustForwardingOptions(ie);
+  if (upstreams == 0 && pending == 0) {
+    this->WillEraseTimedOutPendingInterest(ie);
+    ie->ie()->ev = nullptr;
+    this->global()->npt()->DeletePit(ie);
+    ie = nullptr;
+    return Scheduler::kNoMore;
   }
   
-  return ie->NextEventDelay(include_expired_in_next_evt);
+  return ie->NextEventDelay(false);
 }
 
 void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream) {
@@ -253,9 +250,12 @@ void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstrea
   upstream->set_p(send_interest(CCNDH, ie->ie(), downstream->p(), upstream->p()));
 }
 
-bool Strategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
-  this->Log(kLLDebug, kLCStrategy, "Strategy::DidExhaustForwardingOptions(%" PRI_PitEntrySerial ")", ie->serial());
-  return false;
+void Strategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
+  this->Log(kLLDebug, kLCStrategy, "Strategy::DidnotArriveOnBestFace(%" PRI_PitEntrySerial ") face=%" PRI_FaceId "", ie->serial(), ie->npe()->best_faceid());
+  int limit = 2;
+  for (Ptr<NamePrefixEntry> npe1 = ie->npe(); npe1 != nullptr && --limit >= 0; npe1 = npe1->Parent()) {
+    npe1->AdjustPredictUp();
+  }
 }
 
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {

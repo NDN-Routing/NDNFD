@@ -18,6 +18,7 @@ class NdnfdSim : public Element {
  private:
   Ptr<InternalClientFace> internal_client_;
   std::queue<std::function<void()>> next_run_actions_;
+  ns3::EventId run_evt_;
   
   static void CcndGetTime(const ccn_gettime* self, ccn_timeval* result);
   void RunOnce(void);

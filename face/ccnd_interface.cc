@@ -27,7 +27,7 @@ namespace ndnfd {
 
 void CcndFaceInterface::BindFace(Ptr<Face> face) {
   face->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
-  register_new_face(this->global()->ccndh(), face->ccnd_face());
+  register_new_face(CCNDH, face->ccnd_face());
 }
 
 void CcndFaceInterface::Receive(Ptr<Message> message) {
@@ -47,7 +47,7 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   
   CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
   assert(msg->Verify());
-  process_input_message(this->global()->ccndh(), in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
+  process_input_message(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
 }
 
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {

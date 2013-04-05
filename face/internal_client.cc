@@ -8,8 +8,8 @@ namespace ndnfd {
 void InternalClientFace::Init(void) {
   this->set_kind(FaceKind::kInternal);
   this->global()->facemgr()->AddFace(this);
-  this->global()->ccndh()->face0 = this->ccnd_face();
-  int res = ccnd_internal_client_start(this->global()->ccndh());
+  CCNDH->face0 = this->ccnd_face();
+  int res = ccnd_internal_client_start(CCNDH);
   if (res < 0) {
     this->Log(kLLError, kLCFace, "InternalClientFace::Init ccnd_internal_client_start fails");
     assert(false);
@@ -17,8 +17,8 @@ void InternalClientFace::Init(void) {
 }
 
 InternalClientFace::~InternalClientFace(void) {
-  ccnd_internal_client_stop(this->global()->ccndh());
-  this->global()->ccndh()->face0 = nullptr;
+  ccnd_internal_client_stop(CCNDH);
+  CCNDH->face0 = nullptr;
   this->global()->facemgr()->RemoveFace(this);
 }
 
@@ -28,7 +28,7 @@ void InternalClientFace::Send(Ptr<const Message> message) {
 }
 
 void InternalClientFace::Grab(void) {
-  process_internal_client_buffer(this->global()->ccndh());
+  process_internal_client_buffer(CCNDH);
 }
 
 

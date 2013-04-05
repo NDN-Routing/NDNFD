@@ -1,9 +1,12 @@
 #include "selflearn.h"
 #include <algorithm>
 #include "face/facemgr.h"
+#include "core/scheduler.h"
 namespace ndnfd {
 
-std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie) {
+std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest) {
+  Ptr<NamePrefixEntry> npe = ie->npe();
+  
   // collect downstreams
   std::vector<Ptr<Face>> downstreams;
   std::for_each(ie->beginDownstream(), ie->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
@@ -41,7 +44,24 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<NamePrefixEntr
   return outbounds;
 }
 
-bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
+void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
+  if (ie->beginUpstream() == ie->endUpstream()) {
+    // not outbound, need broadcast
+    this->StartFlood(ie);
+  } else {
+    this->Strategy::PropagateNewInterest(ie);
+  }
+}
+
+void SelfLearnStrategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
+  this->Log(kLLDebug, kLCStrategy, "Strategy::DidnotArriveOnBestFace(%" PRI_PitEntrySerial ") face=%" PRI_FaceId "", ie->serial(), ie->npe()->best_faceid());
+  for (Ptr<NamePrefixEntry> npe1 = ie->npe(); npe1 != nullptr; npe1 = npe1->Parent()) {
+    npe1->AdjustPredictUp();
+  }
+  this->StartFlood(ie);
+}
+
+void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
   // Every upstream tried so far is listed in the PIT entry.
   // That list might be empty, if there's no FIB entry for the prefix.
   // We need to figure out which faces to broadcast, set expiry time to zero,
@@ -114,10 +134,12 @@ bool SelfLearnStrategy::DidExhaustForwardingOptions(Ptr<PitEntry> ie) {
   
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
 #undef DEBUG_APPEND_FaceId
-  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidExhaustForwardingOptions(%" PRI_PitEntrySerial ") broadcast=[%s]", ie->serial(), debug_list.c_str());
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::StartFlood(%" PRI_PitEntrySerial ") broadcast=[%s]", ie->serial(), debug_list.c_str());
 
+  if (outbounds.empty()) return;
+  
   this->PopulateOutbounds(ie, outbounds);
-  return !outbounds.empty();
+  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
 }
 
 void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co) {

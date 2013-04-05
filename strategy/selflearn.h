@@ -11,11 +11,15 @@ class SelfLearnStrategy : public Strategy {
   SelfLearnStrategy(void) {}
   virtual ~SelfLearnStrategy(void) {}
 
-  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<NamePrefixEntry> npe, Ptr<InterestMessage> interest, Ptr<PitEntry> ie);
-  virtual bool DidExhaustForwardingOptions(Ptr<PitEntry> ie);
+  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest);
+  virtual void PropagateNewInterest(Ptr<PitEntry> ie);
+  virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
 
  private:
+  // StartFlood adds new upstreams to broadcast the Interests
+  void StartFlood(Ptr<PitEntry> ie);
+
   DISALLOW_COPY_AND_ASSIGN(SelfLearnStrategy);
 };
 

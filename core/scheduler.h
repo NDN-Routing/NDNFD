@@ -43,7 +43,7 @@ class Scheduler : public Element {
     SchedulerEvent* evt_ptr;
   };
 
-  ccn_schedule* sched() { return this->global()->ccndh()->sched; };
+  ccn_schedule* sched() { return CCNDH->sched; };
   static int ScheduledAction(ccn_schedule* sched, void* clienth, ccn_scheduled_event* ev, int flags);
 
   DISALLOW_COPY_AND_ASSIGN(Scheduler);
