@@ -7,6 +7,7 @@
 #include "face/ip.h"
 #include "face/ether.h"
 #include "message/ccnb.h"
+#include "message/contentobject.h"
 #include "face/ndnlp.h"
 namespace ndnfd {
 
@@ -146,20 +147,15 @@ Ptr<Face> FaceMgr::MakeUnicastFace(Ptr<Face> mcast_face, const NetworkAddress& p
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size) {
   // decode msg as face_instance
-  int res;
-  struct ccn_parsed_ContentObject pco = {0};
-  res = ccn_parse_ContentObject(msg, size, &pco, NULL);
-  if (res < 0)
+  Ptr<ContentObjectMessage> pco = ContentObjectMessage::Parse(msg, size);
+  if (pco == nullptr)
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
   const uint8_t *req;
   size_t req_size;
-  res = ccn_content_get_value(msg, size, &pco, &req, &req_size);
-  if (res < 0)
-    return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
-  res = -1;
-  struct ccn_face_instance *face_instance = NULL;
+  std::tie(req, req_size) = pco->payload();
+  struct ccn_face_instance *face_instance = nullptr;
   face_instance = ccn_face_instance_parse(req, req_size);
-  if (face_instance == NULL || face_instance->action == NULL)
+  if (face_instance == nullptr || face_instance->action == nullptr)
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
   // verify action in msg matches act
   switch (act) {
@@ -176,7 +172,7 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq
     default: assert(false); break;
   }
   // verify inface trusted for face mgmt protocol
-  if (FaceMgr::GetFace(inface)->kind() != FaceKind::kApp) {
+  if (this->GetFace(inface)->kind() != FaceKind::kApp) {
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
   }
   bool ok; int errnum; std::string errmsg;
@@ -190,95 +186,113 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq
     default: assert(false); break;
   }
   if (!ok) {
-    // TODO return NACK with errnum and errmsg
-    return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
+    // return NACK with errnum and errmsg
+    struct ccn_charbuf* cb_msg = ccn_charbuf_create();
+    cb_msg->length = 0;
+    ccn_encode_StatusResponse(cb_msg, errnum, errmsg.c_str());
+    Ptr<Buffer> b1 = new Buffer(0);
+    b1->Swap(cb_msg);
+    ccn_charbuf_destroy(&cb_msg);
+    return std::forward_as_tuple(InternalClientHandler::ResponseKind::kNack, b1);
   }
+  face_instance->ccnd_id = CCNDH->ccnd_id;
   struct ccn_charbuf* cb_face_inst = ccn_charbuf_create();
   ccnb_append_face_instance(cb_face_inst, face_instance);
   Ptr<Buffer> b = new Buffer(0);
   b->Swap(cb_face_inst);
   ccn_charbuf_destroy(&cb_face_inst);
+  ccn_face_instance_destroy(&face_instance);
   return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, b);
 }
 
 std::tuple<bool,int,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* face_inst) {
-  if (face_inst->descr.ipproto != IPPROTO_UDP && face_inst->descr.ipproto != IPPROTO_TCP && face_inst->descr.ipproto != 97) {
-	return std::forward_as_tuple(false, 504, "parameter error");
-  }
-  if (face_inst->descr.address == NULL) {
+  if (face_inst->descr.address == nullptr) {
     return std::forward_as_tuple(false, 504, "parameter error");
   }
-  if ((face_inst->descr.ipproto == IPPROTO_UDP || face_inst->descr.ipproto == IPPROTO_TCP) && face_inst->descr.port == NULL) {
-    return std::forward_as_tuple(false, 504, "parameter error");
+  Ptr<Face> face = nullptr;
+  int errnum;
+  std::string errmsg;
+  switch (face_inst->descr.ipproto) {
+    case IPPROTO_UDP:
+    case IPPROTO_TCP: {
+      std::tie(face, errnum, errmsg) = this->FaceMgmtNewEtherFace(face_inst);
+    }
+    break;
+    case FaceMgr::kFaceMgmtProto_Ether: {
+      std::tie(face, errnum, errmsg) = this->FaceMgmtNewEtherFace(face_inst);
+    }
+    break;
+    default: {
+      return std::forward_as_tuple(false, 504, "parameter error");
+    }
   }
-  // for UDP or TCP face, resolve hostname to IPv4/IPv6 address
-  if (face_inst->descr.ipproto != 97) {
-  // construct NetworkAddress and create face (or get existing)
-    struct addrinfo hints = {0};
-    struct addrinfo *addrinfo = NULL;
-    hints.ai_flags |= AI_NUMERICHOST;
-    hints.ai_protocol = face_inst->descr.ipproto;
-    hints.ai_socktype = (hints.ai_protocol == IPPROTO_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-    int res = getaddrinfo(face_inst->descr.address, face_inst->descr.port, &hints, &addrinfo);
-    if (res != 0) {
-      return std::forward_as_tuple(false, res, "error: getaddrinfo");
-    }
-    NetworkAddress addr;
-    switch (addrinfo->ai_family) {
-      case AF_INET: {
-        addr.wholen = sizeof(sockaddr_in);//or sockaddr_in6 for IPv6
-        sockaddr_in* sa = reinterpret_cast<sockaddr_in*>(&addr.who);
-        sa->sin_family = AF_INET;
-        sa->sin_port = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_port;
-        sa->sin_addr.s_addr = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_addr.s_addr;
-      } 
-      break;
-      case AF_INET6: {
-        addr.wholen = sizeof(sockaddr_in6);
-        sockaddr_in6* sa = reinterpret_cast<sockaddr_in6*>(&addr.who);
-        sa->sin6_family = AF_INET6;
-        sa->sin6_port = (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_port;
-        memcpy(sa->sin6_addr.s6_addr, (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
-      }
-      break;
-      default: {
-        return std::forward_as_tuple(false, 0, "unknown address type");
-      }
-      break;
-    }
-    if (face_inst->descr.ipproto == IPPROTO_TCP) {
-      //   TCP: this->tcp_factory()->Connect(addr)
-      Ptr<Face> face = this->tcp_factory()->Connect(addr);
-      face_inst->faceid = static_cast<unsigned>(face->id());
-      return std::forward_as_tuple(true, 0, "");
-    } else if (face_inst->descr.ipproto == IPPROTO_UDP) {
-      Ptr<IpAddressVerifier> av = new IpAddressVerifier();
-      if (av->IsMcast(addr)) {
-        //  UDP multicast: fail, not supported
-        return std::forward_as_tuple(false, 0, "UDP Multicast is not Supported");
-      } else {
-        //   UDP unicast: this->udp_channel()->GetFace(addr)
-        Ptr<Face> face = this->udp_channel()->GetFace(addr);
-        face_inst->faceid = static_cast<unsigned>(face->id());
-        return std::forward_as_tuple(true, 0, "");
-      }
-    }
+  if (face == nullptr) {
+    return std::forward_as_tuple(false, errnum, errmsg);
   } else {
-  //  Ethernet: this->ether_channel(ifname)->GetFace(addr)
-    bool ok;
-    NetworkAddress addr;
-    std::tie(ok, addr) = EtherAddressVerifier::Parse(face_inst->descr.address);
-    if (ok) {
-      Ptr<Face> face = this->ether_channel(face_inst->descr.source_address)->GetFace(addr);
-      face_inst->faceid = static_cast<unsigned>(face->id());
-      return std::forward_as_tuple(true, 0, "");
+    face_inst->faceid = static_cast<unsigned>(face->id());
+    return std::forward_as_tuple(true, 0, "");
+  }
+}
+
+std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_instance* face_inst) {
+  struct addrinfo hints = {0};
+  struct addrinfo *addrinfo = nullptr;
+  hints.ai_flags |= AI_NUMERICHOST;
+  hints.ai_protocol = face_inst->descr.ipproto;
+  hints.ai_socktype = (hints.ai_protocol == IPPROTO_UDP) ? SOCK_DGRAM : SOCK_STREAM;
+  int res = getaddrinfo(face_inst->descr.address, face_inst->descr.port, &hints, &addrinfo);
+  if (res != 0) {
+    return std::forward_as_tuple(nullptr, res, "error: getaddrinfo");
+  }
+  NetworkAddress addr;
+  switch (addrinfo->ai_family) {
+    case AF_INET: {
+      addr.wholen = sizeof(sockaddr_in);//or sockaddr_in6 for IPv6
+      sockaddr_in* sa = reinterpret_cast<sockaddr_in*>(&addr.who);
+      sa->sin_family = AF_INET;
+      sa->sin_port = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_port;
+      sa->sin_addr.s_addr = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_addr.s_addr;
+    } 
+    break;
+    case AF_INET6: {
+      addr.wholen = sizeof(sockaddr_in6);
+      sockaddr_in6* sa = reinterpret_cast<sockaddr_in6*>(&addr.who);
+      sa->sin6_family = AF_INET6;
+      sa->sin6_port = (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_port;
+      memcpy(sa->sin6_addr.s6_addr, (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
+    }
+    break;
+    default: {
+      return std::forward_as_tuple(nullptr, 0, "unknown address type");
+    }
+    break;
+  }
+  if (face_inst->descr.ipproto == IPPROTO_TCP) {
+    //   TCP: this->tcp_factory()->Connect(addr)
+    Ptr<Face> face = this->tcp_factory()->Connect(addr);
+    return std::forward_as_tuple(face, 0, "");
+  } else {
+    if (IpAddressVerifier::IsMcast(addr)) {
+      //  UDP multicast: fail, not supported
+      return std::forward_as_tuple(nullptr, 0, "UDP Multicast is not Supported");
     } else {
-      return std::forward_as_tuple(false, 0, "fail to parse ethernet address");
+      //   UDP unicast: this->udp_channel()->GetFace(addr)
+      Ptr<Face> face = this->udp_channel()->GetFace(addr);
+      return std::forward_as_tuple(face, 0, "");
     }
   }
-  
-  assert(false);
-  return std::forward_as_tuple(false, 0, "");
+}
+
+std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewEtherFace(const ccn_face_instance* face_inst) {
+  bool ok;
+  NetworkAddress addr;
+  std::tie(ok, addr) = EtherAddressVerifier::Parse(face_inst->descr.address);
+  if (ok) {
+    Ptr<Face> face = this->ether_channel(face_inst->descr.source_address)->GetFace(addr);
+    return std::forward_as_tuple(face, 0, "");
+  } else {
+    return std::forward_as_tuple(nullptr, -1, "fail to parse ethernet address");
+  }
 }
 
 std::tuple<bool,int,std::string> FaceMgr::FaceMgmtDestroyFace(ccn_face_instance* face_inst) {
