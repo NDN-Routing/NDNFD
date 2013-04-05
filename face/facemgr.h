@@ -27,6 +27,8 @@ class FaceMgr : public Element {
     kDestroyFace = 2
   };
   
+  static const int kFaceMgmtProto_Ether = 97;
+  
   class FaceIterator : public std::iterator<std::forward_iterator_tag,Ptr<Face>> {
    public:
     explicit FaceIterator(std::map<FaceId,Ptr<Face>>::iterator map_it) : map_it_(map_it) {}
@@ -114,6 +116,9 @@ class FaceMgr : public Element {
   // On success, it returns true and updates face_inst for the response.
   // On failure, it reutrns false, error number, error message.
   std::tuple<bool,int,std::string> FaceMgmtDestroyFace(ccn_face_instance* face_inst);
+  
+  std::tuple<Ptr<Face>,int,std::string> FaceMgmtNewIpFace(const ccn_face_instance* face_inst);
+  std::tuple<Ptr<Face>,int,std::string> FaceMgmtNewEtherFace(const ccn_face_instance* face_inst);
   
   DISALLOW_COPY_AND_ASSIGN(FaceMgr);
 };
