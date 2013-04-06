@@ -106,7 +106,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
     if (p->faceid() == best) {
       this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie,best](void){
-        assert(ie->npe()->best_faceid() == best);
+        // don't assert(ie->npe()->best_faceid() == best), src may be aged out and set to CCN_NOFACEID
         this->DidnotArriveOnBestFace(ie);
         return Scheduler::kNoMore;
       }, &ie->ie()->strategy.ev, true);

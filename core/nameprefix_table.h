@@ -133,7 +133,7 @@ class PitEntry : public Element {
     PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p);
     virtual ~PitFaceItem(void) {}
     Ptr<PitEntry> ie(void) const { return this->ie_; }
-    FaceId faceid(void) const { return this->p_->faceid == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->p_->faceid); }
+    FaceId faceid(void) const { return static_cast<FaceId>(this->p_->faceid); }
     
     pit_face_item* p(void) const { return this->p_; }
     void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
