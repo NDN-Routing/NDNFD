@@ -215,7 +215,7 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* fac
   switch (face_inst->descr.ipproto) {
     case IPPROTO_UDP:
     case IPPROTO_TCP: {
-      std::tie(face, errnum, errmsg) = this->FaceMgmtNewEtherFace(face_inst);
+      std::tie(face, errnum, errmsg) = this->FaceMgmtNewIpFace(face_inst);
     }
     break;
     case FaceMgr::kFaceMgmtProto_Ether: {
@@ -250,16 +250,16 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
       addr.wholen = sizeof(sockaddr_in);//or sockaddr_in6 for IPv6
       sockaddr_in* sa = reinterpret_cast<sockaddr_in*>(&addr.who);
       sa->sin_family = AF_INET;
-      sa->sin_port = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_port;
-      sa->sin_addr.s_addr = (reinterpret_cast<sockaddr_in*>(addrinfo))->sin_addr.s_addr;
+      sa->sin_port = reinterpret_cast<sockaddr_in*>(addrinfo->ai_addr)->sin_port;
+      sa->sin_addr.s_addr = reinterpret_cast<sockaddr_in*>(addrinfo->ai_addr)->sin_addr.s_addr;
     } 
     break;
     case AF_INET6: {
       addr.wholen = sizeof(sockaddr_in6);
       sockaddr_in6* sa = reinterpret_cast<sockaddr_in6*>(&addr.who);
       sa->sin6_family = AF_INET6;
-      sa->sin6_port = (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_port;
-      memcpy(sa->sin6_addr.s6_addr, (reinterpret_cast<sockaddr_in6*>(addrinfo))->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
+      sa->sin6_port = reinterpret_cast<sockaddr_in6*>(addrinfo->ai_addr)->sin6_port;
+      memcpy(sa->sin6_addr.s6_addr, reinterpret_cast<sockaddr_in6*>(addrinfo->ai_addr)->sin6_addr.s6_addr, sizeof(sa->sin6_addr.s6_addr));
     }
     break;
     default: {
@@ -267,18 +267,26 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
     }
     break;
   }
-  if (face_inst->descr.ipproto == IPPROTO_TCP) {
-    //   TCP: this->tcp_factory()->Connect(addr)
-    Ptr<Face> face = this->tcp_factory()->Connect(addr);
-    return std::forward_as_tuple(face, 0, "");
-  } else {
-    if (IpAddressVerifier::IsMcast(addr)) {
-      //  UDP multicast: fail, not supported
-      return std::forward_as_tuple(nullptr, 0, "UDP Multicast is not Supported");
-    } else {
-      //   UDP unicast: this->udp_channel()->GetFace(addr)
-      Ptr<Face> face = this->udp_channel()->GetFace(addr);
+  switch (face_inst->descr.ipproto) {
+    case IPPROTO_TCP: {
+      //   TCP: this->tcp_factory()->Connect(addr)
+      Ptr<Face> face = this->tcp_factory()->Connect(addr);
       return std::forward_as_tuple(face, 0, "");
+    }
+    break;
+    case IPPROTO_UDP: {
+      if (IpAddressVerifier::IsMcast(addr)) {
+        //  UDP multicast: fail, not supported
+        return std::forward_as_tuple(nullptr, 0, "UDP Multicast is not Supported");
+      } else {
+        //   UDP unicast: this->udp_channel()->GetFace(addr)
+        Ptr<Face> face = this->udp_channel()->GetFace(addr);
+        return std::forward_as_tuple(face, 0, "");
+      }
+    }
+    break;
+    default: {
+      return std::forward_as_tuple(nullptr, 0, "unknown address type");
     }
   }
 }
