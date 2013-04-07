@@ -38,7 +38,10 @@ void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceI
   // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
   // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
   // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
-  if (co == nullptr || co->incoming_face() != upstream) return;
+  if (co == nullptr || co->incoming_face() != upstream) {
+    this->Log(kLLDebug, kLCStrategy, "CcndStrategyInterface::WillSatisfyPendingInterest(%" PRI_FaceId ")", upstream);
+    return;
+  }
 
   Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
   this->global()->strategy()->WillSatisfyPendingInterest(ie1, co);
@@ -49,7 +52,10 @@ void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, Fa
   // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
   // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
   // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
-  if (co == nullptr || co->incoming_face() != upstream) return;
+  if (co == nullptr || co->incoming_face() != upstream) {
+    this->Log(kLLDebug, kLCStrategy, "CcndStrategyInterface::DidSatisfyPendingInterests(%" PRI_FaceId ",%s)", upstream, name->ToUri().c_str());
+    return;
+  }
 
   Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
   this->global()->strategy()->DidSatisfyPendingInterests(npe1, co);
