@@ -90,6 +90,7 @@ ccndc_initialize_data(void) {
     res |= ccnb_element_begin(self->local_scope_template, CCN_DTAG_Name);
     res |= ccnb_element_end(self->local_scope_template);	/* </Name> */
     res |= ccnb_tagged_putf(self->local_scope_template, CCN_DTAG_Scope, "1");
+    res |= ccnb_append_tagged_binary_number(self->local_scope_template, CCN_DTAG_InterestLifetime, 3072);
     res |= ccnb_element_end(self->local_scope_template);	/* </Interest> */
     ON_ERROR_EXIT(res, msg);
     
