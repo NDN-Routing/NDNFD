@@ -39,6 +39,10 @@ class NamePrefixTable : public Element {
   // Any reference to the PIT entry is invalidated.
   void DeletePit(Ptr<PitEntry> ie);
   
+  // nameprefix_entry's extra field is pushed to this port,
+  // and the callback should finalize it.
+  PushPort<void*> FinalizeNpeExtra;
+  
  private:
   Ptr<NamePrefixEntry> SeekInternal(Ptr<const Name> name, bool create);
 
@@ -86,6 +90,11 @@ class NamePrefixEntry : public Element {
   void UpdateBestFace(FaceId value);
   // AdjustPredictUp adjusts up predicted response time.
   void AdjustPredictUp(void);
+  
+  template <typename T>
+  T* strategy_extra(void) const { return static_cast<T*>(this->npe()->ndnfd_strategy_extra); }
+  template <typename T>
+  void set_strategy_extra(T* value);
   
  private:
   Ptr<const Name> name_;
@@ -274,6 +283,14 @@ class PitDownstreamRecord : public PitEntry::PitFaceItem {
   DISALLOW_COPY_AND_ASSIGN(PitDownstreamRecord);
 };
 
+
+template <typename T>
+void NamePrefixEntry::set_strategy_extra(T* value) {
+  if (this->npe()->ndnfd_strategy_extra != nullptr) {
+    this->global()->npt()->FinalizeNpeExtra(this->npe()->ndnfd_strategy_extra);
+  }
+  this->npe()->ndnfd_strategy_extra = value;
+}
 
 template <typename TPfi>
 void PitEntry::PitFaceItemIterator<TPfi>::Delete(void) {

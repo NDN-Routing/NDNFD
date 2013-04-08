@@ -1084,6 +1084,9 @@ finalize_nameprefix(struct hashtb_enumerator *e)
 {
     struct ccnd_handle *h = hashtb_get_param(e->ht, NULL);
     struct nameprefix_entry *npe = e->data;
+#ifdef NDNFD
+    finalize_nameprefix_strategy_extra(h, npe);
+#endif
     struct ielinks *head = &npe->ie_head;
     if (head->next != NULL) {
         while (head->next != head)
@@ -1921,8 +1924,9 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     int n_matched = 0;
     int new_matches;
     int ci;
-#ifndef NDNFD
     int cm = 0;
+#ifdef NDNFD
+    cm = -1;
 #endif
     unsigned c0 = content->comps[0];
     const unsigned char *key = content->key + c0;
@@ -1941,8 +1945,8 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
             return(-1);
 #ifdef NDNFD
         new_matches = consume_matching_interests(h, npe, content, pc, face, from_face);
-        if (from_face != NULL && new_matches != 0) {
-            note_content_from2(h, npe, from_face->faceid, content->key + content->comps[0], content->comps[ci] - content->comps[0]);
+        if (from_face != NULL) {
+            note_content_from2(h, npe, from_face->faceid, content->key + content->comps[0], content->comps[ci] - content->comps[0], new_matches==0?cm-ci:0);
         }
 #else
         new_matches = consume_matching_interests(h, npe, content, pc, face);
@@ -1950,9 +1954,7 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
             note_content_from(h, npe, from_face->faceid, ci);
 #endif
         if (new_matches != 0) {
-#ifndef NDNFD
             cm = ci; /* update stats for this prefix and one shorter */
-#endif
             n_matched += new_matches;
         }
     }

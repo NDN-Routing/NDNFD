@@ -9,6 +9,7 @@ namespace ndnfd {
 
 void Strategy::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
+  this->global()->npt()->FinalizeNpeExtra = std::bind(&Strategy::FinalizeNpeExtra, this, std::placeholders::_1);
 }
 
 void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
@@ -267,13 +268,10 @@ void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> c
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
 }
 
-void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co) {
+void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
   FaceId upstream = co->incoming_face();
-  this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId "", npe->name()->ToUri().c_str(), upstream);
-  int limit = 2;
-  for (Ptr<NamePrefixEntry> npe1 = npe; npe1 != nullptr && --limit >= 0; npe1 = npe1->Parent()) {
-    npe1->UpdateBestFace(upstream);
-  }
+  this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
+  if (matching_suffix >= 0 && matching_suffix < 2) npe->UpdateBestFace(upstream);
 }
 
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {

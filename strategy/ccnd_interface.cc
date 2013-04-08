@@ -13,14 +13,19 @@ void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* i
   return global->strategy()->ccnd_strategy_interface()->WillSatisfyPendingInterest(ie, static_cast<ndnfd::FaceId>(from_face->faceid));
 }
 
-void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size) {
+void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->strategy()->ccnd_strategy_interface()->DidSatisfyPendingInterests(npe, static_cast<ndnfd::FaceId>(from_faceid), ndnfd::Name::FromCcnb(name, name_size));
+  return global->strategy()->ccnd_strategy_interface()->DidSatisfyPendingInterests(npe, static_cast<ndnfd::FaceId>(from_faceid), ndnfd::Name::FromCcnb(name, name_size), matching_suffix);
 }
 
 void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid, const uint8_t* name, size_t name_size) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
   return global->strategy()->ccnd_strategy_interface()->DidAddFibEntry(npe, static_cast<ndnfd::FaceId>(faceid), ndnfd::Name::FromCcnb(name, name_size));
+}
+
+void finalize_nameprefix_strategy_extra(struct ccnd_handle* h, struct nameprefix_entry* npe) {
+  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
+  return global->strategy()->ccnd_strategy_interface()->FinalizeNpe(npe);
 }
 
 namespace ndnfd {
@@ -47,7 +52,7 @@ void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceI
   this->global()->strategy()->WillSatisfyPendingInterest(ie1, co);
 }
 
-void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name) {
+void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix) {
   Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
   // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
   // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
@@ -58,7 +63,7 @@ void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, Fa
   }
 
   Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
-  this->global()->strategy()->DidSatisfyPendingInterests(npe1, co);
+  this->global()->strategy()->DidSatisfyPendingInterests(npe1, co, matching_suffix);
 }
 
 void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name) {
@@ -66,6 +71,10 @@ void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid,
   Ptr<ForwardingEntry> forw = npe1->GetForwarding(faceid);
   assert(forw != nullptr);
   this->global()->strategy()->DidAddFibEntry(forw);
+}
+
+void CcndStrategyInterface::FinalizeNpe(nameprefix_entry* npe) {
+  this->global()->strategy()->FinalizeNpeExtra(npe->ndnfd_strategy_extra);
 }
 
 };//namespace ndnfd

@@ -142,7 +142,7 @@ void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
   this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
 }
 
-void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co) {
+void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
   Ptr<Face> inface = this->global()->facemgr()->GetFace(co->incoming_face());
   if (inface == nullptr) return;
   Ptr<Face> peer = inface;
@@ -150,12 +150,14 @@ void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr
     peer = this->global()->facemgr()->MakeUnicastFace(inface, co->incoming_sender());
   }
 
-  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " peer=%" PRI_FaceId "", npe->name()->ToUri().c_str(), inface->id(), peer->id());
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " peer=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), inface->id(), peer->id(), matching_suffix);
   
-  // update best face all the way to the top
-  for (Ptr<NamePrefixEntry> npe1 = npe; npe1 != nullptr; npe1 = npe1->Parent()) {
-    npe1->UpdateBestFace(peer->id());
-  }
+  npe->UpdateBestFace(peer->id());
+}
+
+void SelfLearnStrategy::FinalizeNpeExtra(void* extra) {
+  if (extra == nullptr) return;
+  
 }
 
 };//namespace ndnfd

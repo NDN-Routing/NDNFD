@@ -412,6 +412,9 @@ struct nameprefix_entry {
     unsigned src;                /**< faceid of recent content source */
     unsigned osrc;               /**< and of older matching content */
     unsigned usec;               /**< response-time prediction */
+#ifdef NDNFD
+    void* ndnfd_strategy_extra;//extra information used by strategy
+#endif
 };
 
 /**

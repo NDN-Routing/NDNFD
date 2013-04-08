@@ -75,14 +75,19 @@ class Strategy : public Element {
   // (same as ccnd strategy_callout CCNST_SATISFIED)
   virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co);
   // DidSatisfyPendingInterests is invoked after some PIT entries are satisfied in npe.
-  // (similar to ccnd note_content_from but is not called for one shorter prefix)
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
+  // If matching_suffix is zero, some PIT entries are matched on this npe;
+  // if matching_suffix is positive, some PIT entries are matched on a child of this npe;
+  // if matching_suffix is negative, no PIT entry has been matched.
+  // (similar to ccnd note_content_from but this is called for all shorter prefixes)
+  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
   
   // -------- face callbacks --------
   virtual void AddFace(FaceId face) {}//currently unused
   virtual void RemoveFace(FaceId face) {}//currently unused
   
-  // -------- FIB callbacks --------
+  // -------- core table callbacks --------
+  
+  virtual void FinalizeNpeExtra(void* extra) {}
   
   // DidAddFibEntry is invoked when a FIB entry is created.
   // (same as update_npe_children)

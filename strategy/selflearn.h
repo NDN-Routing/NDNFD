@@ -14,9 +14,14 @@ class SelfLearnStrategy : public Strategy {
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest);
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co);
+  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  virtual void FinalizeNpeExtra(void* extra);
 
  private:
+  struct NpeExtra {
+    std::unordered_map<FaceId,uint32_t> predicts;
+  };
+  
   // StartFlood adds new upstreams to broadcast the Interests
   void StartFlood(Ptr<PitEntry> ie);
 
