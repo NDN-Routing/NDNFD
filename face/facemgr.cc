@@ -296,7 +296,19 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewEtherFace(const ccn_fa
   NetworkAddress addr;
   std::tie(ok, addr) = EtherAddressVerifier::Parse(face_inst->descr.address);
   if (ok) {
-    Ptr<Face> face = this->ether_channel(face_inst->descr.source_address)->GetFace(addr);
+    std::string sourceAddress = face_inst->descr.source_address;
+    std::string prefix = "localif=";
+    std::string ifname;
+    if (sourceAddress.substr(0, prefix.size()) == prefix) {
+      ifname = sourceAddress.substr(prefix.size());
+    } else {
+      return std::forward_as_tuple(nullptr, -1, "ethernet interface does not begin with 'localif='");
+    }
+    DgramChannel* etherChannel = this->ether_channel(ifname);
+    if (etherChannel == nullptr) {
+      return std::forward_as_tuple(nullptr, -1, "ether_channel is null.");
+    }
+    Ptr<Face> face = etherChannel->GetFace(addr);
     return std::forward_as_tuple(face, 0, "");
   } else {
     return std::forward_as_tuple(nullptr, -1, "fail to parse ethernet address");
