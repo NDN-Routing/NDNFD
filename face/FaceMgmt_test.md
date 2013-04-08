@@ -38,24 +38,6 @@ Expected: content from /ndn/arizona.edu
 
 Expected: content from /ndn/arizona.edu
 
-## NDNFD vs ccndc
-
-### TCP
-
-	sudo ndnfd
-	ccndc add /ndn tcp e.hub.ndn.ucla.edu
-	ccnping /ndn/arizona.edu
-
-Expected: content from /ndn/arizona.edu
-
-### UDP
-
-	sudo ndnfd
-	ccndc add /ndn udp e.hub.ndn.ucla.edu
-	ccnping /ndn/arizona.edu
-
-Expected: content from /ndn/arizona.edu
-
 ## NDNFD vs ndnfdc
 
 ### TCP without port number
