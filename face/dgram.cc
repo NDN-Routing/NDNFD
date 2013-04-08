@@ -97,6 +97,7 @@ Ptr<DgramChannel::PeerEntry> DgramChannel::MakePeer(const NetworkAddress& peer, 
     pe = it->second;
     if (face_op == MakePeerFaceOp::kCreate && pe->face_ == nullptr) {
       pe->face_ = this->CreateFace(hashkey, peer);
+      pe->recv_count_ = 1;//avoid reap too quickly
     } else if (face_op == MakePeerFaceOp::kDelete && pe->face_ != nullptr) {
       pe->face_ = nullptr;
     }
