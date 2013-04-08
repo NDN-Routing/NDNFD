@@ -341,6 +341,7 @@ Ptr<StreamFace> TcpFaceFactory::DoConnect(const NetworkAddress& remote_addr) {
     this->Log(kLLWarn, kLCFace, "TcpFaceFactory::DoConnect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
   }
   Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->wp());
+  face->set_kind(FaceKind::kUnicast);
   this->fat_->Add(remote_addr, face->id());
   return face;
 }
