@@ -1145,6 +1145,9 @@ finalize_interest(struct hashtb_enumerator *e)
             if (face != NULL)
                 face->pending_interests -= 1;
         }
+#ifdef NDNFD
+        if (p->strategy_ev != NULL) ccn_schedule_cancel(h->sched, p->strategy_ev);
+#endif
         free(p);
     }
     ie->pfl = NULL;
@@ -3868,6 +3871,9 @@ pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
         if (face != NULL)
             face->pending_interests -= 1;
     }
+#ifdef NDNFD
+    if (p->strategy_ev != NULL) ccn_schedule_cancel(h->sched, p->strategy_ev);
+#endif
     *pp = p->next;
     free(p);
 }

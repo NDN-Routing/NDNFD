@@ -11,6 +11,7 @@ namespace ndnfd {
 class NamePrefixEntry;
 class ForwardingEntry;
 class PitEntry;
+class PitFaceItem;
 class PitUpstreamRecord;
 class PitDownstreamRecord;
 
@@ -137,30 +138,6 @@ class ForwardingEntry : public Element {
 // and the associated propagation states.
 class PitEntry : public Element {
  public:
-  class PitFaceItem : public Element {
-   public:
-    PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p);
-    virtual ~PitFaceItem(void) {}
-    Ptr<PitEntry> ie(void) const { return this->ie_; }
-    FaceId faceid(void) const { return static_cast<FaceId>(this->p_->faceid); }
-    
-    pit_face_item* p(void) const { return this->p_; }
-    void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
-    
-    bool IsExpired(void) const;
-    // CompareExpiry returns -1,0,1 if a expires earlier/same/later than b.
-    static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
-
-   protected:
-    bool GetFlag(unsigned flag) const { return 0 != (this->p_->pfi_flags & flag); }
-    void SetFlag(unsigned flag, bool value) { if (value) this->p_->pfi_flags |= flag; else this->p_->pfi_flags &= ~flag; }
-    
-   private:
-    Ptr<PitEntry> ie_;
-    pit_face_item* p_;
-    DISALLOW_COPY_AND_ASSIGN(PitFaceItem);
-  };
-  
   template <typename TPfi>
   class PitFaceItemIterator : public std::iterator<std::forward_iterator_tag, Ptr<TPfi>> {
    public:
@@ -241,8 +218,35 @@ class PitEntry : public Element {
   DISALLOW_COPY_AND_ASSIGN(PitEntry);
 };
 
+// PitFaceItem is the base class of PitUpstreamRecord and PitDownstreamRecord
+class PitFaceItem : public Element {
+ public:
+  virtual ~PitFaceItem(void) {}
+  Ptr<PitEntry> ie(void) const { return this->ie_; }
+  FaceId faceid(void) const { return static_cast<FaceId>(this->p_->faceid); }
+  
+  pit_face_item* p(void) const { return this->p_; }
+  void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
+  
+  std::chrono::microseconds time_until_expiry(void) const;
+  bool IsExpired(void) const;
+  // CompareExpiry returns -1,0,1 if a expires earlier/same/later than b.
+  static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
+
+ protected:
+  PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p);
+
+  bool GetFlag(unsigned flag) const { return 0 != (this->p_->pfi_flags & flag); }
+  void SetFlag(unsigned flag, bool value) { if (value) this->p_->pfi_flags |= flag; else this->p_->pfi_flags &= ~flag; }
+  
+ private:
+  Ptr<PitEntry> ie_;
+  pit_face_item* p_;
+  DISALLOW_COPY_AND_ASSIGN(PitFaceItem);
+};
+
 // A PitUpstreamRecord represents an upstream in PIT entry.
-class PitUpstreamRecord : public PitEntry::PitFaceItem {
+class PitUpstreamRecord : public PitFaceItem {
  public:
   static const unsigned ccnd_pfi_flag = CCND_PFI_UPSTREAM;
 
@@ -260,7 +264,7 @@ class PitUpstreamRecord : public PitEntry::PitFaceItem {
 
 
 // A PitDownstreamRecord represents a downstream in PIT entry.
-class PitDownstreamRecord : public PitEntry::PitFaceItem {
+class PitDownstreamRecord : public PitFaceItem {
  public:
   static const unsigned ccnd_pfi_flag = CCND_PFI_DNSTREAM;
 

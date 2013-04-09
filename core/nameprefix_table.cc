@@ -284,16 +284,21 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
   return std::chrono::microseconds(mn * (1000000 / WTHZ_value()));
 }
 
-PitEntry::PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie), p_(p) {
+PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie), p_(p) {
   assert(ie != nullptr);
   assert(p != nullptr);
 }
 
-bool PitEntry::PitFaceItem::IsExpired(void) const {
+std::chrono::microseconds PitFaceItem::time_until_expiry(void) const {
+  ccn_wrappedtime delta = this->p()->expiry - CCNDH->wtnow;
+  return std::chrono::microseconds(delta * 1000000 / WTHZ_value());
+}
+
+bool PitFaceItem::IsExpired(void) const {
   return wt_compare(this->p()->expiry, CCNDH->wtnow) <= 0;
 }
 
-int PitEntry::PitFaceItem::CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b) {
+int PitFaceItem::CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b) {
   return wt_compare(a->p()->expiry, b->p()->expiry);
 }
 

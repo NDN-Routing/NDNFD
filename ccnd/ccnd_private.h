@@ -384,6 +384,9 @@ struct pit_face_item {
     ccn_wrappedtime renewed;        /**< when entry was last refreshed */
     ccn_wrappedtime expiry;         /**< when entry expires */
     unsigned pfi_flags;             /**< CCND_PFI_x */
+#ifdef NDNFD
+    struct ccn_scheduled_event* strategy_ev;// a timed-event used by strategy
+#endif
     unsigned char nonce[TYPICAL_NONCE_SIZE]; /**< nonce bytes */
 };
 #define CCND_PFI_NONCESZ  0x00FF    /**< Mask for actual nonce size */
