@@ -57,7 +57,9 @@ Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interes
     ccnb_append_tagged_binary_number(c, CCN_DTAG_InterestLifetime, static_cast<uint32_t>(lifetime.GetSeconds() * 4) * 1024);
   }
   
-  ccnb_append_tagged_binary_number(c, CCN_DTAG_Nonce, header.GetNonce());
+  char nonce[9];
+  snprintf(nonce, sizeof(nonce), "%08x", header.GetNonce());
+  ccnb_append_tagged_blob(c, CCN_DTAG_Nonce, nonce, 8);
 
   ccnb_element_end(c);//</Interest>
   
