@@ -3,9 +3,11 @@
 #include "strategy.h"
 namespace ndnfd {
 
-// SelfLearnStrategy broadcast the first Interest,
-// learns about where is the producer, send subsequent Interests to that face only,
-// until there's a timeout which would trigger another broadcast.
+// SelfLearnStrategy is a prediction based self-learning strategy.
+// Broadcast the first Interest. Learns about where are the fastest producer and other producers.
+// Send subsequent Interests to the fastest producer, wait for predicted time,
+// and then try other producers and also wait for each producer's predicted time.
+// The predicted time is decreased on successful retrieval, and increased on failed retrieval.
 class SelfLearnStrategy : public Strategy {
  public:
   SelfLearnStrategy(void) {}
