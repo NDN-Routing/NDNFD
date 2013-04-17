@@ -1,13 +1,14 @@
 #ifndef NDNFD_STRATEGY_SELFLEARN_H_
 #define NDNFD_STRATEGY_SELFLEARN_H_
 #include "strategy.h"
+#include "util/rtt.h"
 namespace ndnfd {
 
 // SelfLearnStrategy is a prediction based self-learning strategy.
 // Broadcast the first Interest. Learns about where are the fastest producer and other producers.
 // Send subsequent Interests to the fastest producer, wait for predicted time,
 // and then try other producers and also wait for each producer's predicted time.
-// The predicted time is decreased on successful retrieval, and increased on failed retrieval.
+// The predicted time is maintained by RttEstimator.
 class SelfLearnStrategy : public Strategy {
  public:
   SelfLearnStrategy(void) {}
@@ -28,9 +29,11 @@ class SelfLearnStrategy : public Strategy {
     std::chrono::microseconds time_;
     int rank_;
     std::chrono::microseconds accum_;
+    RttEstimator rtt_;
   };
   struct NpeExtra {
     std::unordered_map<FaceId,PredictRecord> predicts_;
+    std::unordered_map<FaceId,ccn_wrappedtime> interest_sent_time_;//per upstream: last time an Interest was sent
   };
   
   static std::chrono::microseconds initial_prediction(void) { return std::chrono::microseconds(15000); }

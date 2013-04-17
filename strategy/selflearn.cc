@@ -2,6 +2,9 @@
 #include <algorithm>
 #include "face/facemgr.h"
 #include "core/scheduler.h"
+extern "C" {
+uint32_t WTHZ_value(void);
+}
 namespace ndnfd {
 
 SelfLearnStrategy::NpeExtra* SelfLearnStrategy::GetExtra(Ptr<NamePrefixEntry> npe) {
@@ -12,7 +15,8 @@ SelfLearnStrategy::NpeExtra* SelfLearnStrategy::GetExtra(Ptr<NamePrefixEntry> np
   if (parent == nullptr) {
     extra = new NpeExtra();
   } else {
-    extra = new NpeExtra(*this->GetExtra(parent));
+    extra = new NpeExtra();
+    extra->predicts_ = this->GetExtra(parent)->predicts_;
   }
   npe->set_strategy_extra(extra);
   return extra;
@@ -21,8 +25,13 @@ SelfLearnStrategy::NpeExtra* SelfLearnStrategy::GetExtra(Ptr<NamePrefixEntry> np
 void SelfLearnStrategy::RankPredicts(NpeExtra* extra) {
   assert(extra != nullptr);
   std::multimap<std::chrono::microseconds,FaceId> m;
-  for (auto pair : extra->predicts_) {
-    m.insert(std::make_pair(pair.second.time_, pair.first));
+  //for (auto pair : extra->predicts_) {
+  //  pair.second.time_ = std::chrono::duration_cast<std::chrono::microseconds>(pair.second.rtt_.RetransmitTimeout());
+  //  m.insert(std::make_pair(pair.second.time_, pair.first));
+  //}
+  for (auto it = extra->predicts_.begin(); it != extra->predicts_.end(); ++it) {
+    it->second.time_ = std::chrono::duration_cast<std::chrono::microseconds>(it->second.rtt_.RetransmitTimeout());
+    m.insert(std::make_pair(it->second.time_, it->first));
   }
   int rank = 0; std::chrono::microseconds accum(0);
   for (auto pair : m) {
@@ -44,12 +53,10 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
 
   // lookup FIB
   std::unordered_set<FaceId> candidates = npe->LookupFib(interest);
-  /*
   // also include (inherited) best face
-  candidates.insert(npe->GetBestFace());
-  candidates.insert(npe->prev_faceid());
-  candidates.erase(FaceId_none);
-  */
+  //candidates.insert(npe->GetBestFace());
+  //candidates.insert(npe->prev_faceid());
+  //candidates.erase(FaceId_none);
   for (auto tuple : this->GetExtra(npe)->predicts_) {
     candidates.insert(std::get<0>(tuple));
   }
@@ -119,7 +126,6 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       // best face: use it now
       DEBUG_APPEND_FaceTime(faceid,"best",pr.time_.count());
       upstream->SetExpiry(std::chrono::microseconds::zero());
-      //this->SendInterest(ie, downstream, upstream);
     } else if (pr.accum_ < flood_time) {
       // non-best face: round-robin after best face timeout
       DEBUG_APPEND_FaceTime(faceid,"",pr.time_.count());
@@ -147,6 +153,7 @@ void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> 
       return Scheduler::kNoMore;
     }, &upstream->p()->strategy_ev, true);
   }
+  extra->interest_sent_time_[upstream_face] = CCNDH->wtnow;
   this->Strategy::SendInterest(ie, downstream, upstream);
 }
 
@@ -260,11 +267,22 @@ void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " peer=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), inface->id(), peer->id(), matching_suffix);
   
   NpeExtra* extra = this->GetExtra(npe);
-  PredictRecord& pr = extra->predicts_[peer->id()];
-  if (pr.time_.count() == 0) {
-    pr.time_ = SelfLearnStrategy::initial_prediction();
+  //PredictRecord& pr = extra->predicts_[peer->id()];
+  //if (pr.time_.count() == 0) {
+  //  pr.time_ = SelfLearnStrategy::initial_prediction();
+  //}
+  //pr.time_ = std::max(std::chrono::microseconds(127), (pr.time_ - pr.time_ / 128));
+  
+  auto it_interest_time = extra->interest_sent_time_.find(inface->id());
+  if (it_interest_time != extra->interest_sent_time_.end()) {
+    std::chrono::microseconds rtt_sample((CCNDH->wtnow - it_interest_time->second) * (1000000 / WTHZ_value()));
+    this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) rtt_sample[%" PRI_FaceId "]=%" PRIuMAX "", npe->name()->ToUri().c_str(), peer->id(), static_cast<uintmax_t>(rtt_sample.count()));
+    for (Ptr<NamePrefixEntry> npe1 = npe; npe1 != nullptr; npe1 = npe1->Parent()) {
+      NpeExtra* extra1 = this->GetExtra(npe1);
+      PredictRecord& pr = extra1->predicts_[peer->id()];
+      pr.rtt_.Measurement(rtt_sample);
+    }
   }
-  pr.time_ = std::max(std::chrono::microseconds(127), (pr.time_ - pr.time_ / 128));
 }
 
 void SelfLearnStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
@@ -273,10 +291,11 @@ void SelfLearnStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
   for (Ptr<NamePrefixEntry> npe1 = ie->npe(); npe1 != nullptr; npe1 = npe1->Parent()) {
     NpeExtra* extra = this->GetExtra(npe1);
     PredictRecord& pr = extra->predicts_[face];
-    if (pr.time_.count() == 0) {
-      pr.time_ = SelfLearnStrategy::initial_prediction();
-    }
-    pr.time_ = std::min(std::chrono::microseconds(160000), (pr.time_ + pr.time_ / 8));
+    //if (pr.time_.count() == 0) {
+    //  pr.time_ = SelfLearnStrategy::initial_prediction();
+    //}
+    //pr.time_ = std::min(std::chrono::microseconds(160000), (pr.time_ + pr.time_ / 8));
+    pr.rtt_.IncreaseMultiplier();
   }
 }
 

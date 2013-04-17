@@ -3,7 +3,6 @@
 #include <limits>
 extern "C" {
 #include <ccn/hashtb.h>
-uint32_t WTHZ_value(void);
 int nameprefix_seek(struct ccnd_handle* h, struct hashtb_enumerator* e, const uint8_t* msg, struct ccn_indexbuf* comps, int ncomps);
 struct ccn_forwarding* seek_forwarding(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid);
 void update_forward_to(struct ccnd_handle* h, struct nameprefix_entry* npe);

@@ -10,6 +10,17 @@ RttEstimator::RttEstimator(uint16_t max_multiplier, time min_rto, double gain)
       rtt_(RttEstimator::initial_rtt().count()), gain_(gain), variance_(0),
       multiplier_(1), n_samples_(0) {}
 
+RttEstimator& RttEstimator::operator=(const RttEstimator& other) {
+  this->max_multiplier_ = other.max_multiplier_;
+  this->min_rto_ = other.min_rto_;
+  this->rtt_ = other.rtt_;
+  this->gain_ = other.gain_;
+  this->variance_ = other.variance_;
+  this->multiplier_ = other.multiplier_;
+  this->n_samples_ = other.n_samples_;
+  return *this;
+}
+
 void RttEstimator::Measurement(time measure) {
   double m = static_cast<double>(measure.count());
   if (this->n_samples_ > 0) {
