@@ -119,6 +119,8 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       // no prediction: use it now
       DEBUG_APPEND_FaceTime(faceid,"new",0);
       upstream->SetExpiry(std::chrono::microseconds::zero());
+      PredictRecord& pr1 = extra->predicts_[faceid];
+      pr1.time_ = SelfLearnStrategy::initial_prediction();// used for logging timeout
       continue;
     }
     PredictRecord& pr = it2->second;
