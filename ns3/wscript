@@ -25,7 +25,7 @@ def configure(conf):
         conf.env['LIB_NDNFD'] = ['ndnfdsim','ccn','pcap','crypto']
 
 def build(bld):
-    module = bld.create_ns3_module('NDNFD', ['ndnSIM'])
+    module = bld.create_ns3_module('NDNFD', ['ndnSIM','csma','point-to-point','internet'])
     module.module = 'NDNFD'
     module.uselib = 'NDNFD'
     module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc'], excl=['**/*_test*.cc'])
@@ -36,9 +36,10 @@ def build(bld):
     headers.source = [
         'model/ndnfd-l3protocol.h',
         'helper/ndnfd-stack-helper.h',
+        'utils/ndnfd-build-topo.h',
         ]
 
-    unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD','csma'])
+    unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD'])
     unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
 
     if bld.env.ENABLE_EXAMPLES:
