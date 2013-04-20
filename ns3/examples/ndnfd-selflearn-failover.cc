@@ -3,6 +3,7 @@
 #include <ns3/csma-module.h>
 #include <ns3/ndnSIM-module.h>
 #include <ns3/NDNFD-module.h>
+#include <ns3/ndnSIM/utils/tracers/ndn-app-delay-tracer.h>
 
 /*
 This example demostrates the ability of automatic failover in self-learning strategy.
@@ -67,6 +68,9 @@ int main(int argc, char *argv[]) {
   producerG.Start(ns3::Seconds(89.9)); producerG.Stop(ns3::Seconds(110.0));
   ns3::ApplicationContainer producerH = producerHelper.Install(ns3::Names::Find<ns3::Node>("H"));
   producerH.Start(ns3::Seconds(0.0)); producerH.Stop(ns3::Seconds(10.0));
+  
+  auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-selflearn-failover_delay.tsv");
+  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-failover_l3.tsv");
 
   ns3::Simulator::Stop(ns3::Seconds(122.0));
   ns3::Simulator::Run();

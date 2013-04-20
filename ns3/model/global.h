@@ -11,7 +11,7 @@ class NdnsimPacketConverter;
 // A SimGlobal contains all global structures of a router in ns3.
 class SimGlobal : public Global {
  public:
-  SimGlobal(uint32_t nodeid);
+  explicit SimGlobal(uint32_t nodeid);
   virtual void Init(void);
   virtual ~SimGlobal(void);
   

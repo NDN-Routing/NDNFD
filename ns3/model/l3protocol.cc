@@ -1,6 +1,7 @@
 #include "l3protocol.h"
 #include <ns3/simulator.h>
 #include "face/facemgr.h"
+#include "strategy/strategy.h"
 #include "ndnfdsim.h"
 #include "mock_fw.h"
 #include "mock_fib.h"
@@ -10,6 +11,11 @@ ns3::TypeId L3Protocol::GetTypeId(void) {
   static ns3::TypeId tid = ns3::TypeId("ndnfd::L3Protocol")
     .SetGroupName("NDNFD")
     .SetParent<ns3::ndn::L3Protocol>()
+#ifdef NDNFD_STRATEGY_TRACE
+    .AddTraceSource("InterestMcastSend", "Interest sent to multicast group", ns3::MakeTraceSourceAccessor(&L3Protocol::trace_mcast_send_))
+    .AddTraceSource("InterestMcastRecv", "Interest received on multicast face", ns3::MakeTraceSourceAccessor(&L3Protocol::trace_mcast_recv_))
+    .AddTraceSource("InterestUnicastSend", "Interest sent to unicast peer", ns3::MakeTraceSourceAccessor(&L3Protocol::trace_unicast_send_))
+#endif
     .AddConstructor<L3Protocol>();
   return tid;
 }
@@ -29,6 +35,16 @@ void L3Protocol::Init(ns3::Ptr<ns3::Node> node) {
   this->global_ = new SimGlobal(node->GetId());
   this->global_->Init();
   this->global_->set_l3(this);
+#ifdef NDNFD_STRATEGY_TRACE
+  this->global_->strategy()->Trace = [this] (Strategy::TraceEvt evt, Ptr<const Name> name) {
+    switch (evt) {
+      case Strategy::TraceEvt::kMcastSend: this->trace_mcast_send_(this, PeekPointer(name)); break;
+      case Strategy::TraceEvt::kMcastRecv: this->trace_mcast_recv_(this, PeekPointer(name)); break;
+      case Strategy::TraceEvt::kUnicastSend: this->trace_unicast_send_(this, PeekPointer(name)); break;
+      default: break;
+    }
+  };
+#endif
 
   this->AggregateObject(ns3::CreateObject<MockForwardingStrategy>());
   this->AggregateObject(ns3::CreateObject<MockFib>(this->global()));

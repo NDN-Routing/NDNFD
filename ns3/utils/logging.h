@@ -6,7 +6,7 @@ namespace ndnfd {
 // SimLogging prepends nodeid and time to each log line.
 class SimLogging : public Logging {
  public:
-  SimLogging(uint32_t nodeid);
+  explicit SimLogging(uint32_t nodeid);
   virtual ~SimLogging(void) {}
 
  protected:

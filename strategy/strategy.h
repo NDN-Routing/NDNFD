@@ -14,6 +14,18 @@ class Strategy : public Element {
   virtual ~Strategy(void) {}
   Ptr<CcndStrategyInterface> ccnd_strategy_interface(void) const { return this->ccnd_strategy_interface_; }
 
+#define NDNFD_STRATEGY_TRACE 1
+#ifdef NDNFD_STRATEGY_TRACE
+  enum class TraceEvt {
+    kNone,
+    kMcastSend,
+    kMcastRecv,
+    kUnicastSend,
+    kUnicastRecv,
+  };
+  PushPort<TraceEvt, Ptr<const Name>> Trace;
+#endif
+
   // -------- Interest processing --------
 
   // OnInterest processes an incoming Interest.

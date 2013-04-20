@@ -7,7 +7,7 @@ namespace ndnfd {
 class MockFib : public ns3::ndn::Fib {
  public:
   static ns3::TypeId GetTypeId(void);
-  MockFib(SimGlobal* global) { this->global_ = global; }
+  explicit MockFib(SimGlobal* global) { this->global_ = global; }
   virtual ~MockFib(void) {}
 
   virtual ns3::Ptr<ns3::ndn::fib::Entry> LongestPrefixMatch(const ns3::ndn::Interest& interest) { NS_ASSERT(false); return nullptr; }

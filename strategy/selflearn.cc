@@ -110,6 +110,7 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   char debug_buf[32];
 #define DEBUG_APPEND_FaceTime(face,s,time) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ":%s%" PRIu32 ",", face,s,static_cast<uint32_t>(time)); debug_list.append(debug_buf); }
 
+  bool has_usable_face = false;
   for (auto it = ie->beginUpstream(); it != ie->endUpstream(); ++it) {
     Ptr<PitUpstreamRecord> upstream = *it;
     FaceId faceid = upstream->faceid();
@@ -121,6 +122,7 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       upstream->SetExpiry(std::chrono::microseconds::zero());
       PredictRecord& pr1 = extra->predicts_[faceid];
       pr1.time_ = SelfLearnStrategy::initial_prediction();// used for logging timeout
+      has_usable_face = true;
       continue;
     }
     PredictRecord& pr = it2->second;
@@ -128,10 +130,12 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       // best face: use it now
       DEBUG_APPEND_FaceTime(faceid,"best",pr.time_.count());
       upstream->SetExpiry(std::chrono::microseconds::zero());
+      has_usable_face = true;
     } else if (pr.accum_ < flood_time) {
       // non-best face: round-robin after best face timeout
       DEBUG_APPEND_FaceTime(faceid,"",pr.time_.count());
       upstream->SetExpiry(pr.accum_ - pr.time_);
+      has_usable_face = true;
     } else {
       // worst face: don't use them
       DEBUG_APPEND_FaceTime(faceid,"no",pr.time_.count());
@@ -142,6 +146,10 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 #undef DEBUG_APPEND_FaceTime
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::PropagateNewInterest(%" PRI_PitEntrySerial ") pending=%" PRI_FaceId " [%s]", ie->serial(), downstream->faceid(), debug_list.c_str());
+  
+  if (!has_usable_face) {
+    this->StartFlood(ie);
+  }
 }
 
 void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream) {

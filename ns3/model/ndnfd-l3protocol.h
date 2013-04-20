@@ -10,6 +10,7 @@ class SimGlobal;
 class SimAppFace;
 class Message;
 class NdnfdSim;
+class Name;
 
 class L3Protocol : public ns3::ndn::L3Protocol {
  public:
@@ -47,6 +48,9 @@ class L3Protocol : public ns3::ndn::L3Protocol {
  private:
   SimGlobal* global_;
   std::map<uint32_t,ns3::Ptr<ns3::ndn::Face>> facelist_;
+  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_mcast_send_;
+  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_mcast_recv_;
+  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_unicast_send_;
   
   uint32_t nodeid(void) const;
   

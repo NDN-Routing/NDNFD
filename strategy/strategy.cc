@@ -17,6 +17,18 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   bool is_new_ie = ie->ie()->strategy.renewals == 0;
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
   assert(inface != nullptr);
+
+#ifdef NDNFD_STRATEGY_TRACE
+  switch (inface->kind()) {
+    case FaceKind::kMulticast:
+      this->Trace(TraceEvt::kMcastRecv, interest->name());
+      break;
+    case FaceKind::kUnicast:
+      this->Trace(TraceEvt::kUnicastRecv, interest->name());
+      break;
+    default: break;
+  }
+#endif
   
   Ptr<PitDownstreamRecord> p = ie->SeekDownstream(inface->id());
   // read nonce from Interest, or generate one.
@@ -249,6 +261,21 @@ void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstrea
   assert(downstream != nullptr);
   assert(upstream != nullptr);
   upstream->set_p(send_interest(CCNDH, ie->ie(), downstream->p(), upstream->p()));
+
+#ifdef NDNFD_STRATEGY_TRACE
+  Ptr<Face> outface = this->global()->facemgr()->GetFace(upstream->faceid());
+  if (outface != nullptr) {
+    switch (outface->kind()) {
+      case FaceKind::kMulticast:
+        this->Trace(TraceEvt::kMcastSend, ie->name());
+        break;
+      case FaceKind::kUnicast:
+        this->Trace(TraceEvt::kUnicastSend, ie->name());
+        break;
+      default: break;
+    }
+  }
+#endif
 }
 
 void Strategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {

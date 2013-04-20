@@ -37,6 +37,7 @@ def build(bld):
         'model/ndnfd-l3protocol.h',
         'helper/ndnfd-stack-helper.h',
         'utils/ndnfd-build-topo.h',
+        'utils/ndnfd-tracing.h',
         ]
 
     unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD'])
