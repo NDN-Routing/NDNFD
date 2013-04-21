@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-selflearn-failover_delay.tsv");
   ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-failover_l3.tsv");
+  l3_tracer->ConnectAll();
 
   ns3::Simulator::Stop(ns3::Seconds(122.0));
   ns3::Simulator::Run();

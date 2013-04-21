@@ -7,9 +7,6 @@ Tracer::Tracer(const std::string& filename)
     : total_mcast_send_(0), total_mcast_recv_(0), total_unicast_send_(0), recent_mcast_send_(0), recent_mcast_recv_(0), recent_unicast_send_(0) {
   this->outfile_ = fopen(filename.c_str(), "w");
   assert(this->outfile_ != nullptr);
-  this->Connect();
-  this->PrintHeader();
-  this->PeriodicPrinter();
 }
 
 Tracer::~Tracer(void) {
@@ -30,10 +27,20 @@ void Tracer::PeriodicPrinter(void) {
   ns3::Simulator::Schedule(ns3::Seconds(1.0), &Tracer::PeriodicPrinter, this);
 }
 
-void Tracer::Connect(void) {
-  ns3::Config::ConnectWithoutContext("/NodeList/*/$ndnfd::L3Protocol/InterestMcastSend", ns3::MakeCallback(&Tracer::InterestMcastSend, this));
-  ns3::Config::ConnectWithoutContext("/NodeList/*/$ndnfd::L3Protocol/InterestMcastRecv", ns3::MakeCallback(&Tracer::InterestMcastRecv, this));
-  ns3::Config::ConnectWithoutContext("/NodeList/*/$ndnfd::L3Protocol/InterestUnicastSend", ns3::MakeCallback(&Tracer::InterestUnicastSend, this));
+void Tracer::ConnectNode(ns3::Ptr<ns3::Node> node) {
+  assert(node != nullptr);
+  char node_selector[16];
+  snprintf(node_selector, sizeof(node_selector), "%" PRIu32 "", node->GetId());
+  this->Connect(node_selector);
+}
+
+void Tracer::Connect(const std::string& node_selector) {
+  ns3::Config::ConnectWithoutContext("/NodeList/" + node_selector + "/$ndnfd::L3Protocol/InterestMcastSend", ns3::MakeCallback(&Tracer::InterestMcastSend, this));
+  ns3::Config::ConnectWithoutContext("/NodeList/" + node_selector + "/$ndnfd::L3Protocol/InterestMcastRecv", ns3::MakeCallback(&Tracer::InterestMcastRecv, this));
+  ns3::Config::ConnectWithoutContext("/NodeList/" + node_selector + "/$ndnfd::L3Protocol/InterestUnicastSend", ns3::MakeCallback(&Tracer::InterestUnicastSend, this));
+
+  this->PrintHeader();
+  this->PeriodicPrinter();
 }
 
 void Tracer::InterestMcastSend(ns3::Ptr<L3Protocol> l3, const Name* name) {

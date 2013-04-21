@@ -13,6 +13,9 @@ class Tracer : public ns3::SimpleRefCount<Tracer> {
   explicit Tracer(const std::string& filename);
   virtual ~Tracer(void);
   
+  void ConnectAll(void) { this->Connect("*"); }
+  void ConnectNode(ns3::Ptr<ns3::Node> node);
+
   void PrintHeader(void);
   void Print(void);
  
@@ -27,9 +30,9 @@ class Tracer : public ns3::SimpleRefCount<Tracer> {
 
   ns3::EventId next_print_;
   
-  void Connect(void);
   void PeriodicPrinter(void);
 
+  void Connect(const std::string& node_selector);
   void InterestMcastSend(ns3::Ptr<L3Protocol> l3, const Name* name);
   void InterestMcastRecv(ns3::Ptr<L3Protocol> l3, const Name* name);
   void InterestUnicastSend(ns3::Ptr<L3Protocol> l3, const Name* name);
