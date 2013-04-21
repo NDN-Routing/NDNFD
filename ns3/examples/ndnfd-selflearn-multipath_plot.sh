@@ -2,23 +2,23 @@
 
 grep 'FullDelay' ndnfd-selflearn-multipath_delay.tsv > ndnfd-selflearn-multipath_delay_FullDelay.tsv
 awk '
-  BEGIN {
-    i1 = -1;
-    i2 = 1000000000-1;
-    lost[""] = 0;
-  }
-  ($4 < 1000000000) {
-    while (++i1 < $4) {
-      ++lost[int($1-$6)];
-    }
-  }
-  ($4 >= 1000000000) {
-    while (++i2 < $4) {
-      ++lost[int($1-$6)];
-    }
+  {
+    got[$4] = 1;
   }
   END {
-    for (t=16;t<108;++t) {
+    for (i=0; i<=90*5; ++i) {
+      t = i/5;
+      if (! got[i]) {
+        ++lost[int(t)]
+      }
+    }
+    for (i=1000000000; i<1000000000+45*30; ++i) {
+      t = 30 + (i-1000000000)/45;
+      if (! got[i]) {
+        ++lost[int(t)]
+      }
+    }
+    for (t=0;t<90;++t) {
       if (lost[t]) {
         print t "\t" lost[t];
       }
@@ -42,7 +42,7 @@ set ylabel "delay(ms)";
 set y2tics border nomirror in;
 set y2label "loss/s";
 plot "ndnfd-selflearn-multipath_delay_FullDelay.tsv" using ($1-$6-16):($7/1000) with points lc 3 pt 0 title "delay",
-     "ndnfd-selflearn-multipath_lost.tsv" using ($1-16):2 axes x1y2 with points lc 1 pt 2 ps 0.4 title "loss";
+     "ndnfd-selflearn-multipath_lost.tsv" using 1:2 axes x1y2 with points lc 1 pt 2 ps 0.4 title "loss";
 set border 3;
 unset y2tics;
 unset y2label;
