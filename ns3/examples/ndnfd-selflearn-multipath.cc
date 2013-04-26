@@ -38,13 +38,13 @@ int main(int argc, char *argv[]) {
     node F
     node G
     node H
-    csma 5Mbps 10ms A B
-    csma 5Mbps 10ms B C G
-    csma 1Mbps 10ms C D
-    csma 1Mbps 10ms D E
-    csma 1Mbps 10ms E F
-    csma 600Kbps 10ms G H
-    csma 1Mbps 10ms H F
+    csma 900Kbps 6560ns A B
+    csma 900Kbps 6560ns B C G
+    csma 600Kbps 6560ns C D
+    csma 600Kbps 6560ns D E
+    csma 600Kbps 6560ns E F
+    csma 300Kbps 6560ns G H
+    csma 300Kbps 6560ns H F
     ndnfd-stack
   )EOT");
 
