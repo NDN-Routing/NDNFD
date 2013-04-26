@@ -28,7 +28,7 @@ def build(bld):
     module = bld.create_ns3_module('NDNFD', ['ndnSIM','csma','point-to-point','internet'])
     module.module = 'NDNFD'
     module.uselib = 'NDNFD'
-    module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc'], excl=['**/*_test*.cc'])
+    module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc','extra/*.cc'], excl=['**/*_test*.cc'])
     module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
 
     headers = bld.new_task_gen(features=['ns3header'])
@@ -38,6 +38,7 @@ def build(bld):
         'helper/ndnfd-stack-helper.h',
         'utils/ndnfd-build-topo.h',
         'utils/ndnfd-tracing.h',
+        'extra/processing_delay.h',
         ]
 
     unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD'])
