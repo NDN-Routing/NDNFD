@@ -167,13 +167,9 @@ ns3::Ptr<ns3::Packet> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessag
   }
 
   const uint8_t* nonce_blob; size_t nonce_size;
-  if (0 == ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, msg->msg(), msg->parsed()->offset[CCN_PI_B_Nonce], msg->parsed()->offset[CCN_PI_E_Nonce], &nonce_blob, &nonce_size)) {
-    uint32_t nonce = 0;
-    const uint8_t* nonce_end = nonce_blob + nonce_size;
-    for (const uint8_t* nonce_p = nonce_blob; nonce_p < nonce_end; ++nonce_p) {
-      nonce = (nonce << 8) + *nonce_p;
-    }
-    header.SetNonce(nonce);
+  if (0 == ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, msg->msg(), msg->parsed()->offset[CCN_PI_B_Nonce], msg->parsed()->offset[CCN_PI_E_Nonce], &nonce_blob, &nonce_size) && nonce_size == 8) {
+    uint32_t nonce;
+    if (1 == sscanf(reinterpret_cast<const char*>(nonce_blob), "%08x", &nonce)) header.SetNonce(nonce);
   }
   
   ns3::Ptr<ns3::Packet> p = ns3::Create<ns3::Packet>();
