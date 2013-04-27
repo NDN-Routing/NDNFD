@@ -55,6 +55,7 @@ class ProcessingDelay : public Object {
   void OnSlotEnd(uint32_t i);
   void StartNext(void);
 };
+NS_OBJECT_ENSURE_REGISTERED(ProcessingDelay);
 
 };//namespace ns3
 #endif//NDNFD_NS3_EXTRA_PROCESSING_DELAY_H_
