@@ -95,7 +95,7 @@ set term pdf;
 set out "ndnfd-loadbal-csma_plot.pdf";
 
 set xlabel "time(s)";
-set xrange [0:10];
+set xrange [0:'$sim_time'];
 set yrange [0:];
 set border 3;
 set key right top Left reverse samplen 0;
