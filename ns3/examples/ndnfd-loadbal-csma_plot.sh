@@ -90,7 +90,13 @@ gawk '
   }
   ' ndnfd-loadbal-csma.out > ndnfd-loadbal-csma_serve.tsv
 
-gnuplot -e '
+plot_producer=''
+for p in `seq 1 $n_producers`
+do
+  plot_producer=$plot_producer', "ndnfd-loadbal-csma_producer-use.tsv" using 1:'$(($p+2))' with lines lc '$(($p+1))' title "producer'$p'"'
+done
+
+plot='
 set term pdf;
 set out "ndnfd-loadbal-csma_plot.pdf";
 
@@ -103,11 +109,7 @@ set xtics nomirror;
 set ytics nomirror;
 
 set ylabel "requests/s";
-plot "ndnfd-loadbal-csma_producer-use.tsv" using 1:2 with lines lc 1 lw 4 title "unhandled",
-     "ndnfd-loadbal-csma_producer-use.tsv" using 1:3 with lines lc 2 title "producer1",
-     "ndnfd-loadbal-csma_producer-use.tsv" using 1:4 with lines lc 3 title "producer2",
-     "ndnfd-loadbal-csma_producer-use.tsv" using 1:5 with lines lc 4 title "producer3",
-     "ndnfd-loadbal-csma_producer-use.tsv" using 1:6 with lines lc 5 title "producer4";
+plot "ndnfd-loadbal-csma_producer-use.tsv" using 1:2 with lines lc 1 lw 4 title "unhandled"'$plot_producer';
 
 set ylabel "delay(ms)";
 set y2tics border nomirror in;
@@ -123,4 +125,5 @@ set border 3;
 set ylabel "services";
 plot "ndnfd-loadbal-csma_serve.tsv" using 2:3 with points lc 1 pt 0 title "";
 '
+gnuplot -e "$plot"
 
