@@ -1,10 +1,10 @@
 #!/bin/bash
 
-n_producers=4
-process_time=10
-frequency=300
-sim_time=10
-stop_req_time=$(($sim_time-1))
+n_producers=$1
+process_time=$2
+frequency=$3
+sim_time=$4
+stop_req_time=$5
 
 gawk '
   BEGIN {
@@ -43,7 +43,7 @@ gawk '
       print row
     }
   }
-  ' nohup.out > ndnfd-loadbal-csma_producer-use.tsv
+  ' ndnfd-loadbal-csma.out > ndnfd-loadbal-csma_producer-use.tsv
 
 grep 'FullDelay' ndnfd-loadbal-csma_delay.tsv > ndnfd-loadbal-csma_delay_FullDelay.tsv
 gawk '
@@ -88,7 +88,7 @@ gawk '
       }
     }
   }
-  ' nohup.out > ndnfd-loadbal-csma_serve.tsv
+  ' ndnfd-loadbal-csma.out > ndnfd-loadbal-csma_serve.tsv
 
 gnuplot -e '
 set term pdf;
