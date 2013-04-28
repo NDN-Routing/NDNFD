@@ -6,9 +6,7 @@
 #include <ns3/ndnSIM/utils/tracers/ndn-app-delay-tracer.h>
 
 /*
-This scenario is a demo for ns3::ndn::ProducerThrottled
-
-NS_LOG=ndn.Consumer:ndn.ProducerThrottled ./waf --run ndnfd-loadbal-csma
+One consumer and several producers are connected on one CsmaChannel.
 */
 
 int main(int argc, char *argv[]) {
