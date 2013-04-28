@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
   ns3::Config::SetDefault("ns3::ProcessingDelay::ProcessTime", ns3::TimeValue(ns3::MilliSeconds(process_time)));
 
   ns3::NodeContainer consumer_nodes; consumer_nodes.Create(1);
-  ns3::NodeContainer producer_nodes; producer_nodes.Create(4);
+  ns3::NodeContainer producer_nodes; producer_nodes.Create(n_producers);
   ns3::NodeContainer nodes(consumer_nodes, producer_nodes);
 
   ns3::CsmaHelper csma;
