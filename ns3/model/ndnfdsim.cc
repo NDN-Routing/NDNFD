@@ -54,7 +54,7 @@ void NdnfdSim::Start(void) {
 void NdnfdSim::ScheduleOnNextRun(std::function<void()> action) {
   this->next_run_actions_.push(action);
   this->run_evt_.Cancel();
-  ns3::Simulator::ScheduleNow(&NdnfdSim::RunOnce, this);
+  this->run_evt_ = ns3::Simulator::ScheduleNow(&NdnfdSim::RunOnce, this);
 }
 
 void NdnfdSim::RunOnce(void) {
@@ -76,7 +76,7 @@ void NdnfdSim::RunOnce(void) {
   if (next_scheduler_evt != Scheduler::kNoMore) {
     next_us = std::min(next_us, static_cast<uint64_t>(next_scheduler_evt.count()));
   }
-  ns3::Simulator::Schedule(ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
+  this->run_evt_ = ns3::Simulator::Schedule(ns3::MicroSeconds(next_us), &NdnfdSim::RunOnce, this);
 }
 
 };//namespace ndnfd
