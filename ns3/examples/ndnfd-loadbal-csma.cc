@@ -13,24 +13,20 @@ int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
   
   uint32_t n_producers = 4;
-  uint32_t process_time = 10;
   uint32_t frequency = 300;
   uint32_t sim_time = 10;
   uint32_t stop_req_time = sim_time - 1;
   ns3::CommandLine cmd;
   cmd.AddValue("n_producers", "number of producers", n_producers);
-  cmd.AddValue("process_time", "time to process one request (ms)", process_time);
   cmd.AddValue("frequency", "number of requests per sec", frequency);
   cmd.AddValue("sim_time", "total simulation time (s)", sim_time);
   cmd.AddValue("stop_req_time", "time of last request (s)", stop_req_time);
   cmd.Parse(argc, argv);
-  NS_ASSERT(process_time * frequency <= n_producers * 1000);//no overload
 
   ns3::Config::SetDefault("ns3::CsmaChannel::DataRate", ns3::StringValue("1Gbps"));
   ns3::Config::SetDefault("ns3::CsmaChannel::Delay", ns3::StringValue("6560ns"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
   ns3::Config::SetDefault("ns3::ProcessingDelay::NSlots", ns3::StringValue("1"));
-  ns3::Config::SetDefault("ns3::ProcessingDelay::ProcessTime", ns3::TimeValue(ns3::MilliSeconds(process_time)));
 
   ns3::NodeContainer consumer_nodes; consumer_nodes.Create(1);
   ns3::NodeContainer producer_nodes; producer_nodes.Create(n_producers);

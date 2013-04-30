@@ -10,16 +10,27 @@ TypeId ProcessingDelay::GetTypeId(void) {
       UintegerValue(1),
       MakeUintegerAccessor(&ProcessingDelay::nslots_),
       MakeUintegerChecker<uint32_t>(1))
+    .AddAttribute("QueueCapacity", "maximum number of queued jobs",
+      UintegerValue(10),
+      MakeUintegerAccessor(&ProcessingDelay::queue_capacity_),
+      MakeUintegerChecker<size_t>(1))
     .AddAttribute("ProcessTime", "fixed processing time",
       TimeValue(MilliSeconds(1)),
       MakeTimeAccessor(&ProcessingDelay::SetProcessTime, &ProcessingDelay::GetProcessTime),
       MakeTimeChecker())
+    .AddTraceSource("Drop", "drop a job because queue is full",
+      MakeTraceSourceAccessor(&ProcessingDelay::drop_))
     ;
   return tid;
 }
 
-void ProcessingDelay::SubmitJob(Job job, Priority priority) {
-  this->queue_.push(std::make_tuple(job.Copy(), priority));
+void ProcessingDelay::SubmitJob(Job job) {
+  if (this->queue_.size() >= this->queue_capacity_) {
+    Ptr<AttributeValue> victim = this->queue_.front();
+    this->queue_.pop();
+    this->drop_(*(victim));
+  }
+  this->queue_.push(job.Copy());
   this->StartNext();
 }
 
@@ -41,7 +52,7 @@ void ProcessingDelay::StartNext(void) {
   // place job on slot
   NS_ASSERT(slot.idle_);
   slot.idle_ = false;
-  slot.job_ = std::get<0>(this->queue_.top());
+  slot.job_ = this->queue_.front();
   this->queue_.pop();
   Time time = this->process_(*(slot.job_));
   slot.end_ = Simulator::Schedule(time, &ProcessingDelay::OnSlotEnd, this, i);

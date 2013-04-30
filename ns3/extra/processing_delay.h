@@ -3,6 +3,7 @@
 #include <queue>
 #include <tuple>
 #include <ns3/simulator.h>
+#include <ns3/traced-callback.h>
 namespace ns3 {
 
 // ProcessingDelay models the processing delay in an application
@@ -11,14 +12,13 @@ namespace ns3 {
 class ProcessingDelay : public Object {
  public:
   typedef const AttributeValue& Job;
-  typedef uint8_t Priority;
   
   static TypeId GetTypeId(void);
   ProcessingDelay(void) {}
   virtual ~ProcessingDelay(void) {}
 
   // SubmitJob submits a job.
-  void SubmitJob(Job job, Priority priority);
+  void SubmitJob(Job job);
   
   // Process callback determines the processing time for a job.
   void SetProcessCallback(Callback<Time,Job> cb);
@@ -35,18 +35,15 @@ class ProcessingDelay : public Object {
     Ptr<AttributeValue> job_;
     EventId end_;
   };
-  typedef std::tuple<Ptr<AttributeValue>,Priority> JobItem;
-  class JobItemComparer {
-   public:
-    bool operator()(const JobItem& lhs, const JobItem& rhs) const { return std::get<1>(lhs) > std::get<1>(rhs); }
-  };
   
   uint32_t nslots_;
   std::vector<SlotUsage> slots_;
-  std::priority_queue<JobItem,std::vector<JobItem>,JobItemComparer> queue_;
+  size_t queue_capacity_;
+  std::queue<Ptr<AttributeValue>> queue_;
   Time process_time_;
   Callback<Time,Job> process_;
   Callback<void,Job> complete_;
+  TracedCallback<Job> drop_;
 
   Time GetProcessTime(void) const { return this->process_time_; }
   void SetProcessTime(Time time);

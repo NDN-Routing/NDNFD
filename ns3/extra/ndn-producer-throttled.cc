@@ -8,7 +8,7 @@
 namespace ns3 {
 namespace ndn {
 
-NS_LOG_COMPONENT_DEFINE ("ndn.ProducerThrottled");
+NS_LOG_COMPONENT_DEFINE("ndn.ProducerThrottled");
 
 TypeId ProducerThrottled::GetTypeId(void) {
   static TypeId tid = TypeId("ns3::ndn::ProducerThrottled")
@@ -45,7 +45,7 @@ void ProducerThrottled::OnInterest(const Ptr<const Interest>& interest, Ptr<Pack
   
   uint32_t pending_i = ++this->pending_i_;
   this->pendings_[pending_i] = header;
-  this->pd_->SubmitJob(UintegerValue(pending_i), 0);
+  this->pd_->SubmitJob(UintegerValue(pending_i));
 }
 
 void ProducerThrottled::ProcessComplete(ProcessingDelay::Job job) {
@@ -56,7 +56,7 @@ void ProducerThrottled::ProcessComplete(ProcessingDelay::Job job) {
   Ptr<ContentObject> header = pending_it->second;
   this->pendings_.erase(pending_it);
 
-  NS_LOG_INFO ("node("<< GetNode()->GetId() <<") responding with ContentObject:\n" << boost::cref(*header));
+  NS_LOG_INFO("node("<< GetNode()->GetId() <<") responding with ContentObject:\n" << boost::cref(*header));
   
   UintegerValue virtual_payload_size;
   this->GetAttribute("PayloadSize", virtual_payload_size);
