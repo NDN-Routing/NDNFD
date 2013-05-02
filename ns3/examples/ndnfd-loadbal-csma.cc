@@ -13,19 +13,14 @@ int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
   
   uint32_t n_producers = 4;
-  uint32_t frequency = 300;
   uint32_t sim_time = 10;
-  uint32_t stop_req_time = sim_time - 1;
   ns3::CommandLine cmd;
   cmd.AddValue("n_producers", "number of producers", n_producers);
-  cmd.AddValue("frequency", "number of requests per sec", frequency);
   cmd.AddValue("sim_time", "total simulation time (s)", sim_time);
-  cmd.AddValue("stop_req_time", "time of last request (s)", stop_req_time);
   cmd.Parse(argc, argv);
 
   ns3::Config::SetDefault("ns3::CsmaChannel::DataRate", ns3::StringValue("1Gbps"));
   ns3::Config::SetDefault("ns3::CsmaChannel::Delay", ns3::StringValue("6560ns"));
-  ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
   ns3::Config::SetDefault("ns3::ProcessingDelay::NSlots", ns3::StringValue("1"));
 
   ns3::NodeContainer consumer_nodes; consumer_nodes.Create(1);
@@ -40,8 +35,6 @@ int main(int argc, char *argv[]) {
   
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   consumerHelper.SetPrefix("/prefix");
-  consumerHelper.SetAttribute("Frequency", ns3::DoubleValue(frequency));
-  consumerHelper.SetAttribute("MaxSeq", ns3::IntegerValue(stop_req_time * frequency));
   consumerHelper.Install(consumer_nodes);
 
   ns3::ndn::AppHelper producerHelper("ns3::ndn::ProducerThrottled");
