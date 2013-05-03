@@ -21,7 +21,7 @@ ns3::Ptr<ns3::ndn::fib::Entry> MockFib::Add(const ns3::Ptr<const ns3::ndn::Name>
   Ptr<ForwardingEntry> f = npe->SeekForwarding(static_cast<FaceId>(face->GetId()));
   f->MakePermanent();
   
-  ns3::Ptr<ns3::ndn::fib::Entry> entry = ns3::CreateObject<ns3::ndn::fib::Entry>(prefix);
+  ns3::Ptr<ns3::ndn::fib::Entry> entry = ns3::CreateObject<ns3::ndn::fib::Entry>(this, prefix);
   entry->AddOrUpdateRoutingMetric(face, metric);
   return entry;
 }
