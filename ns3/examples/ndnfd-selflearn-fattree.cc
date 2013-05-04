@@ -31,7 +31,7 @@ Every end host expresses 2 Interests per second to each end host.
 int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
 
-  ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("20"));
+  //ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("20"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
   
   ndnfd::SimBuildTopo(R"EOT(
@@ -134,10 +134,11 @@ int main(int argc, char *argv[]) {
 
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   consumerHelper.SetAttribute("Frequency", ns3::StringValue("2"));
+  //consumerHelper.SetAttribute("Randomize", ns3::StringValue("uniform"));
   ns3::ApplicationContainer consumers;
   for (auto consumer_host : hostnames) {
     for (auto producer_host : hostnames) {
-      consumerHelper.SetAttribute("StartSeq", ns3::StringValue(producer_host.substr(1) + "000000"));
+      consumerHelper.SetAttribute("StartSeq", ns3::StringValue(consumer_host.substr(1) + producer_host.substr(1) + "0000"));
       consumerHelper.SetPrefix("/" + producer_host);
       consumers.Add(consumerHelper.Install(ns3::Names::Find<ns3::Node>(consumer_host)));
     }
@@ -151,7 +152,6 @@ int main(int argc, char *argv[]) {
     producerHelper.SetPrefix("/" + producer_host);
     producers.Add(producerHelper.Install(ns3::Names::Find<ns3::Node>(producer_host)));
   }
-  producerHelper.SetPrefix("/prefix");
   producers.Start(ns3::Seconds(0.0)); producers.Stop(ns3::Seconds(20.0)); 
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-selflearn-fattree_delay.tsv");
