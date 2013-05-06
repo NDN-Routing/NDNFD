@@ -2,9 +2,8 @@
 
 n_producers=$1
 process_time=$2
-frequency=$3
-maxseq=$4
-sim_time=$5
+maxseq=$3
+sim_time=$4
 
 touch ndnfd-loadbal-csma_lost.tsv
 
@@ -71,6 +70,8 @@ gawk '
   }
   ' ndnfd-loadbal-csma.out
 
+sed -n '/Window: / s/^\([0-9\.]*\)s .* Window: \([0-9]*\), InFlight: \([0-9]*\)$/\1\t\2\t\3/ p' ndnfd-loadbal-csma.out >  ndnfd-loadbal-csma_window.tsv
+
 finish=`cat ndnfd-loadbal-csma_finish.tsv`
 n_lost=`wc -l < ndnfd-loadbal-csma_lost.tsv`
 avg_retx=`awk '{ sum += $2; ++count } END { print int(sum*1000/count)/1000 }' ndnfd-loadbal-csma_time.tsv`
@@ -123,6 +124,13 @@ set ylabel "number of segments";
 set yrange [0:*];
 plot "ndnfd-loadbal-csma_serveh.tsv" using 1:2 with boxes lc 3 title "",
      "ndnfd-loadbal-csma_serveh.tsv" using 1:2:2 with labels lc 3 title "";
+
+set title "window size by time";
+set xlabel "time(s)";
+set xrange [0:*];
+set ylabel "number of Interests";
+set yrange [0:*];
+plot "ndnfd-loadbal-csma_window.tsv" using ($1-16):2 with lines lc 1 title "window";
 '
 gnuplot -e "$plot"
 

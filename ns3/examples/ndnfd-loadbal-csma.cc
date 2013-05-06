@@ -14,9 +14,11 @@ int main(int argc, char *argv[]) {
   
   uint32_t n_producers = 4;
   uint32_t sim_time = 10;
+  std::string frequency_str;
   ns3::CommandLine cmd;
   cmd.AddValue("n_producers", "number of producers", n_producers);
   cmd.AddValue("sim_time", "total simulation time (s)", sim_time);
+  cmd.AddValue("frequency", "frequency | 'window'", frequency_str);
   cmd.Parse(argc, argv);
 
   ns3::Config::SetDefault("ns3::CsmaChannel::DataRate", ns3::StringValue("1Gbps"));
@@ -34,6 +36,12 @@ int main(int argc, char *argv[]) {
   ndnfdHelper.Install(nodes);
   
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  if (frequency_str == "window") {
+    consumerHelper = ns3::ndn::AppHelper("ns3::ndn::ConsumerWindow");
+    consumerHelper.SetAttribute("PayloadSize", ns3::StringValue("1024"));
+  } else {
+    consumerHelper.SetAttribute("Frequency", ns3::StringValue(frequency_str));
+  }
   consumerHelper.SetPrefix("/prefix");
   consumerHelper.Install(consumer_nodes);
 
