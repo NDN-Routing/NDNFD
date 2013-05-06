@@ -106,7 +106,7 @@ set y2label "loss/s";
 plot "ndnfd-selflearn-fattree_delay_FullDelay.tsv" using ($1-$6-16):($7/1000) with dots lc 3 title "delay",
      "ndnfd-selflearn-fattree_lost.tsv" using 1:2 axes x1y2 with lines lc 1 title "loss";
 
-set title "unicast send and flood";
+set title "Interest send and flood";
 set ylabel "Interest/s";
 set y2tics border nomirror in;
 set y2label "flood/s";
