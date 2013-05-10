@@ -17,7 +17,7 @@ A----B----C--+         |
 
 Consumer A expresses 50 Interests per second during 0 ~ 120 seconds.
 Producer H runs for  0 ~ 10 and 90 ~ 110 seconds.
-Producer D runs for  0 ~ 30 seconds.
+Producer D runs for 10 ~ 30 seconds.
 Producer E runs for 30 ~ 60 seconds.
 Producer F runs for 60 ~ 90 seconds.
 
