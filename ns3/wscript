@@ -31,7 +31,7 @@ def build(bld):
     module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc','extra/*.cc'], excl=['**/*_test*.cc'])
     module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
 
-    headers = bld.new_task_gen(features=['ns3header'])
+    headers = bld(features=['ns3header'])
     headers.module = module.module
     headers.source = [
         'model/ndnfd-l3protocol.h',
@@ -45,5 +45,5 @@ def build(bld):
     unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
 
     if bld.env.ENABLE_EXAMPLES:
-        bld.add_subdirs('examples')
+        bld.recurse('examples')
 
