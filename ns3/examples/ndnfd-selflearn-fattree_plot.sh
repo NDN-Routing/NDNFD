@@ -113,7 +113,7 @@ set y2label "flood/s";
 plot "ndnfd-selflearn-fattree_l3.tsv" using ($1-16):($2+$4) with lines lc 1 title "send",
      "ndnfd-selflearn-fattree_flood.tsv" using 1:2 axes x1y2 with lines lc 3 title "flood";
 
-set title "path inflaction";
+set title "path inflation";
 set ylabel "extra path length (hop)";
 set y2tics border nomirror in;
 set y2label "shortest path usage (%)";
