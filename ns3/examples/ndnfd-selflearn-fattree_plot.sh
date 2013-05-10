@@ -43,7 +43,7 @@ awk '
     return 6
   }
   $0 ~ "SelfLearnStrategy::DidSatisfyPendingInterests" {
-    if (match($0,/SelfLearnStrategy::DidSatisfyPendingInterests\(\/H[0-3][0-3]\/([0-3][0-3][0-3][0-3][0-9][0-9][0-9][0-9])\).*matching\_suffix=0/,m)) {
+    if (match($0,/SelfLearnStrategy::DidSatisfyPendingInterests\(\/H[0-3][0-3]\/([0-9]*)\).*matching\_suffix=0/,m)) {
       seqnum = m[1]
       ++satisfy[seqnum]
     }
