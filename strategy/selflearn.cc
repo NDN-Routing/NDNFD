@@ -9,7 +9,15 @@ namespace ndnfd {
 
 SelfLearnStrategy::NpeExtra* SelfLearnStrategy::GetExtra(Ptr<NamePrefixEntry> npe) {
   NpeExtra* extra = npe->strategy_extra<NpeExtra>();
-  if (extra != nullptr) return extra;
+  if (extra != nullptr) {
+    for (auto it = extra->predicts_.begin(), next = it; it != extra->predicts_.end(); it = next) {
+      next = it; ++next;
+      if (this->global()->facemgr()->GetFace(it->first) == nullptr) {
+        extra->predicts_.erase(it);
+      }
+    }
+    return extra;
+  }
 
   Ptr<NamePrefixEntry> parent = npe->Parent();
   if (parent == nullptr) {

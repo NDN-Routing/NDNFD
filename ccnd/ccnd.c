@@ -5878,6 +5878,9 @@ ccnd_create(const char *progname, ccnd_logger logger, void *loggerdata)
             h->mtu = 8800;
     }
     h->data_pause_microsec = 10000;
+#ifdef NDNFD
+    h->data_pause_microsec = 1;
+#endif
     data_pause = getenv("CCND_DATA_PAUSE_MICROSEC");
     if (data_pause != NULL && data_pause[0] != 0) {
         h->data_pause_microsec = atol(data_pause);
