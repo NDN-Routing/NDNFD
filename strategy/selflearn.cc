@@ -52,7 +52,8 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
   });
 
   // lookup FIB
-  std::unordered_set<FaceId> candidates = npe->LookupFib(interest);
+  std::unordered_set<FaceId> fib_candidates = npe->LookupFib(interest);
+  std::unordered_set<FaceId> candidates = fib_candidates;
   // also include (inherited) best face
   //candidates.insert(npe->GetBestFace());
   //candidates.insert(npe->prev_faceid());
@@ -66,6 +67,13 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
   for (FaceId outbound : candidates) {
     Ptr<Face> upstream = this->global()->facemgr()->GetFace(outbound);
     if (upstream == nullptr || !upstream->CanSend()) continue;
+    switch (upstream->kind()) {
+      case FaceKind::kInternal:
+      case FaceKind::kApp:// exclude local faces not in FIB: they always register prefix
+        if (fib_candidates.find(outbound) == fib_candidates.end()) continue;
+      default:
+        break;
+    }
     bool reach = false;
     for (Ptr<Face> downstream : downstreams) {
       // if outbound unicast is a downstream: it's a consumer
