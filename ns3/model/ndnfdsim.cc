@@ -5,6 +5,7 @@
 #include "facemgr.h"
 extern "C" {
 #include "ndnld/ndnld.h"
+uint32_t WTHZ_value(void);
 }
 namespace ndnfd {
 
@@ -27,7 +28,6 @@ NdnfdSim::~NdnfdSim(void) {
 
 void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
   ccnd_handle* h = const_cast<ccnd_handle*>(static_cast<const ccnd_handle*>(self->data));
-  const uint16_t WTHZ = 500U;
 
   int64_t now_us = ns3::Now().GetMicroSeconds();
   result->s = static_cast<long>(now_us / 1000000);
@@ -38,9 +38,9 @@ void NdnfdSim::CcndGetTime(const ccn_gettime* self, ccn_timeval* result) {
   h->sec = result->s; h->usec = result->micros;
 
   // ns3 time won't run backwards or take huge steps
-  ccn_wrappedtime delta = static_cast<unsigned>(udelta) / (1000000U / WTHZ);
-  h->sliver = udelta - delta * (1000000U / WTHZ);
-  delta += static_cast<unsigned>(sdelta) * WTHZ;
+  ccn_wrappedtime delta = static_cast<unsigned>(udelta) / (1000000U / WTHZ_value());
+  h->sliver = udelta - delta * (1000000U / WTHZ_value());
+  delta += static_cast<unsigned>(sdelta) * WTHZ_value();
   h->wtnow += delta;
 
   // also update time in ndnld
@@ -68,9 +68,9 @@ void NdnfdSim::RunOnce(void) {
     this->next_run_actions_.pop();
   }
 
-  this->internal_client_->Grab();
+  //this->internal_client_->Grab();
   std::chrono::microseconds next_scheduler_evt = this->global()->scheduler()->Run();
-  this->internal_client_->Grab();
+  //this->internal_client_->Grab();
 
   uint64_t next_us = 10000;
   if (next_scheduler_evt != Scheduler::kNoMore) {
