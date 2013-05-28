@@ -1,6 +1,6 @@
 #include "stream.h"
 #include <fcntl.h>
-#include "message/ccnb.h"
+#include "message/interest.h"
 #include "core/element_testh.h"
 #include "gtest/gtest.h"
 namespace ndnfd {
@@ -25,10 +25,11 @@ TEST(FaceTest, StreamFace) {
   ASSERT_TRUE(f1->CanSend());
   ASSERT_TRUE(f1->CanReceive());
   
-  uint8_t buf[2054];
-  memset(buf, 0, 2054);
-  memcpy(buf, "\x4E\x64\x4C\xB2\x7F\xFD", 6);
-  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 2054);
+  uint8_t buf[2056];
+  memset(buf, 0, sizeof(buf));
+  memcpy(buf, "\x01\xD2\xF2\xFA\x7F\xFD", 6);
+  ASSERT_NE(nullptr, InterestMessage::Parse(buf, sizeof(buf)));
+  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, sizeof(buf));
   ASSERT_TRUE(m1->Verify());
   
   int sent = 0;
@@ -47,8 +48,8 @@ TEST(FaceTest, StreamFace) {
   f2->Receive = [&received] (Ptr<Message> msg) {
     ++received;
     CcnbMessage* m = static_cast<CcnbMessage*>(PeekPointer(msg));
-    EXPECT_EQ(2054U, m->length());
-    EXPECT_EQ(0x4E, m->msg()[0]);
+    EXPECT_EQ(2056U, m->length());
+    EXPECT_EQ(0xF2, m->msg()[2]);
   };
   while (received < sent) {
     TestGlobal()->pollmgr()->Poll(std::chrono::milliseconds(1000));

@@ -38,11 +38,11 @@ TEST(MessageTest, CcnbWireProtoDecodeDgram) {
   ASSERT_FALSE(wp->IsStateful());
   bool ok; std::list<Ptr<Message>> msgs;
 
-  Ptr<Buffer> pkt1 = new Buffer(5);
-  memcpy(pkt1->mutable_data(), "\x4E\x64\x4C\xB2\x00", 5);
+  Ptr<Buffer> pkt1 = new Buffer(9);
+  memcpy(pkt1->mutable_data(), "\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00", 9);
   std::tie(ok, msgs) = wp->Decode(netaddr, nullptr, pkt1);
   ASSERT_EQ(1U, msgs.size());
-  EXPECT_EQ(5U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
+  EXPECT_EQ(9U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
   
   pkt1->Put(1);
   std::tie(ok, msgs) = wp->Decode(netaddr, nullptr, pkt1);
@@ -63,22 +63,22 @@ TEST(MessageTest, CcnbWireProtoDecodeStream) {
   Ptr<Buffer> pkt;
 
   pkt = state->GetReceiveBuffer();
-  memcpy(pkt->Put(21), "\x4E\x64\x4C\xB2\x00\x4E\x64\x4C\xBA\x4E\x64\x4C\xC2\xB5\0\0\0\0\0\0\x00", 21);
+  memcpy(pkt->Put(21), "\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00\x01\xD2\xF2\xFA\xB5\0\0\0\0\0\0\x00", 21);
   std::tie(ok, msgs) = wp->Decode(netaddr, state, pkt);
   ASSERT_EQ(1U, msgs.size());
-  EXPECT_EQ(5U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
+  EXPECT_EQ(9U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
   
   pkt = state->GetReceiveBuffer();
-  memcpy(pkt->Put(4), "\0\x4E\x64\x4C", 4);
+  memcpy(pkt->Put(5), "\x00\x00\x01\xD2\xF2", 5);
   std::tie(ok, msgs) = wp->Decode(netaddr, state, pkt);
   ASSERT_EQ(1U, msgs.size());
-  EXPECT_EQ(17U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
+  EXPECT_EQ(14U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
   
   pkt = state->GetReceiveBuffer();
-  memcpy(pkt->Put(2), "\xCA\0", 2);
+  memcpy(pkt->Put(6), "\xFA\x8Dz\x00\x00\x00", 6);
   std::tie(ok, msgs) = wp->Decode(netaddr, state, pkt);
   ASSERT_EQ(1U, msgs.size());
-  EXPECT_EQ(5U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
+  EXPECT_EQ(9U, static_cast<CcnbMessage*>(PeekPointer(msgs.front()))->length());
 
   pkt = state->GetReceiveBuffer();
   memcpy(pkt->Put(6), "\x16\xEF\xEF\x00", 6);

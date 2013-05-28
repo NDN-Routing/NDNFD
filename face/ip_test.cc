@@ -1,6 +1,6 @@
 #include "ip.h"
 #include "util/endian.h"
-#include "message/ccnb.h"
+#include "message/interest.h"
 #include "core/element_testh.h"
 #include "gtest/gtest.h"
 namespace ndnfd {
@@ -41,9 +41,10 @@ TEST(FaceTest, Udp) {
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(false);
   
-  uint8_t buf[5];
-  memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
-  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
+  uint8_t buf[9];
+  memcpy(buf, "\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00", sizeof(buf));
+  ASSERT_NE(nullptr, InterestMessage::Parse(buf, sizeof(buf)));
+  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, sizeof(buf));
 
   Ptr<UdpFaceFactory> factory = NewTestElement<UdpFaceFactory>(ccnbwp);
   Ptr<DgramChannel> ch1 = factory->Channel(addr1);
@@ -94,9 +95,10 @@ TEST(FaceTest, Tcp) {
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
   
-  uint8_t buf[5];
-  memcpy(buf, "\x4E\x64\x4C\xB2\x00", 5);
-  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, 5);
+  uint8_t buf[9];
+  memcpy(buf, "\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00", sizeof(buf));
+  ASSERT_NE(nullptr, InterestMessage::Parse(buf, sizeof(buf)));
+  Ptr<CcnbMessage> m1 = new CcnbMessage(buf, sizeof(buf));
 
   Ptr<TcpFaceFactory> factory = NewTestElement<TcpFaceFactory>(ccnbwp);
   Ptr<StreamListener> listener = factory->Listen(addr);
