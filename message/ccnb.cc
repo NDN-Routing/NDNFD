@@ -1,5 +1,27 @@
 #include "ccnb.h"
+#include "interest.h"
+#include "contentobject.h"
 namespace ndnfd {
+
+Ptr<CcnbMessage> CcnbMessage::Parse(const uint8_t* msg, size_t length) {
+  ccn_skeleton_decoder decoder = {0};
+  ccn_skeleton_decoder* d = &decoder;
+  d->state |= CCN_DSTATE_PAUSE;
+  ccn_skeleton_decode(d, msg, length);
+  if (d->state < 0) return nullptr;
+  if (CCN_GET_TT_FROM_DSTATE(d->state) != CCN_DTAG) return nullptr;
+  ccn_dtag dtag = static_cast<ccn_dtag>(d->numval);
+  switch (dtag) {
+    case CCN_DTAG_Interest:
+      return InterestMessage::Parse(msg, length);
+    case CCN_DTAG_ContentObject:
+      return ContentObjectMessage::Parse(msg, length);
+    default:
+      return nullptr;
+    // CCN_DTAG_CCNProtocolDataUnit is not supported, so that NDNFD cannot work with link adaptors.
+    // CCN_DTAG_SequenceNumber is not supported, but the other end will detect this and stop sending seqnum.
+  }
+}
 
 const MessageType CcnbMessage::kType;
 
@@ -65,10 +87,12 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
   ccn_skeleton_decode(d, packet->data() + d->index, packet->length() - d->index);
   while (d->state == 0) {
     if (d->index > static_cast<ssize_t>(s->msgstart_)) {
-      Ptr<CcnbMessage> msg = new CcnbMessage(const_cast<uint8_t*>(packet->data() + s->msgstart_), d->index - s->msgstart_);
-      assert(msg->Verify());
-      msg->set_source_buffer(packet);
-      results.push_back(msg);
+      Ptr<CcnbMessage> msg = CcnbMessage::Parse(packet->data() + s->msgstart_, d->index - s->msgstart_);
+      if (msg != nullptr) {
+        //assert(msg->Verify());
+        msg->set_source_buffer(packet);
+        results.push_back(msg);
+      }
     }
     s->msgstart_ = d->index;
     if (s->msgstart_ == packet->length()) {

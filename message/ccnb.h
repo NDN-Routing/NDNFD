@@ -17,6 +17,10 @@ class CcnbMessage : public Message {
   virtual ~CcnbMessage(void) {}
   virtual MessageType type(void) const { return CcnbMessage::kType; }
   
+  // Parse parses a CCNB message into a specific subtype,
+  // or returns null.
+  static Ptr<CcnbMessage> Parse(const uint8_t* msg, size_t length);
+  
   // CCNB message
   const uint8_t* msg(void) const { return this->msg_; }
   // length of msg
