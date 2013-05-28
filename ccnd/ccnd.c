@@ -4319,19 +4319,27 @@ drop_nonlocal_interest(struct ccnd_handle *h, struct nameprefix_entry *npe,
  *  on that face that also match this object.
  * Otherwise, initiate propagation of the interest.
  */
+#ifdef NDNFD
+void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
+#endif
 static void
 process_incoming_interest(struct ccnd_handle *h, struct face *face,
                           unsigned char *msg, size_t size)
 {
+#ifndef NDNFD
     struct hashtb_enumerator ee;
     struct hashtb_enumerator *e = &ee;
+#endif
     struct ccn_parsed_interest parsed_interest = {0};
     struct ccn_parsed_interest *pi = &parsed_interest;
 #ifndef NDNFD_FIXCCNDWARNINGS
     size_t namesize = 0;
 #endif
+#ifndef NDNFD
     int k;
+#endif
     int res;
+#ifndef NDNFD
     int try;
     int matched;
     int s_ok;
@@ -4339,6 +4347,7 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
     struct nameprefix_entry *npe = NULL;
     struct content_entry *content = NULL;
     struct content_entry *last_match = NULL;
+#endif
     struct ccn_indexbuf *comps = indexbuf_obtain(h);
     if (size > 65535)
         res = -__LINE__;
@@ -4349,6 +4358,22 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
         ccn_indexbuf_destroy(&comps);
         return;
     }
+#ifdef NDNFD
+    process_incoming_interest2(h, face, msg, size, pi, comps);
+    indexbuf_release(h, comps);
+}
+void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps) {
+    struct hashtb_enumerator ee;
+    struct hashtb_enumerator *e = &ee;
+    int k;
+    int try;
+    int matched;
+    int s_ok;
+    struct interest_entry *ie = NULL;
+    struct nameprefix_entry *npe = NULL;
+    struct content_entry *content = NULL;
+    struct content_entry *last_match = NULL;
+#endif
     ccnd_meter_bump(h, face->meter[FM_INTI], 1);
     if (pi->scope >= 0 && pi->scope < 2 &&
              (face->flags & CCN_FACE_GG) == 0) {
@@ -4374,7 +4399,9 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
                            pi->offset[CCN_PI_B_InterestLifetime]);
         if (ie != NULL) {
             /* Since this is in the PIT, we do not need to check the CS. */
+#ifndef NDNFD
             indexbuf_release(h, comps);
+#endif
             comps = NULL;
             npe = ie->ll.npe;
             if (drop_nonlocal_interest(h, npe, face, msg, size))
@@ -4396,7 +4423,11 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
         s_ok = (pi->answerfrom & CCN_AOK_STALE) != 0;
         matched = 0;
         hashtb_start(h->nameprefix_tab, e);
+#ifdef NDNFD
+        nameprefix_seek(h, e, msg, comps, pi->prefix_comps);
+#else
         res = nameprefix_seek(h, e, msg, comps, pi->prefix_comps);
+#endif
         npe = e->data;
         if (npe == NULL || drop_nonlocal_interest(h, npe, face, msg, size))
             goto Bail;
@@ -4469,7 +4500,9 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
     Bail:
         hashtb_end(e);
     }
+#ifndef NDNFD
     indexbuf_release(h, comps);
+#endif
 }
 
 /**

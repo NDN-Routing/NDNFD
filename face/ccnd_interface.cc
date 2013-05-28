@@ -1,9 +1,11 @@
 #include "ccnd_interface.h"
 #include "face/facemgr.h"
-#include "message/ccnb.h"
+#include "message/interest.h"
+#include "message/contentobject.h"
 extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
+void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
 }
 using ndnfd::Ptr;
 using ndnfd::Global;
@@ -45,9 +47,18 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   
   this->last_received_message_ = message;
   
-  CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
-  assert(msg->Verify());
-  process_input_message(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
+  switch (message->type()) {
+    case InterestMessage::kType: {
+      InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
+      process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
+    } break;
+    case ContentObjectMessage::kType: {
+      CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
+      assert(msg->Verify());
+      process_input_message(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
+    } break;
+    default: assert(false); break;
+  }
 }
 
 void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {

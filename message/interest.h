@@ -11,6 +11,7 @@ class InterestMessage : public CcnbMessage {
   virtual MessageType type(void) const { return InterestMessage::kType; }
   
   InterestMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed);
+  virtual ~InterestMessage(void);
   
   // Parse parses a buffer and returns parsed InterestMessage,
   // or null if buffer is not a CCNB Interest.
@@ -21,10 +22,15 @@ class InterestMessage : public CcnbMessage {
   
   // ccn_parsed_interest structure
   const ccn_parsed_interest* parsed(void) const { return &this->parsed_; }
+  
+  // name components indexbuf structure
+  // This is available only from InterestMessage::Parse.
+  const ccn_indexbuf* comps(void) const { return this->comps_; }
 
  private:
   ccn_parsed_interest parsed_;
   Ptr<Name> name_;
+  ccn_indexbuf* comps_;
 
   InterestMessage(const uint8_t* msg, size_t length);
   DISALLOW_COPY_AND_ASSIGN(InterestMessage);
