@@ -55,6 +55,8 @@ void ProducerThrottled::ProcessComplete(ProcessingDelay::Job job) {
   NS_ASSERT(pending_it != this->pendings_.end());
   Ptr<ContentObject> header = pending_it->second;
   this->pendings_.erase(pending_it);
+  
+  if (!this->m_active) return;//app stopped
 
   NS_LOG_INFO("node("<< GetNode()->GetId() <<") responding with ContentObject:\n" << boost::cref(*header));
   

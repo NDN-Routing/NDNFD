@@ -48,7 +48,7 @@ plot "ndnfd-selflearn-migration_l3.tsv" using ($1-16):5 with lines lc 1 title "m
 
 set ylabel "loss (%)";
 set yrange [0:100];
-plot "ndnfd-selflearn-migration_delay_lost.tsv" using 1:($2*100) with lines lc 1 title "loss";
+plot "ndnfd-selflearn-migration_lost.tsv" using 1:($2*100) with lines lc 1 title "loss";
 set yrange [0:*];
 
 '
