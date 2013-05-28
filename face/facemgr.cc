@@ -286,9 +286,10 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
     }
     break;
     default: {
-      return std::forward_as_tuple(nullptr, 0, "unknown address type");
+      return std::forward_as_tuple(nullptr, 0, "unknown protocol type");
     }
   }
+  return std::forward_as_tuple(nullptr, 0, "");
 }
 
 std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewEtherFace(const ccn_face_instance* face_inst) {
