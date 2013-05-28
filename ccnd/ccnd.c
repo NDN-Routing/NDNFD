@@ -4616,15 +4616,54 @@ Finish:
  * XXX - the change to staleness should also not happen if there was no
  * matching PIT entry.
  */
+#ifdef NDNFD
+void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
+#endif
 static void
 process_incoming_content(struct ccnd_handle *h, struct face *face,
                          unsigned char *wire_msg, size_t wire_size)
 {
     unsigned char *msg;
     size_t size;
+#ifndef NDNFD
     struct hashtb_enumerator ee;
     struct hashtb_enumerator *e = &ee;
+#endif
     struct ccn_parsed_ContentObject obj = {0};
+    int res;
+#ifndef NDNFD
+    size_t keysize = 0;
+    size_t tailsize = 0;
+    unsigned char *tail = NULL;
+    struct content_entry *content = NULL;
+    int i;
+    struct ccn_indexbuf *comps = indexbuf_obtain(h);
+    struct ccn_charbuf *cb = charbuf_obtain(h);
+#endif
+    
+    msg = wire_msg;
+    size = wire_size;
+    
+#ifdef NDNFD
+    res = ccn_parse_ContentObject(msg, size, &obj, NULL);
+#else
+    res = ccn_parse_ContentObject(msg, size, &obj, comps);
+#endif
+    if (res < 0) {
+        ccnd_msg(h, "error parsing ContentObject - code %d", res);
+#ifdef NDNFD
+        return;
+#else
+        goto Bail;
+#endif
+    }
+#ifdef NDNFD
+    process_incoming_content2(h, face, msg, size, &obj);
+}
+void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co) {
+#define obj (*co)
+    struct hashtb_enumerator ee;
+    struct hashtb_enumerator *e = &ee;
     int res;
     size_t keysize = 0;
     size_t tailsize = 0;
@@ -4633,18 +4672,15 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
     int i;
     struct ccn_indexbuf *comps = indexbuf_obtain(h);
     struct ccn_charbuf *cb = charbuf_obtain(h);
-    
-    msg = wire_msg;
-    size = wire_size;
-    
-    res = ccn_parse_ContentObject(msg, size, &obj, comps);
-    if (res < 0) {
-        ccnd_msg(h, "error parsing ContentObject - code %d", res);
-        goto Bail;
-    }
+#endif
     ccnd_meter_bump(h, face->meter[FM_DATI], 1);
+#ifdef NDNFD
+    if (co->name_ncomps < 1 ||
+        (keysize = co->offset[CCN_PCO_E_ComponentLast]) > 65535 - 36) {
+#else
     if (comps->n < 1 ||
         (keysize = comps->buf[comps->n - 1]) > 65535 - 36) {
+#endif
         ccnd_msg(h, "ContentObject with keysize %lu discarded",
                  (unsigned long)keysize);
         ccnd_debug_ccnb(h, __LINE__, "oversize", face, msg, size);
@@ -4657,7 +4693,11 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
         ccnd_debug_ccnb(h, __LINE__, "indigestible", face, msg, size);
         goto Bail;
     }
+#ifdef NDNFD
+    i = co->offset[CCN_PCO_E_ComponentLast];
+#else
     i = comps->buf[comps->n - 1];
+#endif
     ccn_charbuf_append(cb, msg, i);
     ccn_charbuf_append_tt(cb, CCN_DTAG_Component, CCN_DTAG);
     ccn_charbuf_append_tt(cb, obj.digest_bytes, CCN_BLOB);
@@ -4782,6 +4822,9 @@ Bail:
             }
         }
     }
+#ifdef NDNFD
+#undef obj
+#endif
 }
 
 /**

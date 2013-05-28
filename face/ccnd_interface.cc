@@ -6,6 +6,7 @@ extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
 void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
+void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
 }
 using ndnfd::Ptr;
 using ndnfd::Global;
@@ -53,9 +54,8 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
       process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
     } break;
     case ContentObjectMessage::kType: {
-      CcnbMessage* msg = static_cast<CcnbMessage*>(PeekPointer(message));
-      assert(msg->Verify());
-      process_input_message(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(msg->msg())), msg->length(), 0);
+      ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
+      process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
     } break;
     default: assert(false); break;
   }
