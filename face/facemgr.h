@@ -3,6 +3,7 @@
 extern "C" {
 #include <ccn/face_mgmt.h>
 }
+#include <mutex>
 #include "face/face.h"
 #include "face/ccnd_interface.h"
 #include "core/internal_client_handler.h"
@@ -94,6 +95,7 @@ class FaceMgr : public Element {
 
  private:
   FaceId next_id_;
+  std::recursive_mutex table_mutex_;
   std::map<FaceId,Ptr<Face>> table_;
   Ptr<CcndFaceInterface> ccnd_face_interface_;
   

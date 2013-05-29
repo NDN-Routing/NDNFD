@@ -47,12 +47,14 @@ FaceMgr::~FaceMgr(void) {
 }
 
 Ptr<Face> FaceMgr::GetFace(FaceId id) const {
+  std::lock_guard<std::recursive_mutex> lock(const_cast<FaceMgr*>(this)->table_mutex_);
   auto it = this->table_.find(id);
   if (it == this->table_.end()) return nullptr;
   return it->second;
 }
 
 void FaceMgr::AddFace(Ptr<Face> face) {
+  std::lock_guard<std::recursive_mutex> lock(this->table_mutex_);
   FaceId id = 0;
   if (face->kind() != FaceKind::kInternal) id = ++this->next_id_;
   face->Enroll(id, this);
@@ -61,11 +63,13 @@ void FaceMgr::AddFace(Ptr<Face> face) {
 }
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {
+  std::lock_guard<std::recursive_mutex> lock(this->table_mutex_);
   this->table_.erase(face->id());
   face->Finalize();
 }
 
 void FaceMgr::NotifyStatusChange(Ptr<Face> face) {
+  std::lock_guard<std::recursive_mutex> lock(this->table_mutex_);
   // TODO call ccnd_face_status_change if necessary
 }
 
