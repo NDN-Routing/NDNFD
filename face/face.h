@@ -4,7 +4,7 @@ extern "C" {
 #include "ccnd/ccnd_private.h"
 }
 #include "core/element.h"
-#include "message/message.h"
+#include "face/thread.h"
 namespace ndnfd {
 
 // FaceType indicates the type of a Face subclass.
@@ -50,6 +50,8 @@ class Face : public Element {
   FaceKind kind(void) const { return this->kind_; }
   void set_kind(FaceKind value);
   FaceStatus status(void) const { return this->status_; }
+  Ptr<FaceThread> face_thread(void) const;
+  void set_face_thread(Ptr<FaceThread> value);
   face* ccnd_face(void) const { return const_cast<face*>(&this->ccnd_face_); }
 
   // CanSend returns true if this Face may be used to send messages.
@@ -87,7 +89,7 @@ class Face : public Element {
   void CountBytesOut(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTO], static_cast<unsigned>(n)); }
 
  protected:
-  Face(void);
+  Face(Ptr<FaceThread> face_thread = nullptr);
   void set_id(FaceId value);
   void set_status(FaceStatus value);
   void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
@@ -104,6 +106,7 @@ class Face : public Element {
   FaceId id_;
   FaceKind kind_;
   FaceStatus status_;
+  Ptr<FaceThread> face_thread_;
   face ccnd_face_;
   
   DISALLOW_COPY_AND_ASSIGN(Face);

@@ -21,7 +21,7 @@ void StreamFace::Init(void) {
   }
   this->inbuf_ = nullptr;
   this->global()->facemgr()->AddFace(this);
-  this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
+  this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
 }
 
@@ -97,7 +97,7 @@ void StreamFace::Write(void) {
     }
   }
   if (this->send_queue().empty()) {
-    this->global()->pollmgr()->Remove(this, this->fd(), POLLOUT);
+    this->face_thread()->pollmgr()->Remove(this, this->fd(), POLLOUT);
     this->set_send_blocked(false);
     if (this->status() == FaceStatus::kConnecting) {
       this->set_status(FaceStatus::kUndecided);
@@ -106,7 +106,7 @@ void StreamFace::Write(void) {
       this->Close();
     }
   } else {
-    this->global()->pollmgr()->Add(this, this->fd(), POLLOUT);
+    this->face_thread()->pollmgr()->Add(this, this->fd(), POLLOUT);
     this->set_send_blocked(true);
   }
 }
@@ -160,7 +160,7 @@ void StreamFace::Read(void) {
 }
 
 void StreamFace::DoFinalize(void) {
-  this->global()->pollmgr()->RemoveAll(this);
+  this->face_thread()->pollmgr()->RemoveAll(this);
   close(this->fd());
 }
 
@@ -176,7 +176,7 @@ StreamListener::StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const 
 
 void StreamListener::Init(void) {
   this->global()->facemgr()->AddFace(this);
-  this->global()->pollmgr()->Add(this, this->fd(), POLLIN);
+  this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d", this, this->id(), this->fd());
 }
 
@@ -216,7 +216,7 @@ Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
 }
 
 void StreamListener::DoFinalize(void) {
-  this->global()->pollmgr()->RemoveAll(this);
+  this->face_thread()->pollmgr()->RemoveAll(this);
   close(this->fd());
 }
 

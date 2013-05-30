@@ -12,7 +12,9 @@ namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
   ccnd_handle* h = ccnd_create("ndnfd", &Logging::CcndLogger, this->global()->logging());
+  //this->global()->logging()->set_components(~kLCStrategy);
   this->global()->set_ccndh(h);
+  this->global()->facemgr()->AddFaceThreads(1);
   
   this->internal_client_ = this->New<InternalClientFace>();
   this->global()->facemgr()->StartDefaultListeners();

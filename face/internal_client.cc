@@ -7,6 +7,7 @@ namespace ndnfd {
 
 void InternalClientFace::Init(void) {
   this->set_kind(FaceKind::kInternal);
+  this->set_face_thread(this->global()->facemgr()->integrated_face_thread());
   this->global()->facemgr()->AddFace(this);
   CCNDH->face0 = this->ccnd_face();
   int res = ccnd_internal_client_start(CCNDH);

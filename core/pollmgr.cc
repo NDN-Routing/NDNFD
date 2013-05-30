@@ -10,6 +10,7 @@ constexpr std::chrono::milliseconds PollMgr::kNoTimeout;
 PollMgr::PollMgr(void) {
   this->pfds_ = nullptr;
   this->nfds_ = this->pfds_limit_ = 0;
+  this->local_thread_ = std::this_thread::get_id();
 }
 
 PollMgr::~PollMgr(void) {
@@ -17,6 +18,11 @@ PollMgr::~PollMgr(void) {
 }
 
 void PollMgr::Add(IPollClient* client, int fd, short events) {
+  if (std::this_thread::get_id() != this->local_thread_) {
+    this->local_calls_.push(std::bind(&PollMgr::Add, this, client, fd, events));
+    return;
+  }
+
   events = events & PollMgr::kEvents;
   
   Reg& reg = this->regs_[fd];
@@ -27,6 +33,11 @@ void PollMgr::Add(IPollClient* client, int fd, short events) {
 }
 
 void PollMgr::Remove(IPollClient* client, int fd, short events) {
+  if (std::this_thread::get_id() != this->local_thread_) {
+    this->local_calls_.push(std::bind(&PollMgr::Remove, this, client, fd, events));
+    return;
+  }
+
   events = events & PollMgr::kEvents;
   
   Reg& reg = this->regs_[fd];
@@ -37,6 +48,11 @@ void PollMgr::Remove(IPollClient* client, int fd, short events) {
 }
 
 void PollMgr::RemoveAll(IPollClient* client) {
+  if (std::this_thread::get_id() != this->local_thread_) {
+    this->local_calls_.push(std::bind(&PollMgr::RemoveAll, this, client));
+    return;
+  }
+
   for (auto it = this->regs_.begin(); it != this->regs_.end(); ++it) {
     if (0 != it->second.clients_.erase(client)) {
       this->UpdateRegEvents(&it->second);
@@ -81,6 +97,13 @@ void PollMgr::UpdateRegEvents(Reg* reg) {
 }
 
 bool PollMgr::Poll(std::chrono::milliseconds timeout) {
+  assert(std::this_thread::get_id() == this->local_thread_);
+  bool ok; std::function<void(void)> local_call;
+  while (std::tie(ok, local_call) = this->local_calls_.pop(), ok) {
+    this->Log(kLLInfo, kLCPollMgr, "PollMgr(%" PRIxPTR ")::Poll() local_call", this);
+    local_call();
+  }
+
   int timeout_ms = static_cast<int>(timeout.count());
   int r = poll(this->pfds_, this->nfds_, timeout_ms);
   if (r == -1) return false;

@@ -51,11 +51,33 @@ bool FaceStatus_IsUsable(FaceStatus status) {
   }
 }
 
-Face::Face(void) {
+Face::Face(Ptr<FaceThread> face_thread) {
   this->id_ = FaceId_none;
   this->kind_ = FaceKind::kNone;
   this->status_ = FaceStatus::kNone;
+  this->face_thread_ = face_thread;
   memset(&this->ccnd_face_, 0, sizeof(this->ccnd_face_));
+}
+
+Ptr<FaceThread> Face::face_thread(void) const {
+  if (this->face_thread_ == nullptr) {
+    Ptr<FaceThread> ft;
+    if (this->CanAccept()) {
+      ft = this->global()->facemgr()->integrated_face_thread();
+    } else {
+      ft = this->global()->facemgr()->PickRandomFaceThread();
+    }
+    this->Log(kLLInfo, kLCFace, "Face(%" PRIxPTR ")::face_thread() set face_thread=%" PRIxPTR "", this, PeekPointer(ft));
+    const_cast<Face*>(this)->set_face_thread(ft);
+  }
+  return this->face_thread_;
+}
+
+void Face::set_face_thread(Ptr<FaceThread> value) {
+  assert(value != nullptr);
+  assert(this->face_thread_ == nullptr);
+  // set only once
+  this->face_thread_ = value;
 }
 
 void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {

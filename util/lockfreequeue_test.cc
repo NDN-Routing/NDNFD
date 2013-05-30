@@ -1,15 +1,5 @@
 #include "lockfreequeue.h"
-
-#if !defined(_GLIBCXX_USE_NANOSLEEP) && (__GNUC__*1000+__GNUC_MINOR__)<=4007
-#define HACK_GCCBUG52680
-#define _GLIBCXX_USE_NANOSLEEP
-#endif
-#include <thread>
-#ifdef HACK_GCCBUG52680
-#undef HACK_GCCBUG52680
-#undef _GLIBCXX_USE_NANOSLEEP
-#endif
-
+#include "util/thread.h"
 #include "gtest/gtest.h"
 namespace ndnfd {
 

@@ -67,6 +67,7 @@ class DgramChannel : public Element, public IPollClient {
   DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~DgramChannel(void) {}
+  Ptr<FaceThread> face_thread(void) const { return this->face_thread_; }
   
   // GetFallbackFace returns the fallback face: "unsolicited" messages
   // (from peers without a DgramFace) are received on this face.
@@ -184,6 +185,7 @@ class DgramChannel : public Element, public IPollClient {
  private:
   static constexpr std::chrono::microseconds kReapInterval = std::chrono::microseconds(20000000);
 
+  Ptr<FaceThread> face_thread_;
   int fd_;
   Ptr<const AddressVerifier> av_;
   Ptr<const WireProtocol> wp_;

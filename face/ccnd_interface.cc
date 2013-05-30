@@ -28,8 +28,12 @@ void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_
 
 namespace ndnfd {
 
+void CcndFaceInterface::BindFaceThread(Ptr<FaceThread> face_thread) {
+  face_thread->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
+}
+
 void CcndFaceInterface::BindFace(Ptr<Face> face) {
-  face->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
+  //face->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
   register_new_face(CCNDH, face->ccnd_face());
 }
 
@@ -73,7 +77,7 @@ void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
   }
   
   Ptr<CcnbMessage> message = new CcnbMessage(msg, length);
-  out_face->Send(message);
+  out_face->face_thread()->Send(out_face->id(), message);
 }
 
 };//namespace ndnfd

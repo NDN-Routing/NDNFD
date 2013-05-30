@@ -64,6 +64,14 @@ class FaceMgr : public Element {
   void RemoveFace(Ptr<Face> face);
   // NotifyStatusChange is called by Face when status is changed.
   void NotifyStatusChange(Ptr<Face> face);
+  
+  const std::vector<Ptr<FaceThread>>& face_threads(void) const { return this->face_threads_; }
+  Ptr<FaceThread> integrated_face_thread(void) const { return this->face_threads_[0]; }
+  // AddFaceThreads creates n FaceThreads.
+  void AddFaceThreads(uint32_t n);
+  // PickRandomFaceThread picks a random FaceThread.
+  // IntegratedFaceThread is not picked unless there's no other FaceThread.
+  Ptr<FaceThread> PickRandomFaceThread(void) const;
 
   // StartDefaultListeners creates default listeners.
   virtual void StartDefaultListeners(void);
@@ -97,6 +105,7 @@ class FaceMgr : public Element {
   FaceId next_id_;
   std::recursive_mutex table_mutex_;
   std::map<FaceId,Ptr<Face>> table_;
+  std::vector<Ptr<FaceThread>> face_threads_;
   Ptr<CcndFaceInterface> ccnd_face_interface_;
   
   StreamListener* unix_listener_;

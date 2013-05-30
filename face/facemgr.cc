@@ -22,6 +22,9 @@ FaceMgr::FaceMgr(void) {
 
 void FaceMgr::Init(void) {
   this->ccnd_face_interface_ = this->New<CcndFaceInterface>();
+  Ptr<FaceThread> ft = this->New<IntegratedFaceThread>();
+  this->ccnd_face_interface()->BindFaceThread(ft);
+  this->face_threads_.push_back(ft);
 }
 
 FaceMgr::~FaceMgr(void) {
@@ -60,6 +63,7 @@ void FaceMgr::AddFace(Ptr<Face> face) {
   face->Enroll(id, this);
   this->table_[id] = face;
   this->ccnd_face_interface()->BindFace(face);
+  face->face_thread()->NewFace(face);
 }
 
 void FaceMgr::RemoveFace(Ptr<Face> face) {
@@ -71,6 +75,21 @@ void FaceMgr::RemoveFace(Ptr<Face> face) {
 void FaceMgr::NotifyStatusChange(Ptr<Face> face) {
   std::lock_guard<std::recursive_mutex> lock(this->table_mutex_);
   // TODO call ccnd_face_status_change if necessary
+}
+
+void FaceMgr::AddFaceThreads(uint32_t n) {
+  for (uint32_t i = 0; i < n; ++i) {
+    Ptr<FaceThread> ft = this->New<FaceThread>();
+    this->ccnd_face_interface()->BindFaceThread(ft);
+    this->face_threads_.push_back(ft);
+  }
+}
+Ptr<FaceThread> FaceMgr::PickRandomFaceThread(void) const {
+  if (this->face_threads_.size() > 1) {
+    int i = std::rand() % (this->face_threads_.size() - 1);
+    return this->face_threads_[1 + i];
+  }
+  return this->face_threads_[0];
 }
 
 void FaceMgr::StartDefaultListeners(void) {

@@ -11,7 +11,6 @@ void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_
 #ifdef __cplusplus
 }
 
-#include "face.h"
 #include "facemgr.h"
 
 namespace ndnfd {
@@ -22,8 +21,7 @@ class CcndFaceInterface : public Element {
   CcndFaceInterface(void) {}
   virtual ~CcndFaceInterface(void) {}
   
-  // BindFace is called by FaceMgr.AddFace.
-  // It binds Receive to face.Receive port.
+  void BindFaceThread(Ptr<FaceThread> face_thread);
   void BindFace(Ptr<Face> face);
 
   // Send sends a CCNB message through a face.

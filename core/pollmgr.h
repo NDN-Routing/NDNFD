@@ -2,6 +2,8 @@
 #define NDNFD_CORE_POLLMGR_H_
 #include "core/element.h"
 #include <poll.h>
+#include "util/thread.h"
+#include "util/lockfreequeue.h"
 namespace ndnfd {
 
 // An IPollClient implementor can receive events from PollMgr.
@@ -29,6 +31,11 @@ class PollMgr : public Element {
  
   PollMgr(void);
   virtual ~PollMgr(void);
+
+  // Poll must be invoked on local_thread.
+  // Add/Remove/RemoveAll can be invoked on any thread.
+  std::thread::id local_thread(void) const { return this->local_thread_; }
+  void set_local_thread(std::thread::id value) { this->local_thread_ = value; }
   
   // Add makes client to be invoked if event occurs on fd.
   void Add(IPollClient* client, int fd, short events);
@@ -58,6 +65,12 @@ class PollMgr : public Element {
   nfds_t nfds_;
   // number of pollfds allocated
   nfds_t pfds_limit_;
+  
+  // local_thread is the thread on which Poll is called.
+  // If Add/Remove/RemoveAll are called on another thread, they are accumulated
+  // in local_calls and deferred until the beginning of next Poll.
+  std::thread::id local_thread_;
+  LockFreeQueue<std::function<void(void)>> local_calls_;
   
   // UpdatePfds updates pfds_ according to Reg.events_.
   void UpdatePfds(void);

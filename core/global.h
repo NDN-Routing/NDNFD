@@ -1,6 +1,7 @@
 #ifndef NDNFD_CORE_GLOBAL_H_
 #define NDNFD_CORE_GLOBAL_H_
 #include "util/defs.h"
+#include "util/thread.h"
 #include "util/logging.h"
 extern "C" {
   struct ccnd_handle;
@@ -25,6 +26,7 @@ class Global {
   Global(void);
   virtual void Init(void);//create all objects
   virtual ~Global(void);
+  bool IsCoreThread(void) const { return std::this_thread::get_id() == this->core_thread_; }
 
   Logging* logging(void) { return this->logging_; }
   void set_logging(Logging* value);
@@ -44,6 +46,7 @@ class Global {
   void set_strategy(Ptr<Strategy> value);
   
  private:
+  std::thread::id core_thread_;
   Logging* logging_;
   ccnd_handle* ccndh_;
   PollMgr* pollmgr_;

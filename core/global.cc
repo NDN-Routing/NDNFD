@@ -15,6 +15,7 @@ extern "C" {
 namespace ndnfd {
 
 Global::Global(void) {
+  this->core_thread_ = std::this_thread::get_id();
   this->logging_ = new Logging();
   this->ccndh_ = nullptr;
   this->pollmgr_ = nullptr;
