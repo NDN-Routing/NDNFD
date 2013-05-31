@@ -18,6 +18,8 @@ void FaceThread::Init(void) {
   fcntl(this->notify_fds_[1], F_SETFL, O_NONBLOCK);
   this->pollmgr()->Add(this, this->notify_fds_[1], POLLIN);
 
+  this->scheduler_ = this->New<Scheduler>(ccn_schedule_create(CCNDH, &CCNDH->ticktock));
+
   this->running_ = true;
   this->face_thread_ = std::thread(std::mem_fn(&FaceThread::RunFaceThread), this);
 }
@@ -71,8 +73,9 @@ void FaceThread::RunFaceThread() {
   this->face_thread_id_ = std::this_thread::get_id();
   this->pollmgr()->set_local_thread(this->face_thread_id_);
   while (this->running_) {
-    this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::RunFaceThread() poll", this);
-    this->pollmgr()->Poll(PollMgr::kNoTimeout);
+    std::chrono::microseconds next_scheduler_evt = this->scheduler()->Run();
+    std::chrono::milliseconds poll_timeout = next_scheduler_evt.count()<0 ? PollMgr::kNoTimeout : std::chrono::duration_cast<std::chrono::milliseconds>(next_scheduler_evt);
+    this->pollmgr()->Poll(poll_timeout);
   }
   this->pollmgr()->RemoveAll(this);
 }
@@ -123,6 +126,7 @@ void IntegratedFaceThread::Init(void) {
   assert(this->global()->IsCoreThread());
   this->face_thread_id_ = std::this_thread::get_id();
   this->pollmgr_ = this->global()->pollmgr();
+  this->scheduler_ = this->global()->scheduler();
 }
 
 void IntegratedFaceThread::Send(FaceId face, Ptr<Message> message) {

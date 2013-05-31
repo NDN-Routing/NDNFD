@@ -72,7 +72,7 @@ void DgramChannel::Init(void) {
   this->fallback_face_ = this->New<DgramFallbackFace>(this);
   this->fallback_face_->set_kind(FaceKind::kMulticast);
   if (this->fd() >= 0) this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->global()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this), &this->reap_evt_);
+  this->face_thread()->scheduler()->Schedule(DgramChannel::kReapInterval, std::bind(&DgramChannel::ReapInactivePeers, this), &this->reap_evt_);
 
   this->Log(kLLInfo, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::Init local=%s fallback=%" PRI_FaceId "", this, this->fd(), this->av()->ToString(this->local_addr_).c_str(), this->fallback_face_->id());
 }
@@ -284,7 +284,7 @@ void DgramChannel::Close() {
   this->GetFallbackFace()->Close();
   this->face_thread()->pollmgr()->RemoveAll(this);
   this->CloseFd();
-  this->global()->scheduler()->Cancel(this->reap_evt_);
+  this->face_thread()->scheduler()->Cancel(this->reap_evt_);
 }
 
 

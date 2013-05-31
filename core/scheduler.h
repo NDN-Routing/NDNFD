@@ -19,8 +19,9 @@ class Scheduler : public Element {
   
   static constexpr std::chrono::microseconds kNoMore = std::chrono::microseconds(-1);
  
-  Scheduler(void) {}
-  virtual ~Scheduler(void) {}
+  Scheduler(void);// use global schedule
+  Scheduler(ccn_schedule* sched);// use local schedule; will be destroy in dtor
+  virtual ~Scheduler(void);
   
   // Schedule schedules an event.
   // cb must remain valid until event happens or is cancelled.
@@ -42,8 +43,9 @@ class Scheduler : public Element {
     Callback cb;
     SchedulerEvent* evt_ptr;
   };
+  ccn_schedule* sched_;
+  ccn_schedule* sched() { return this->sched_ == nullptr ? CCNDH->sched : this->sched_; };
 
-  ccn_schedule* sched() { return CCNDH->sched; };
   static int ScheduledAction(ccn_schedule* sched, void* clienth, ccn_scheduled_event* ev, int flags);
 
   DISALLOW_COPY_AND_ASSIGN(Scheduler);

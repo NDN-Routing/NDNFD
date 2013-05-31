@@ -6,6 +6,21 @@ namespace ndnfd {
 
 constexpr std::chrono::microseconds Scheduler::kNoMore;
 
+Scheduler::Scheduler(void) {
+  this->sched_ = nullptr;
+}
+
+Scheduler::Scheduler(ccn_schedule* sched) {
+  assert(sched != nullptr);
+  this->sched_ = sched;
+}
+
+Scheduler::~Scheduler(void) {
+  if (this->sched_ != nullptr) {
+    ccn_schedule_destroy(&this->sched_);
+  }
+}
+
 SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb, SchedulerEvent* evt_ptr, bool cancel_old) {
   assert(cb != nullptr);
   if (this->sched() == nullptr) {

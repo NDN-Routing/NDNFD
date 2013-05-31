@@ -1,6 +1,7 @@
 #ifndef NDNFD_FACE_THREAD_H_
 #define NDNFD_FACE_THREAD_H_
 #include "core/pollmgr.h"
+#include "core/scheduler.h"
 #include "face/faceid.h"
 #include "message/message.h"
 #include "util/lockfreequeue.h"
@@ -20,6 +21,7 @@ class FaceThread : public Element, public IPollClient {
   virtual void Stop(void);
   
   Ptr<PollMgr> pollmgr(void) const { return this->pollmgr_; }
+  Ptr<Scheduler> scheduler(void) const { return this->scheduler_; }
   
   void NewFace(Ptr<Face> face);
   
@@ -41,6 +43,7 @@ class FaceThread : public Element, public IPollClient {
  protected:
   std::thread::id face_thread_id_;
   Ptr<PollMgr> pollmgr_;
+  Ptr<Scheduler> scheduler_;
 
  private:
   std::thread face_thread_;
