@@ -29,6 +29,7 @@ class InternalClientHandler : public Element {
   std::tuple<ResponseKind,Ptr<Buffer>> ReqSignature(const uint8_t* msg, size_t size);
   std::tuple<ResponseKind,Ptr<Buffer>> ReqNewFace(const uint8_t* msg, size_t size);
   std::tuple<ResponseKind,Ptr<Buffer>> ReqDestroyFace(const uint8_t* msg, size_t size);
+  std::tuple<ResponseKind,Ptr<Buffer>> ReqStats(const uint8_t* msg, size_t size);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(InternalClientHandler);

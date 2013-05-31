@@ -62,11 +62,11 @@ struct ccnd_stats {
 };
 
 static int ccnd_collect_stats(struct ccnd_handle *h, struct ccnd_stats *ans);
-static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
+NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
 static void send_http_response(struct ccnd_handle *h, struct face *face,
                                const char *mime_type,
                                struct ccn_charbuf *response);
-static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
+NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
 static struct ccn_charbuf *collect_stats_xml(struct ccnd_handle *h);
 
 /* HTTP */
@@ -362,7 +362,7 @@ ccnd_colorhash(struct ccnd_handle *h)
     return (v | 0xC0C0C0);
 }
 
-static struct ccn_charbuf *
+NDNFD_EXPOSE_static struct ccn_charbuf *
 collect_stats_html(struct ccnd_handle *h)
 {
     struct ccnd_stats stats = {0};

@@ -64,9 +64,6 @@
 #ifdef NDNFD
 #include "face/ccnd_interface.h"
 #include "strategy/ccnd_interface.h"
-#define NDNFD_EXPOSE_static //NDNFD_EXPOSE_static expands to nothing, so that a ccnd static function is exposed to NDNFD.
-#else
-#define NDNFD_EXPOSE_static static //NDNFD_EXPOSE_static expands to static, when NDNFD is disabled
 #endif
 #define NDNFD_FIXCCNDWARNINGS
 

@@ -27,6 +27,12 @@
 #ifndef CCND_PRIVATE_DEFINED
 #define CCND_PRIVATE_DEFINED
 
+#ifdef NDNFD
+#define NDNFD_EXPOSE_static //NDNFD_EXPOSE_static expands to nothing, so that a ccnd static function is exposed to NDNFD.
+#else
+#define NDNFD_EXPOSE_static static //NDNFD_EXPOSE_static expands to static, when NDNFD is disabled
+#endif
+
 #include <poll.h>
 #include <stdarg.h>
 #include <stddef.h>

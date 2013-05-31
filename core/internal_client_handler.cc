@@ -3,6 +3,7 @@
 #include "face/facemgr.h"
 extern "C" {
 #include "ccnd/ccnd_private.h"
+struct ccn_charbuf* collect_stats_html(struct ccnd_handle* h);
 }
 
 #define NDNFD_DEF_REQ(op,method) \
@@ -16,6 +17,7 @@ int ndnfd_req_##op(ccnd_handle* h, const uint8_t* msg, size_t size, ccn_charbuf*
 NDNFD_DEF_REQ(signature,ReqSignature);
 NDNFD_DEF_REQ(newface,ReqNewFace);
 NDNFD_DEF_REQ(destroyface,ReqDestroyFace);
+NDNFD_DEF_REQ(stats,ReqStats);
 
 namespace ndnfd {
 
@@ -38,5 +40,12 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
   return this->global()->facemgr()->FaceMgmtReq(FaceMgr::FaceMgmtProtoAct::kDestroyFace, inface, msg, size);
 }
 
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqStats(const uint8_t* msg, size_t size) {
+  ccn_charbuf* html = collect_stats_html(CCNDH);
+  Ptr<Buffer> reply = new Buffer(0);
+  reply->Swap(html);
+  ccn_charbuf_destroy(&html);
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, reply);
+}
 
 };//namespace ndnfd
