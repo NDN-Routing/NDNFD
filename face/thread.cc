@@ -78,7 +78,7 @@ void FaceThread::RunFaceThread() {
 }
 
 void FaceThread::PollCallback(int fd, short revents) {
-  uint32_t buf[32];
+  uint8_t buf[32];
   if (fd == this->notify_fds_[0]) {
     assert(this->global()->IsCoreThread());
     read(fd, buf, sizeof(buf));
@@ -102,6 +102,7 @@ void FaceThread::PullOutQueue() {
     assert(face->face_thread() == this);
     if (!face->CanSend()) continue;
     Ptr<Message> message = std::get<1>(outgoing);
+    //this->Log(kLLWarn, kLCFace, "FaceThread(%" PRIxPTR ")::PullOutQueue() Face(%" PRI_FaceId ")::Send(type=%" PRIu32 ")", this, face->id(), message->type());
     face->Send(message);
   }
   this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::PullOutQueue() %d messages", this, count);

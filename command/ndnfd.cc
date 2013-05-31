@@ -12,47 +12,26 @@ namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
   ccnd_handle* h = ccnd_create("ndnfd", &Logging::CcndLogger, this->global()->logging());
-  //this->global()->logging()->set_components(~kLCStrategy);
   this->global()->set_ccndh(h);
-  this->global()->facemgr()->AddFaceThreads(1);
+  this->global()->facemgr()->AddFaceThreads(2);
   
   this->internal_client_ = this->New<InternalClientFace>();
   this->global()->facemgr()->StartDefaultListeners();
   
-  //bool ok; NetworkAddress addr;
+  //for (DgramFace* udp_mcast_face : this->global()->facemgr()->udp_mcast_faces()) {
+  //  this->ccndc_add(udp_mcast_face->id(), "/");
+  //}
 
-  //std::tie(ok, addr) = IpAddressVerifier::Parse("131.179.196.46:9695");//b.hub.ndn.ucla.edu
-  //assert(ok);
-  //Ptr<Face> tcp_Bhub = this->global()->facemgr()->tcp_factory()->Connect(addr);
-  //this->ccndc_add(tcp_Bhub->id(), "/");
-
-  //std::tie(ok, addr) = IpAddressVerifier::Parse("192.168.3.2:9695");
-  //assert(ok);
-  //Ptr<Face> udp_2 = this->udp_channel_->GetFace(addr);
-  //this->ccndc_add(udp_2->id(), "/example");
-  
-  //std::tie(ok, addr) = EtherAddressVerifier::Parse("08:00:27:39:18:1a");
-  //assert(ok);
-  //Ptr<Face> ether_vm102 = this->global()->facemgr()->ether_channel()->GetFace(addr);
-  //this->ccndc_add(ether_vm102->id(), "/vm102");
-
-  //this->ccndc_add(this->global()->facemgr()->udp_mcast_face()->id(), "/");
-
-  for (DgramFace* udp_mcast_face : this->global()->facemgr()->udp_mcast_faces()) {
-    this->ccndc_add(udp_mcast_face->id(), "/");
-  }
-
-  for (auto ether_tuple : this->global()->facemgr()->ether_channels()) {
-    Ptr<DgramFace> ether_mcast_face = std::get<2>(ether_tuple);
-    this->ccndc_add(ether_mcast_face->id(), "/");
-  }
+  //for (auto ether_tuple : this->global()->facemgr()->ether_channels()) {
+  //  Ptr<DgramFace> ether_mcast_face = std::get<2>(ether_tuple);
+  //  this->ccndc_add(ether_mcast_face->id(), "/");
+  //}
 }
 
 void NdnfdProgram::Run(void) {
   while (true) {
     this->internal_client_->Grab();
     std::chrono::microseconds next_scheduler_evt = this->global()->scheduler()->Run();
-    //this->internal_client_->Grab();
     std::chrono::milliseconds poll_timeout = next_scheduler_evt.count()<0 ? PollMgr::kNoTimeout : std::chrono::duration_cast<std::chrono::milliseconds>(next_scheduler_evt);
     this->global()->pollmgr()->Poll(poll_timeout);
   }

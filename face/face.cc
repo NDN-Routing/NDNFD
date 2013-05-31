@@ -152,6 +152,7 @@ void Face::set_status(FaceStatus value) {
 
 void Face::ReceiveMessage(Ptr<Message> msg) {
   assert(msg != nullptr);
+  //this->Log(kLLDebug, kLCFace, "Face(%" PRI_FaceId ")::ReceiveMessage(type=%" PRIu16 ")", this->id(), msg->type());
   msg->set_incoming_face(this->id());
   this->Receive(msg);
 }

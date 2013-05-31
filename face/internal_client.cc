@@ -12,7 +12,7 @@ void InternalClientFace::Init(void) {
   CCNDH->face0 = this->ccnd_face();
   int res = ccnd_internal_client_start(CCNDH);
   if (res < 0) {
-    this->Log(kLLError, kLCFace, "InternalClientFace::Init ccnd_internal_client_start fails");
+    this->Log(kLLError, kLCCcndFace, "InternalClientFace::Init ccnd_internal_client_start fails");
     assert(false);
   }
 }
@@ -24,6 +24,7 @@ InternalClientFace::~InternalClientFace(void) {
 }
 
 void InternalClientFace::Send(Ptr<const Message> message) {
+  this->Log(kLLDebug, kLCCcndFace, "InternalClientFace::Send interest_faceid=%u", CCNDH->interest_faceid);
   const CcnbMessage* msg = static_cast<const CcnbMessage*>(PeekPointer(message));
   ccn_dispatch_message(this->internal_client(), const_cast<uint8_t*>(msg->msg()), msg->length());
 }

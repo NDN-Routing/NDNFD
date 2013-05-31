@@ -16,6 +16,7 @@ using ndnfd::FaceMgr;
 
 struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
   Global* global = ccnd_ndnfdGlobal(h);
+  assert(global->IsCoreThread());
   Ptr<Face> face = global->facemgr()->GetFace(static_cast<FaceId>(faceid));
   if (face == nullptr) return nullptr;
   return face->ccnd_face();
@@ -55,10 +56,12 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   switch (message->type()) {
     case InterestMessage::kType: {
       InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
+      //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Receive(%" PRI_FaceId " INTEREST %s)", message->incoming_face(), interest->name()->ToUri().c_str());
       process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
     } break;
     case ContentObjectMessage::kType: {
       ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
+      //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Receive(%" PRI_FaceId " CO %s)", message->incoming_face(), co->name()->ToUri().c_str());
       process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
     } break;
     default: assert(false); break;
@@ -77,6 +80,9 @@ void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
   }
   
   Ptr<CcnbMessage> message = new CcnbMessage(msg, length);
+  //Ptr<CcnbMessage> message = CcnbMessage::Parse(msg, length);
+  //assert(message != nullptr);
+  //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Send(%" PRI_FaceId " type=%" PRIu32 ")", out_face->id(), message->type());
   out_face->face_thread()->Send(out_face->id(), message);
 }
 
