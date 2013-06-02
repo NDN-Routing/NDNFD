@@ -11,6 +11,8 @@ class AddressVerifier : public Object {
  public:
   virtual ~AddressVerifier(void) {}
   
+  virtual std::string proto_name(void) const =0;
+  
   // Check checks whether addr is valid in lower protocol.
   virtual bool Check(const NetworkAddress& addr) const =0;
   

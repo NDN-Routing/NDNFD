@@ -4,11 +4,12 @@
 #include "message/ccnb.h"
 namespace ndnfd {
 
-StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const WireProtocol> wp) {
+StreamFace::StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(wp != nullptr);
   this->set_fd(fd);
   this->set_status(connecting ? FaceStatus::kConnecting : FaceStatus::kUndecided);
+  this->set_av(av);
   this->set_wp(wp);
   this->set_peer(peer);
 }
@@ -23,6 +24,14 @@ void StreamFace::Init(void) {
   this->global()->facemgr()->AddFace(this);
   this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
+}
+
+FaceDescription StreamFace::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = this->av()->proto_name();
+  d.peer_ = this->av()->ToString(this->peer());
+  d.wp_ = this->wp()->GetDescription();
+  return d;
 }
 
 void StreamFace::Send(Ptr<const Message> message) {
@@ -164,11 +173,12 @@ void StreamFace::DoFinalize(void) {
   close(this->fd());
 }
 
-StreamListener::StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
+StreamListener::StreamListener(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp) {
   assert(fd > 0);
   assert(av != nullptr);
   assert(wp != nullptr);
   this->set_fd(fd);
+  this->local_addr_ = local_addr;
   this->set_av(av);
   this->set_wp(wp);
   this->set_ccnd_flags(CCN_FACE_PASSIVE, CCN_FACE_PASSIVE);
@@ -178,6 +188,15 @@ void StreamListener::Init(void) {
   this->global()->facemgr()->AddFace(this);
   this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
   this->Log(kLLInfo, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d", this, this->id(), this->fd());
+}
+
+FaceDescription StreamListener::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = this->av_->proto_name();
+  d.peer_ = "LISTEN";
+  d.local_ = this->av_->ToString(this->local_addr());
+  d.wp_ = this->wp()->GetDescription();
+  return d;
 }
 
 void StreamListener::PollCallback(int fd, short revents) {
@@ -210,7 +229,7 @@ Ptr<StreamFace> StreamListener::MakeFace(int fd, const NetworkAddress& peer) {
     this->Log(kLLWarn, kLCFace, "StreamListener(%" PRIxPTR ",%" PRI_FaceId ")::MakeFace fd=%d SetNonBlock %s", this, this->id(), fd, Logging::ErrorString().c_str());
   }
   
-  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, peer, this->wp());
+  Ptr<StreamFace> face = this->New<StreamFace>(fd, false, peer, this->av(), this->wp());
   face->set_kind(this->accepted_kind());
   return face;
 }

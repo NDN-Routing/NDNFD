@@ -16,6 +16,15 @@ void DgramFace::Init(void) {
   this->global()->facemgr()->AddFace(this);
 }
 
+FaceDescription DgramFace::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = this->channel()->av()->proto_name();
+  d.peer_ = this->channel()->av()->ToString(this->peer());
+  d.local_ = this->channel()->av()->ToString(this->channel()->local_addr());
+  d.wp_ = this->channel()->wp()->GetDescription();
+  return d;
+}
+
 void DgramFace::Send(Ptr<const Message> message) {
   if (!this->CanSend()) {
     this->Log(kLLError, kLCFace, "DgramFace(%" PRI_FaceId ")::Send !CanSend", this->id());

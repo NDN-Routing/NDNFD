@@ -173,7 +173,7 @@ std::tuple<bool,NetworkAddress> IpAddressVerifier::Parse(std::string s) {
 }
 
 UdpFaceFactory::UdpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
-  this->av_ = new IpAddressVerifier();
+  this->av_ = new IpAddressVerifier("UDP");
 }
 
 std::tuple<bool,int> UdpFaceFactory::MakeBoundSocket(const NetworkAddress& local_addr) {
@@ -276,7 +276,7 @@ void UdpSingleMcastChannel::SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt) 
 }
 
 TcpFaceFactory::TcpFaceFactory(Ptr<WireProtocol> wp) : FaceFactory(wp) {
-  this->av_ = new IpAddressVerifier();
+  this->av_ = new IpAddressVerifier("TCP");
 }
 
 void TcpFaceFactory::Init(void) {
@@ -303,7 +303,7 @@ Ptr<StreamListener> TcpFaceFactory::Listen(const NetworkAddress& local_addr) {
     close(fd);
     return nullptr;
   }
-  Ptr<StreamListener> face = this->New<StreamListener>(fd, this->av_, this->wp());
+  Ptr<StreamListener> face = this->New<StreamListener>(fd, local_addr, this->av_, this->wp());
   return face;
 }
 
@@ -340,7 +340,7 @@ Ptr<StreamFace> TcpFaceFactory::DoConnect(const NetworkAddress& remote_addr) {
   if (res == -1 && errno != EINPROGRESS) {
     this->Log(kLLWarn, kLCFace, "TcpFaceFactory::DoConnect connect(%s) %s", this->av_->ToString(remote_addr).c_str(), Logging::ErrorString().c_str());
   }
-  Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->wp());
+  Ptr<StreamFace> face = this->New<StreamFace>(fd, true, remote_addr, this->av_, this->wp());
   face->set_kind(FaceKind::kUnicast);
   this->fat_->Add(remote_addr, face->id());
   return face;

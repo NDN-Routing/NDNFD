@@ -24,6 +24,7 @@ class NdnlpWireProtocol : public WireProtocol {
   
   explicit NdnlpWireProtocol(uint16_t mtu);
   virtual ~NdnlpWireProtocol(void);
+  virtual std::string GetDescription(void) const { return "NDNLP"; }
   
   virtual bool IsStateful(void) const { return true; }
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) const { return new State(); }

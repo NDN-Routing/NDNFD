@@ -9,7 +9,7 @@ TEST(FaceTest, FaceAddressTable) {
   std::tie(ok, a1) = IpAddressVerifier::Parse("192.0.2.1:80"); ASSERT_TRUE(ok);
   std::tie(ok, a2) = IpAddressVerifier::Parse("192.0.2.2:80"); ASSERT_TRUE(ok);
   
-  Ptr<IpAddressVerifier> av = new IpAddressVerifier();
+  Ptr<IpAddressVerifier> av = new IpAddressVerifier("tcp");
   Ptr<FaceAddressTable> fat = NewTestElement<FaceAddressTable>(av);
   FaceId conflict;
   

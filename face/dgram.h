@@ -22,6 +22,7 @@ class DgramFace : public Face {
 
   const NetworkAddress& peer(void) const { return this->peer_; }
   Ptr<DgramChannel> channel(void) const { return this->channel_; }
+  virtual FaceDescription GetDescription(void) const;
   
   virtual bool CanSend(void) const { return FaceStatus_IsUsable(this->status()); }
   virtual void Send(Ptr<const Message> message);
@@ -67,6 +68,9 @@ class DgramChannel : public Element, public IPollClient {
   DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~DgramChannel(void) {}
+  Ptr<const AddressVerifier> av(void) const { return this->av_; }
+  Ptr<const WireProtocol> wp(void) const { return this->wp_; }
+  const NetworkAddress& local_addr(void) const { return this->local_addr_; }
   Ptr<FaceThread> face_thread(void) const { return this->face_thread_; }
   
   // GetFallbackFace returns the fallback face: "unsolicited" messages
@@ -132,11 +136,8 @@ class DgramChannel : public Element, public IPollClient {
   
   bool closed_;
   int fd(void) const { return this->fd_; }
-  Ptr<const AddressVerifier> av(void) const { return this->av_; }
-  Ptr<const WireProtocol> wp(void) const { return this->wp_; }
   std::unordered_map<AddressHashKey,Ptr<PeerEntry>>& peers(void) { return this->peers_; }
   Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
-  const NetworkAddress& local_addr(void) const { return this->local_addr_; }
 
   // CloseFd closes fd
   virtual void CloseFd(void);

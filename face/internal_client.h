@@ -13,6 +13,7 @@ class InternalClientFace : public Face {
  public:
   static const FaceType kType = 10;
   virtual FaceType type(void) const { return InternalClientFace::kType; }
+  virtual FaceDescription GetDescription(void) const;
 
   InternalClientFace(void) {}
   virtual void Init(void);

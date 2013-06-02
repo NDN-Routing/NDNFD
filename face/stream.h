@@ -13,9 +13,10 @@ class StreamFace : public Face, public IPollClient {
   static const FaceType kType = 200;
   static bool IsStreamFaceType(FaceType t) { return 200 <= t && t <= 299; }
   virtual FaceType type(void) const { return StreamFace::kType; }
+  virtual FaceDescription GetDescription(void) const;
 
   // fd: fd of the socket, after connect() or accept()
-  StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const WireProtocol> wp);
+  StreamFace(int fd, bool connecting, const NetworkAddress& peer, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~StreamFace(void) {}
 
@@ -39,6 +40,8 @@ class StreamFace : public Face, public IPollClient {
  protected:
   int fd(void) const { return this->fd_; }
   void set_fd(int value) { this->fd_ = value; }
+  Ptr<const AddressVerifier> av(void) const { return this->av_; }
+  void set_av(Ptr<const AddressVerifier> value) { this->av_ = value; }
   Ptr<const WireProtocol> wp(void) const { return this->wp_; }
   void set_wp(Ptr<const WireProtocol> value) { this->wp_ = value; }
   Ptr<WireProtocolState> wps(void) const { return this->wps_; }
@@ -68,6 +71,7 @@ class StreamFace : public Face, public IPollClient {
 
  private:
   int fd_;
+  Ptr<const AddressVerifier> av_;
   Ptr<const WireProtocol> wp_;
   Ptr<WireProtocolState> wps_;
   NetworkAddress peer_;
@@ -86,9 +90,10 @@ class StreamListener : public Face, public IPollClient {
 
   FaceKind accepted_kind(void) const { return this->accepted_kind_; }
   void set_accepted_kind(FaceKind value) { this->accepted_kind_ = value; }
+  virtual FaceDescription GetDescription(void) const;
 
   // fd: fd of the socket, after bind() and listen()
-  StreamListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
+  StreamListener(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp);
   virtual void Init(void);
   virtual ~StreamListener(void) {}
   
@@ -101,6 +106,7 @@ class StreamListener : public Face, public IPollClient {
  protected:
   int fd(void) const { return this->fd_; }
   void set_fd(int value) { this->fd_ = value; }
+  const NetworkAddress& local_addr(void) const { return this->local_addr_; }
   Ptr<const AddressVerifier> av(void) const { return this->av_; }
   void set_av(Ptr<const AddressVerifier> value) { this->av_ = value; }
   Ptr<const WireProtocol> wp(void) const { return this->wp_; }
@@ -118,6 +124,7 @@ class StreamListener : public Face, public IPollClient {
   Ptr<const AddressVerifier> av_;
   Ptr<const WireProtocol> wp_;
   FaceKind accepted_kind_;
+  NetworkAddress local_addr_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamListener);
 };

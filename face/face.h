@@ -40,6 +40,14 @@ bool FaceStatus_IsError(FaceStatus status);
 // FaceStatus_IsUsable returns true if status is or may become Established.
 bool FaceStatus_IsUsable(FaceStatus status);
 
+struct FaceDescription {
+  std::string proto_;
+  std::string peer_;
+  std::string local_;
+  std::string wp_;
+  std::string note_;
+};
+
 // A Face is a logical connection to a local entity, or one or more remote peers.
 class Face : public Element {
  public:
@@ -53,6 +61,8 @@ class Face : public Element {
   Ptr<FaceThread> face_thread(void) const;
   void set_face_thread(Ptr<FaceThread> value);
   face* ccnd_face(void) const { return const_cast<face*>(&this->ccnd_face_); }
+  
+  virtual FaceDescription GetDescription(void) const =0;
 
   // CanSend returns true if this Face may be used to send messages.
   virtual bool CanSend(void) const { return false; }

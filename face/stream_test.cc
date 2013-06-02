@@ -5,6 +5,17 @@
 #include "gtest/gtest.h"
 namespace ndnfd {
 
+class StreamFaceTest_AddressVerifier : public AddressVerifier {
+ public:
+  StreamFaceTest_AddressVerifier(void) {}
+  virtual ~StreamFaceTest_AddressVerifier(void) {}
+  virtual std::string proto_name(void) const { return "StreamFaceTest_proto"; }
+  virtual bool Check(const NetworkAddress& addr) const { return true; }
+  virtual std::string ToString(const NetworkAddress& addr) const { return ""; };
+ private:
+  DISALLOW_COPY_AND_ASSIGN(StreamFaceTest_AddressVerifier);
+};
+
 void StreamFaceTest_MakeSocketPair(int sockets[2]) {
   int res;
   ASSERT_EQ(0, socketpair(AF_UNIX, SOCK_STREAM, 0, sockets));
@@ -17,10 +28,11 @@ void StreamFaceTest_MakeSocketPair(int sockets[2]) {
 TEST(FaceTest, StreamFace) {
   int sockets[2];
   NetworkAddress netaddr;
+  Ptr<AddressVerifier> av = new StreamFaceTest_AddressVerifier();
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
 
   StreamFaceTest_MakeSocketPair(sockets);
-  Ptr<StreamFace> f1 = NewTestElement<StreamFace>(sockets[1], false, netaddr, ccnbwp);
+  Ptr<StreamFace> f1 = NewTestElement<StreamFace>(sockets[1], false, netaddr, av, ccnbwp);
   EXPECT_EQ(FaceStatus::kUndecided, f1->status());
   ASSERT_TRUE(f1->CanSend());
   ASSERT_TRUE(f1->CanReceive());
@@ -43,7 +55,7 @@ TEST(FaceTest, StreamFace) {
   }
   // cannot test SetClosing() here: those cannot be received due to socketpair
 
-  Ptr<StreamFace> f2 = NewTestElement<StreamFace>(sockets[0], false, netaddr, ccnbwp);
+  Ptr<StreamFace> f2 = NewTestElement<StreamFace>(sockets[0], false, netaddr, av, ccnbwp);
   int received = 0;
   f2->Receive = [&received] (Ptr<Message> msg) {
     ++received;

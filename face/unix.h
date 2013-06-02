@@ -11,6 +11,7 @@ class UnixAddressVerifier : public AddressVerifier {
  public:
   UnixAddressVerifier(void) {}
   virtual ~UnixAddressVerifier(void) {}
+  virtual std::string proto_name(void) const { return "unix"; }
   virtual bool Check(const NetworkAddress& addr) const;
   virtual std::string ToString(const NetworkAddress& addr) const;
  private:
@@ -21,13 +22,12 @@ class UnixAddressVerifier : public AddressVerifier {
 // that unlinks local socket when closing.
 class UnixListener : public StreamListener {
  public:
-  UnixListener(int fd, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp, const std::string& local_socket)
-    : StreamListener(fd, av, wp), local_socket_(local_socket) {}
+  UnixListener(int fd, const NetworkAddress& local_addr, Ptr<const AddressVerifier> av, Ptr<const WireProtocol> wp, const std::string& local_socket)
+    : StreamListener(fd, local_addr, av, wp) {}
   
   virtual void Close(void);
   
  private:
-  std::string local_socket_;
   DISALLOW_COPY_AND_ASSIGN(UnixListener);
 };
 

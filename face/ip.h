@@ -18,8 +18,9 @@ namespace ndnfd {
 // An IpAddressVerifier verifies sockaddr_in or sockaddr_in6 addresses.
 class IpAddressVerifier : public AddressVerifier {
  public:
-  IpAddressVerifier(void) {}
+  IpAddressVerifier(const std::string& proto_name) : proto_name_(proto_name) {}
   virtual ~IpAddressVerifier(void) {}
+  virtual std::string proto_name(void) const { return this->proto_name_; }
   virtual bool Check(const NetworkAddress& addr) const;
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr) const;
   virtual bool IsLocal(const NetworkAddress& addr) const;
@@ -30,6 +31,7 @@ class IpAddressVerifier : public AddressVerifier {
   virtual std::string ToString(const NetworkAddress& addr) const;
   static std::tuple<bool,NetworkAddress> Parse(std::string s);
  private:
+  std::string proto_name_;
   DISALLOW_COPY_AND_ASSIGN(IpAddressVerifier);
 };
 

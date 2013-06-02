@@ -36,6 +36,11 @@ CcnbWireProtocol::CcnbWireProtocol(bool stream_mode) {
   this->stream_mode_ = stream_mode;
 }
 
+std::string CcnbWireProtocol::GetDescription(void) const {
+  if (this->stream_mode_) return "CCNB(stream)";
+  else return "CCNB(dgram)";
+}
+
 CcnbWireProtocol::State::State(void) {
   this->Clear();
 }

@@ -6,7 +6,7 @@
 namespace ndnfd {
 
 TEST(FaceTest, IpAddressParse) {
-  Ptr<IpAddressVerifier> av = new IpAddressVerifier();
+  Ptr<IpAddressVerifier> av = new IpAddressVerifier("tcp");
   bool ok; NetworkAddress addr;
   
   std::tie(ok, addr) = av->Parse("192.0.2.1:22");
@@ -32,12 +32,11 @@ TEST(FaceTest, IpAddressParse) {
 
 TEST(FaceTest, Udp) {
   bool ok; NetworkAddress addr1, addr2, addr3;
-  Ptr<IpAddressVerifier> av = new IpAddressVerifier();
-  std::tie(ok, addr1) = av->Parse("127.0.0.1:23089");
+  std::tie(ok, addr1) = IpAddressVerifier::Parse("127.0.0.1:23089");
   ASSERT_TRUE(ok);
-  std::tie(ok, addr2) = av->Parse("127.0.0.1:28075");
+  std::tie(ok, addr2) = IpAddressVerifier::Parse("127.0.0.1:28075");
   ASSERT_TRUE(ok);
-  std::tie(ok, addr3) = av->Parse("127.0.0.1:10971");
+  std::tie(ok, addr3) = IpAddressVerifier::Parse("127.0.0.1:10971");
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(false);
   
@@ -72,6 +71,10 @@ TEST(FaceTest, Udp) {
   }
   r10 = 0;
   
+  FaceDescription f21d = f21->GetDescription();
+  EXPECT_EQ("UDP", f21d.proto_);
+  EXPECT_EQ("127.0.0.1:23089", f21d.peer_);
+  
   Ptr<DgramFace> f12 = ch1->GetFace(addr2);
   int r12 = 0;
   f12->Receive = [&r12] (Ptr<Message> msg) { ++r12; };
@@ -90,8 +93,7 @@ TEST(FaceTest, Udp) {
 
 TEST(FaceTest, Tcp) {
   bool ok; NetworkAddress addr;
-  Ptr<IpAddressVerifier> av = new IpAddressVerifier();
-  std::tie(ok, addr) = av->Parse("127.0.0.1:13602");
+  std::tie(ok, addr) = IpAddressVerifier::Parse("127.0.0.1:13602");
   ASSERT_TRUE(ok);
   Ptr<CcnbWireProtocol> ccnbwp = new CcnbWireProtocol(true);
   

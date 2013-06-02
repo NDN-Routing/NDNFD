@@ -31,6 +31,9 @@ class WireProtocolState : public Object {
 class WireProtocol : public Element {
  public:
   virtual ~WireProtocol(void) {}
+  
+  // GetDescription returns a human-readable description about this wire protocol.
+  virtual std::string GetDescription(void) const =0;
 
   // IsStateful returns true if per-peer state is needed.
   virtual bool IsStateful(void) const { return false; }

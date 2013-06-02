@@ -23,6 +23,13 @@ InternalClientFace::~InternalClientFace(void) {
   this->global()->facemgr()->RemoveFace(this);
 }
 
+FaceDescription InternalClientFace::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = "INTERNAL";
+  d.peer_ = "INTERNAL_CLIENT";
+  return d;
+}
+
 void InternalClientFace::Send(Ptr<const Message> message) {
   this->Log(kLLDebug, kLCCcndFace, "InternalClientFace::Send interest_faceid=%u", CCNDH->interest_faceid);
   const CcnbMessage* msg = static_cast<const CcnbMessage*>(PeekPointer(message));
