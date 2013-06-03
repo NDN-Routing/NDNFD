@@ -16,7 +16,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
   bool is_new_ie = ie->ie()->strategy.renewals == 0;
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
-  assert(inface != nullptr);
+  if (inface == nullptr) return;// face is gone in another thread
 
 #ifdef NDNFD_STRATEGY_TRACE
   switch (inface->kind()) {

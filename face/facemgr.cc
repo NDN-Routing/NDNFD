@@ -9,6 +9,12 @@
 #include "message/ccnb.h"
 #include "message/contentobject.h"
 #include "face/ndnlp.h"
+
+void collect_faces_xml(struct ccnd_handle* h, struct ccn_charbuf* b) {
+  std::string faces_xml = ccnd_ndnfdGlobal(h)->facemgr()->StatsXml();
+  ccn_charbuf_append(b, faces_xml.data(), faces_xml.size());
+}
+
 namespace ndnfd {
 
 FaceMgr::FaceMgr(void) {
@@ -350,5 +356,34 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtDestroyFace(ccn_face_instance*
   return std::forward_as_tuple(true, 0, "");
 }
 
+std::string FaceMgr::StatsXml(void) const {
+  std::lock_guard<std::recursive_mutex> lock(const_cast<FaceMgr*>(this)->table_mutex_);
+  char buf[16];
+  std::string x;
+  auto xml_tag_append = [&x,&buf](const std::string& tag, const std::string& value) {
+    x.push_back('<'); x.append(tag); x.push_back('>');
+    for (char ch : value) {
+      snprintf(buf, sizeof(buf), "&#x%04x;", ch);
+      x.append(buf);
+    }
+    x.append("</"); x.append(tag); x.push_back('>');
+  };
+  
+  x.append("<faces>");
+  for (Ptr<const Face> face : *const_cast<FaceMgr*>(this)) {
+    x.append("<face>");
+    snprintf(buf, sizeof(buf), "%" PRI_FaceId "", face->id()); xml_tag_append("faceid", buf);
+    FaceDescription d = face->GetDescription();
+    if (d.proto_.size() > 0) xml_tag_append("proto", d.proto_);
+    if (d.peer_.size() > 0) xml_tag_append("peer", d.peer_);
+    if (d.local_.size() > 0) xml_tag_append("local", d.local_);
+    if (d.wp_.size() > 0) xml_tag_append("wireproto", d.wp_);
+    if (d.note_.size() > 0) xml_tag_append("note", d.note_);
+    // TODO meters
+    x.append("</face>");
+  }
+  x.append("</faces>");
+  return x;
+}
 
 };//namespace ndnfd

@@ -69,7 +69,7 @@ class EtherAddressVerifier : public AddressVerifier {
  public:
   EtherAddressVerifier(void) {}
   virtual ~EtherAddressVerifier(void) {}
-  virtual std::string proto_name(void) const { return "ether"; }
+  virtual std::string proto_name(void) const { return "ETHER"; }
   virtual bool Check(const NetworkAddress& addr) const;
   virtual AddressHashKey GetHashKey(const NetworkAddress& addr) const;
   virtual std::string ToString(const NetworkAddress& addr) const;

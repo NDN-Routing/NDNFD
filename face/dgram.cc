@@ -61,6 +61,15 @@ DgramFallbackFace::DgramFallbackFace(Ptr<DgramChannel> channel)
   this->set_kind(FaceKind::kMulticast);
 }
 
+FaceDescription DgramFallbackFace::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = this->channel()->av()->proto_name();
+  d.peer_ = "FALLBACK";
+  d.local_ = this->channel()->av()->ToString(this->channel()->local_addr());
+  d.wp_ = this->channel()->wp()->GetDescription();
+  return d;
+}
+
 void DgramFallbackFace::DoFinalize(void) {
   this->channel()->Close();
 }

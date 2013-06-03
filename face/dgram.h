@@ -47,6 +47,7 @@ class DgramFallbackFace : public DgramFace {
  public:
   static const FaceType kType = 101;
   virtual FaceType type(void) const { return DgramFallbackFace::kType; }
+  virtual FaceDescription GetDescription(void) const;
 
   explicit DgramFallbackFace(Ptr<DgramChannel> channel);
   virtual ~DgramFallbackFace(void) {}

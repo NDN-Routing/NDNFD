@@ -35,7 +35,7 @@ NDNFD_ANSWER_REQ(OP_STATS, stats);
 #ifdef WANT_NDNFD_URI_LISTEN
 
 ccnd_uri_listen(ccnd, "ccnx:/ccnx/" CCND_ID_TEMPL "/ndnfd", &ccnd_answer_req, OP_SIGNATURE);
-ccnd_uri_listen(ccnd, "ccnx:/%C1.M.S.localhost/ndnfd/ccnd-stats", &ccnd_answer_req, OP_STATS);
+ccnd_uri_listen(ccnd, "ccnx:/ccnx/" CCND_ID_TEMPL "/ndnfd-stats", &ccnd_answer_req, OP_STATS);
 
 #undef WANT_NDNFD_URI_LISTEN
 #endif

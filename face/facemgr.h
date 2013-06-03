@@ -2,6 +2,7 @@
 #define NDNFD_FACE_FACEMGR_H_
 extern "C" {
 #include <ccn/face_mgmt.h>
+void collect_faces_xml(struct ccnd_handle* h, struct ccn_charbuf* b);
 }
 #include <mutex>
 #include "face/face.h"
@@ -51,7 +52,7 @@ class FaceMgr : public Element {
   
   // GetFace finds a Face by FaceId.
   Ptr<Face> GetFace(FaceId id) const;
-  // ForeachFace invokes f for each face.
+  // begin,end iterate over all faces.
   FaceIterator begin(void) { return FaceIterator(this->table_.begin()); }
   FaceIterator end(void) { return FaceIterator(this->table_.end()); }
 
@@ -91,6 +92,9 @@ class FaceMgr : public Element {
   
   // FaceMgmtReq answers a face management request.
   std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgmtReq(FaceMgmtProtoAct act, FaceId inface, const uint8_t* msg, size_t size);
+  
+  // StatsXml returns face stats in XML format.
+  std::string StatsXml(void) const;
 
  protected:
   void set_unix_listener(Ptr<StreamListener> value);

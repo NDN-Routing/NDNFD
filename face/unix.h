@@ -11,7 +11,7 @@ class UnixAddressVerifier : public AddressVerifier {
  public:
   UnixAddressVerifier(void) {}
   virtual ~UnixAddressVerifier(void) {}
-  virtual std::string proto_name(void) const { return "unix"; }
+  virtual std::string proto_name(void) const { return "UNIX"; }
   virtual bool Check(const NetworkAddress& addr) const;
   virtual std::string ToString(const NetworkAddress& addr) const;
  private:

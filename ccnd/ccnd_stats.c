@@ -62,12 +62,12 @@ struct ccnd_stats {
 };
 
 static int ccnd_collect_stats(struct ccnd_handle *h, struct ccnd_stats *ans);
-NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
+static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
 static void send_http_response(struct ccnd_handle *h, struct face *face,
                                const char *mime_type,
                                struct ccn_charbuf *response);
-NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
-static struct ccn_charbuf *collect_stats_xml(struct ccnd_handle *h);
+static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
+NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_xml(struct ccnd_handle *h);
 
 /* HTTP */
 
@@ -362,7 +362,7 @@ ccnd_colorhash(struct ccnd_handle *h)
     return (v | 0xC0C0C0);
 }
 
-NDNFD_EXPOSE_static struct ccn_charbuf *
+static struct ccn_charbuf *
 collect_stats_html(struct ccnd_handle *h)
 {
     struct ccnd_stats stats = {0};
@@ -442,6 +442,7 @@ collect_stats_html(struct ccnd_handle *h)
 
 /* XML formatting */
 
+#ifndef NDNFD
 static void
 collect_meter_xml(struct ccnd_handle *h, struct ccn_charbuf *b, struct ccnd_meter *m)
 {
@@ -455,7 +456,11 @@ collect_meter_xml(struct ccnd_handle *h, struct ccn_charbuf *b, struct ccnd_mete
     ccn_charbuf_putf(b, "<%s><total>%ju</total><persec>%u</persec></%s>",
         m->what, total, rate, m->what);
 }
+#endif
 
+#ifdef NDNFD
+void collect_faces_xml(struct ccnd_handle *h, struct ccn_charbuf *b);
+#else
 static void
 collect_faces_xml(struct ccnd_handle *h, struct ccn_charbuf *b)
 {
@@ -499,6 +504,7 @@ collect_faces_xml(struct ccnd_handle *h, struct ccn_charbuf *b)
     ccn_charbuf_putf(b, "</faces>");
     ccn_charbuf_destroy(&nodebuf);
 }
+#endif
 
 static void
 collect_forwarding_xml(struct ccnd_handle *h, struct ccn_charbuf *b)
@@ -545,7 +551,7 @@ collect_forwarding_xml(struct ccnd_handle *h, struct ccn_charbuf *b)
     ccn_charbuf_putf(b, "</forwarding>");
 }
 
-static struct ccn_charbuf *
+NDNFD_EXPOSE_static struct ccn_charbuf *
 collect_stats_xml(struct ccnd_handle *h)
 {
     struct ccnd_stats stats = {0};

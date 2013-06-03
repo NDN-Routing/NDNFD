@@ -3,7 +3,7 @@
 #include "face/facemgr.h"
 extern "C" {
 #include "ccnd/ccnd_private.h"
-struct ccn_charbuf* collect_stats_html(struct ccnd_handle* h);
+struct ccn_charbuf* collect_stats_xml(struct ccnd_handle* h);
 }
 
 #define NDNFD_DEF_REQ(op,method) \
@@ -41,7 +41,7 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
 }
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqStats(const uint8_t* msg, size_t size) {
-  ccn_charbuf* html = collect_stats_html(CCNDH);
+  ccn_charbuf* html = collect_stats_xml(CCNDH);
   Ptr<Buffer> reply = new Buffer(0);
   reply->Swap(html);
   ccn_charbuf_destroy(&html);
