@@ -8,6 +8,7 @@ class SimAppFace : public Face {
  public:
   static const FaceType kType = 901;
   virtual FaceType type(void) const { return SimAppFace::kType; }
+  virtual FaceDescription GetDescription(void) const;
 
   explicit SimAppFace(Ptr<L3Protocol> l3) { this->l3_ = l3; }
   virtual void Init(void);

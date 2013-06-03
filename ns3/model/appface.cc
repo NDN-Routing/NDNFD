@@ -7,4 +7,10 @@ void SimAppFace::Init(void) {
   this->global()->facemgr()->AddFace(this);
 }
 
+FaceDescription SimAppFace::GetDescription(void) const {
+  FaceDescription d;
+  d.proto_ = "NDNSIM";
+  return d;
+}
+
 };//namespace ndnfd
