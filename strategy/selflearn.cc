@@ -146,12 +146,12 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       // best face: use it now
       DEBUG_APPEND_FaceTime(faceid,"best",pr.time_.count());
       upstream->SetExpiry(std::chrono::microseconds::zero());
-      flood_actual = std::max(pr.time_, flood_actual);
+      flood_actual = std::max(pr.accum_, flood_actual);
     } else if (pr.accum_ < flood_time) {
       // non-best face: round-robin after best face timeout
       DEBUG_APPEND_FaceTime(faceid,"",pr.time_.count());
       upstream->SetExpiry(pr.accum_ - pr.time_);
-      flood_actual = std::max(pr.time_, flood_actual);
+      flood_actual = std::max(pr.accum_, flood_actual);
     } else {
       // worst face: don't use them
       DEBUG_APPEND_FaceTime(faceid,"no",pr.time_.count());
@@ -295,11 +295,6 @@ void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " peer=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), inface->id(), peer->id(), matching_suffix);
   
   NpeExtra* extra = this->GetExtra(npe);
-  //PredictRecord& pr = extra->predicts_[peer->id()];
-  //if (pr.time_.count() == 0) {
-  //  pr.time_ = SelfLearnStrategy::initial_prediction();
-  //}
-  //pr.time_ = std::max(std::chrono::microseconds(127), (pr.time_ - pr.time_ / 128));
   
   auto it_interest_time = extra->interest_sent_time_.find(inface->id());
   if (it_interest_time != extra->interest_sent_time_.end()) {
