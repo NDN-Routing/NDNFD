@@ -1,4 +1,7 @@
 #include "ccnb.h"
+#include "interest.h"
+#include "contentobject.h"
+#include "nack.h"
 #include "gtest/gtest.h"
 namespace ndnfd {
 
@@ -15,6 +18,16 @@ TEST(MessageTest, CcnbMessage) {
   EXPECT_EQ(buf, m2->msg());
   EXPECT_EQ(5U, m2->length());
   EXPECT_TRUE(m2->Verify());
+}
+
+TEST(MessageTest, CcnbMessageParse) {
+  Ptr<CcnbMessage> m1 = CcnbMessage::Parse(reinterpret_cast<const uint8_t*>("\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00"), 9);
+  EXPECT_NE(nullptr, m1);
+  EXPECT_EQ(InterestMessage::kType, m1->type());
+  
+  Ptr<CcnbMessage> m2 = CcnbMessage::Parse(reinterpret_cast<const uint8_t*>("\x07\x82\x07\x8A\x9E""161\x00\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00\x00"), 19);
+  EXPECT_NE(nullptr, m2);
+  EXPECT_EQ(NackMessage::kType, m2->type());
 }
 
 TEST(MessageTest, CcnbWireProtoEncode) {

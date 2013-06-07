@@ -1,6 +1,7 @@
 #include "ccnb.h"
 #include "interest.h"
 #include "contentobject.h"
+#include "nack.h"
 namespace ndnfd {
 
 Ptr<CcnbMessage> CcnbMessage::Parse(const uint8_t* msg, size_t length) {
@@ -16,6 +17,8 @@ Ptr<CcnbMessage> CcnbMessage::Parse(const uint8_t* msg, size_t length) {
       return InterestMessage::Parse(msg, length);
     case CCN_DTAG_ContentObject:
       return ContentObjectMessage::Parse(msg, length);
+    case CCN_DTAG_StatusResponse:
+      return NackMessage::Parse(msg, length);
     default:
       return nullptr;
     // CCN_DTAG_CCNProtocolDataUnit is not supported, so that NDNFD cannot work with link adaptors.
