@@ -32,9 +32,8 @@ class CcndFaceInterface : public Element {
   Ptr<Message> last_received_message_;
   
  private:
-  // Receive is bound to face.Receive port.
-  // When a message is received, it is handed over to ccnd core
-  // through process_input_message.
+  // Receive is bound to face_thread.Receive port.
+  // When a message is received, it is handed over to strategy.
   void Receive(Ptr<Message> message);
 
   DISALLOW_COPY_AND_ASSIGN(CcndFaceInterface);

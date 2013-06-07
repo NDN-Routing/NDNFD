@@ -2,11 +2,10 @@
 #include "face/facemgr.h"
 #include "message/interest.h"
 #include "message/contentobject.h"
+#include "strategy/strategy.h"
 extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
-void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
 }
 using ndnfd::Ptr;
 using ndnfd::Global;
@@ -56,13 +55,15 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   switch (message->type()) {
     case InterestMessage::kType: {
       InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
-      //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Receive(%" PRI_FaceId " INTEREST %s)", message->incoming_face(), interest->name()->ToUri().c_str());
-      process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
+      this->global()->strategy()->OnInterest(interest);
     } break;
     case ContentObjectMessage::kType: {
       ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
-      //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Receive(%" PRI_FaceId " CO %s)", message->incoming_face(), co->name()->ToUri().c_str());
-      process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
+      this->global()->strategy()->OnContent(co);
+    } break;
+    case NackMessage::kType: {
+      NackMessage* nack = static_cast<NackMessage*>(PeekPointer(message));
+      this->global()->strategy()->OnNack(nack);
     } break;
     default: assert(false); break;
   }

@@ -15,6 +15,18 @@ bool NackCode_valid(NackCode code) {
   return false;
 }
 
+std::string NackCode_string(NackCode code) {
+  switch (code) {
+    case NackCode::kDuplicate:
+      return "Duplicate";
+    case NackCode::kCongestion:
+      return "Congestion";
+    case NackCode::kNoData:
+      return "NoData";
+  }
+  return "";
+}
+
 const MessageType NackMessage::kType;
 
 NackMessage::NackMessage(const uint8_t* msg, size_t length) : CcnbMessage(msg, length) {}

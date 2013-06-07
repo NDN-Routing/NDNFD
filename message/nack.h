@@ -10,6 +10,7 @@ enum class NackCode {
 };
 
 bool NackCode_valid(NackCode code);
+std::string NackCode_string(NackCode code);
 
 // An NackMessage represents a decoded Nack.
 class NackMessage : public CcnbMessage {

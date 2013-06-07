@@ -2,6 +2,8 @@
 #include <algorithm>
 extern "C" {
 struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* x, struct pit_face_item* p);
+void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
+void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -10,6 +12,11 @@ namespace ndnfd {
 void Strategy::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
   this->global()->npt()->FinalizeNpeExtra = std::bind(&Strategy::FinalizeNpeExtra, this, std::placeholders::_1);
+}
+
+void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
+  Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
+  process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
 }
 
 void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
@@ -290,6 +297,11 @@ void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
 }
 
+void Strategy::OnContent(Ptr<const ContentObjectMessage> co) {
+  Ptr<Face> in_face = this->global()->facemgr()->GetFace(co->incoming_face());
+  process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
+}
+
 void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co) {
   FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
@@ -299,6 +311,10 @@ void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Me
   FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
   if (matching_suffix >= 0 && matching_suffix < 2) npe->UpdateBestFace(upstream);
+}
+
+void Strategy::OnNack(Ptr<const NackMessage> nack) {
+  this->Log(kLLWarn, kLCStrategy, "Strategy::OnNack(%s,%" PRI_FaceId ",%s) not-implemented", NackCode_string(nack->code()).c_str(), nack->incoming_face(), nack->interest()->name()->ToUri().c_str());
 }
 
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {

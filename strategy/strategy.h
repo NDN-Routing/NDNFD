@@ -3,6 +3,7 @@
 #include "ccnd_interface.h"
 #include "message/interest.h"
 #include "message/contentobject.h"
+#include "message/nack.h"
 #include "core/nameprefix_table.h"
 namespace ndnfd {
 
@@ -29,8 +30,8 @@ class Strategy : public Element {
   // -------- Interest processing --------
 
   // OnInterest processes an incoming Interest.
-  // (same as ccnd process_incoming_interest)
-  virtual void OnInterest(Ptr<InterestMessage> interest) {}//currently unused
+  // (hand over to ccnd process_incoming_interest)
+  virtual void OnInterest(Ptr<const InterestMessage> interest);
   
   // SatisfyPendingInterestsOnFace satisfies all pending Interests on downstream.
   // It's invoked when incoming Interest is satisfied in CS.
@@ -73,15 +74,15 @@ class Strategy : public Element {
 
   // -------- ContentObject processing --------
 
-  // OnContentObject processes an incoming ContentObject.
-  // (same as ccnd process_incoming_content)
-  virtual void OnContentObject(Ptr<ContentObjectMessage> content) { assert(false); }//currently unused
+  // OnContent processes an incoming Content.
+  // (hand over to ccnd process_incoming_content)
+  virtual void OnContent(Ptr<const ContentObjectMessage> co);
   
   // SatisfyPendingInterests satisfies pending Interests in npe that match content.
   // WillSatisfyPendingInterest is called before satisfying each Interest.
   // It returns downstream => number of Interests satisfied on that downtream; the caller should send content to them.
   // (same as ccnd match_interests with face=null)
-  virtual std::unordered_map<FaceId,int> SatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const ContentObjectMessage> content) { return std::unordered_map<FaceId,int>(); }//currently unused
+  virtual std::unordered_map<FaceId,int> SatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const ContentObjectMessage> co) { return std::unordered_map<FaceId,int>(); }//currently unused
   
   // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
   // (same as ccnd strategy_callout CCNST_SATISFIED)
@@ -92,6 +93,11 @@ class Strategy : public Element {
   // if matching_suffix is negative, no PIT entry has been matched.
   // (similar to ccnd note_content_from but this is called for all shorter prefixes)
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  
+  // -------- Nack processing --------
+  
+  // OnNack processes an incoming Nack.
+  virtual void OnNack(Ptr<const NackMessage> nack);
   
   // -------- face callbacks --------
   virtual void AddFace(FaceId face) {}//currently unused
