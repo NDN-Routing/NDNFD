@@ -6,7 +6,7 @@ extern "C" {
 #include "ccnd/ccnd_private.h"
 
 struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid);
-void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_t size);
+void stuff_and_send(struct ccnd_handle* h, struct face* face, const unsigned char *data1, size_t size1, const unsigned char *data2, size_t size2, const char *tag, int lineno);
 
 #ifdef __cplusplus
 }
@@ -25,7 +25,7 @@ class CcndFaceInterface : public Element {
   void BindFace(Ptr<Face> face);
 
   // Send sends a CCNB message through a face.
-  void Send(FaceId faceid, uint8_t* msg, size_t length);
+  void Send(FaceId faceid, const uint8_t* data1, size_t size1, const uint8_t* data2, size_t size2);
   
   // last message passed to process_input_message,
   // in case strategy wants to inspect (eg. to get incoming_sender)

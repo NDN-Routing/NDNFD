@@ -322,7 +322,7 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
   Ptr<NamePrefixEntry> npe = forw->npe();
   FaceId faceid = forw->face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidAddFibEntry(%s,%" PRI_FaceId ")", npe->name()->ToUri().c_str(), faceid);
-  /*
+
   std::chrono::microseconds defer(6000);
 
   npe->ForeachPit([&] (Ptr<PitEntry> ie) ->ForeachAction {
@@ -348,7 +348,6 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
     this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
     FOREACH_OK;
   });
-  */
 }
 
 };//namespace ndnfd

@@ -80,22 +80,26 @@ enum ccn_strategy_op {
 static void cleanup_at_exit(void);
 static void unlink_at_exit(const char *path);
 static int create_local_listener(struct ccnd_handle *h, const char *sockname, int backlog);
-#endif
 static struct face *record_connection(struct ccnd_handle *h,
                                       int fd,
                                       struct sockaddr *who,
                                       socklen_t wholen,
                                       int setflags);
-NDNFD_EXPOSE_static void process_input_message(struct ccnd_handle *h, struct face *face,
+#endif
+static void process_input_message(struct ccnd_handle *h, struct face *face,
                                   unsigned char *msg, size_t size, int pdu_ok);
+#ifndef NDNFD
 static void process_input(struct ccnd_handle *h, int fd);
 static int ccn_stuff_interest(struct ccnd_handle *h,
                               struct face *face, struct ccn_charbuf *c);
 static void do_deferred_write(struct ccnd_handle *h, int fd);
+#endif
 static void clean_needed(struct ccnd_handle *h);
+#ifndef NDNFD
 static struct face *get_dgram_source(struct ccnd_handle *h, struct face *face,
                                      struct sockaddr *addr, socklen_t addrlen,
                                      int why);
+#endif
 static void content_skiplist_insert(struct ccnd_handle *h,
                                     struct content_entry *content);
 static void content_skiplist_remove(struct ccnd_handle *h,
@@ -114,6 +118,7 @@ NDNFD_EXPOSE_static int nameprefix_seek(struct ccnd_handle *h,
 NDNFD_EXPOSE_static void register_new_face(struct ccnd_handle *h, struct face *face);
 NDNFD_EXPOSE_static void update_forward_to(struct ccnd_handle *h,
                               struct nameprefix_entry *npe);
+#ifndef NDNFD
 static void stuff_and_send(struct ccnd_handle *h, struct face *face,
                            const unsigned char *data1, size_t size1,
                            const unsigned char *data2, size_t size2,
@@ -125,6 +130,7 @@ static void ccn_append_link_stuff(struct ccnd_handle *h,
 static int process_incoming_link_message(struct ccnd_handle *h,
                                          struct face *face, enum ccn_dtag dtag,
                                          unsigned char *msg, size_t size);
+#endif
 NDNFD_EXPOSE_static void process_internal_client_buffer(struct ccnd_handle *h);
 NDNFD_EXPOSE_static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
@@ -318,6 +324,7 @@ ccnd_face_from_faceid(struct ccnd_handle *h, unsigned faceid)
     return(face_from_faceid(h, faceid));
 }
 
+#ifndef NDNFD
 /**
  * Assigns the faceid for a nacent face,
  * calls register_new_face() if successful.
@@ -360,6 +367,7 @@ use_i:
     register_new_face(h, face);
     return (face->faceid);
 }
+#endif
 
 /**
  * Decide how much to delay the content sent out on a face.
@@ -426,6 +434,7 @@ content_queue_destroy(struct ccnd_handle *h, struct content_queue **pq)
     }
 }
 
+#ifndef NDNFD
 /**
  * Close an open file descriptor quietly.
  */
@@ -438,7 +447,6 @@ close_fd(int *pfd)
     }
 }
 
-#ifndef NDNFD
 /**
  * Close an open file descriptor, and grumble about it.
  */
@@ -1228,7 +1236,6 @@ establish_min_recv_bufsize(struct ccnd_handle *h, int fd, int minsize)
     ccnd_msg(h, "SO_RCVBUF for fd %d is %d", fd, rcvbuf);
     return(rcvbuf);
 }
-#endif
 
 /**
  * Initialize the face flags based upon the addr information
@@ -1337,7 +1344,6 @@ accept_connection(struct ccnd_handle *h, int listener_fd)
     return(fd);
 }
 
-#ifndef NDNFD
 /**
  * Make an outbound stream connection.
  */
@@ -1961,6 +1967,7 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
     return(n_matched);
 }
 
+#ifndef NDNFD
 /**
  * Send a message in a PDU, possibly stuffing other interest messages into it.
  * The message may be in two pieces.
@@ -2179,7 +2186,6 @@ process_incoming_link_message(struct ccnd_handle *h,
     return(0);
 }
 
-#ifndef NDNFD
 /**
  * Checks for inactivity on datagram faces.
  * @returns number of faces that have gone away.
@@ -2751,7 +2757,9 @@ register_new_face(struct ccnd_handle *h, struct face *face)
             ccnd_reg_uri_list(h, h->autoreg, face->faceid,
                               CCN_FORW_CAPTURE_OK | CCN_FORW_CHILD_INHERIT | CCN_FORW_ACTIVE,
                               0x7FFFFFFF);
+#ifndef NDNFD
         ccn_link_state_init(h, face);
+#endif
     }
 }
 
@@ -4830,7 +4838,7 @@ Bail:
  * This is where we decide whether we have an Interest message,
  * a ContentObject, or something else.
  */
-NDNFD_EXPOSE_static void
+static void
 process_input_message(struct ccnd_handle *h, struct face *face,
                       unsigned char *msg, size_t size, int pdu_ok)
 {
@@ -4884,9 +4892,11 @@ process_input_message(struct ccnd_handle *h, struct face *face,
         case CCN_DTAG_ContentObject:
             process_incoming_content(h, face, msg, size);
             return;
+#ifndef NDNFD
         case CCN_DTAG_SequenceNumber:
             process_incoming_link_message(h, face, dtag, msg, size);
             return;
+#endif
         default:
             break;
     }
@@ -4895,6 +4905,7 @@ process_input_message(struct ccnd_handle *h, struct face *face,
              (unsigned long)size);
 }
 
+#ifndef NDNFD
 /**
  * Log a notification that a new datagram face has been created.
  */
@@ -4998,6 +5009,7 @@ get_dgram_source(struct ccnd_handle *h, struct face *face,
     hashtb_end(e);
     return(source);
 }
+#endif
 
 /**
  * Break up data in a face's input buffer buffer into individual messages,
@@ -5034,6 +5046,7 @@ process_input_buffer(struct ccnd_handle *h, struct face *face)
     memset(d, 0, sizeof(*d));
 }
 
+#ifndef NDNFD
 /**
  * Process the input from a socket.
  *
@@ -5157,6 +5170,7 @@ process_input(struct ccnd_handle *h, int fd)
         }
     }
 }
+#endif
 
 /**
  * Process messages from our internal client.
@@ -5346,7 +5360,6 @@ ccnd_send(struct ccnd_handle *h,
     ccn_charbuf_append(face->outbuf,
                        ((const unsigned char *)data) + res, size - res);
 }
-#endif
 
 /**
  * Do deferred sends.
@@ -5484,6 +5497,7 @@ ccnd_run(struct ccnd_handle *h)
         }
     }
 }
+#endif
 
 /**
  * Reseed our pseudo-random number generator.

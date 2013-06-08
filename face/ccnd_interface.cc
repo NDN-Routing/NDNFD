@@ -21,9 +21,9 @@ struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
   return face->ccnd_face();
 }
 
-void ccnd_send(struct ccnd_handle* h, struct face* face, const void* data, size_t size) {
+void stuff_and_send(struct ccnd_handle* h, struct face* face, const unsigned char *data1, size_t size1, const unsigned char *data2, size_t size2, const char *tag, int lineno) {
   Global* global = ccnd_ndnfdGlobal(h);
-  global->facemgr()->ccnd_face_interface()->Send(static_cast<FaceId>(face->faceid), const_cast<uint8_t*>(static_cast<const uint8_t*>(data)), size);
+  global->facemgr()->ccnd_face_interface()->Send(static_cast<FaceId>(face->faceid), data1, size1, data2, size2);
 }
 
 namespace ndnfd {
@@ -69,7 +69,7 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   }
 }
 
-void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
+void CcndFaceInterface::Send(FaceId faceid, const uint8_t* data1, size_t size1, const uint8_t* data2, size_t size2) {
   Ptr<Face> out_face = this->global()->facemgr()->GetFace(faceid);
   if (out_face == nullptr) {
     this->Log(kLLError, kLCCcndFace, "CcndFaceInterface::Send face %" PRI_FaceId " does not exist", faceid);
@@ -80,10 +80,11 @@ void CcndFaceInterface::Send(FaceId faceid, uint8_t* msg, size_t length) {
     return;
   }
   
-  Ptr<CcnbMessage> message = new CcnbMessage(msg, length);
-  //Ptr<CcnbMessage> message = CcnbMessage::Parse(msg, length);
-  //assert(message != nullptr);
-  //this->Log(kLLDebug, kLCCcndFace, "CcndFaceInterface::Send(%" PRI_FaceId " type=%" PRIu32 ")", out_face->id(), message->type());
+  Ptr<Buffer> buf = new Buffer(size1, 0, size2);
+  memcpy(buf->mutable_data(), data1, size1);
+  if (size2 > 0) memcpy(buf->Put(size2), data2, size2);
+  Ptr<CcnbMessage> message = new CcnbMessage(buf->data(), buf->length());
+  message->set_source_buffer(buf);
   out_face->face_thread()->Send(out_face->id(), message);
 }
 

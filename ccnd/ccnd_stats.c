@@ -62,13 +62,16 @@ struct ccnd_stats {
 };
 
 static int ccnd_collect_stats(struct ccnd_handle *h, struct ccnd_stats *ans);
+#ifndef NDNFD
 static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
 static void send_http_response(struct ccnd_handle *h, struct face *face,
                                const char *mime_type,
                                struct ccn_charbuf *response);
 static struct ccn_charbuf *collect_stats_html(struct ccnd_handle *h);
+#endif
 NDNFD_EXPOSE_static struct ccn_charbuf *collect_stats_xml(struct ccnd_handle *h);
 
+#ifndef NDNFD
 /* HTTP */
 
 static const char *resp404 =
@@ -181,6 +184,7 @@ send_http_response(struct ccnd_handle *h, struct face *face,
     ccnd_send(h, face, buf, hdrlen);
     ccnd_send(h, face, response->buf, response->length);
 }
+#endif
 
 /* Common statistics collection */
 
@@ -221,6 +225,7 @@ ccnd_collect_stats(struct ccnd_handle *h, struct ccnd_stats *ans)
     return(0);
 }
 
+#ifndef NDNFD
 /* HTML formatting */
 
 static void
@@ -439,6 +444,7 @@ collect_stats_html(struct ccnd_handle *h)
         "</html>" NL);
     return(b);
 }
+#endif
 
 /* XML formatting */
 
