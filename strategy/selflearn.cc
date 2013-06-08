@@ -49,7 +49,7 @@ void SelfLearnStrategy::RankPredicts(NpeExtra* extra) {
   }
 }
 
-std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest) {
+std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
   Ptr<NamePrefixEntry> npe = ie->npe();
   
   // collect downstreams

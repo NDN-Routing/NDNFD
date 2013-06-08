@@ -41,11 +41,11 @@ class Strategy : public Element {
   // PropagateInterest propagates an Interest.
   // It's known that interest cannot be satisfied in CS.
   // (same as ccnd propagate_interest)
-  virtual void PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe);
+  virtual void PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe);
   
   // LookupOutbounds returns a list of upstreams for an Interest,
   // usually from FIB.
-  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest);
+  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
 
   // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
   // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.

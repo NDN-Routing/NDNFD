@@ -14,7 +14,7 @@ class SelfLearnStrategy : public Strategy {
   SelfLearnStrategy(void) {}
   virtual ~SelfLearnStrategy(void) {}
 
-  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest);
+  virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie) { assert(false); }
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);

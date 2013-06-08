@@ -16,10 +16,42 @@ void Strategy::Init(void) {
 
 void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
-  process_incoming_interest2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(interest->msg())), interest->length(), const_cast<ccn_parsed_interest*>(interest->parsed()), const_cast<ccn_indexbuf*>(interest->comps()));
+  if (in_face == nullptr) return;
+  in_face->CountInterestIn();
+
+  int interest_scope = interest->parsed()->scope;
+  if ((interest_scope == 0 || interest_scope == 1) && in_face->kind() != FaceKind::kApp) {
+    this->Log(kLLWarn, kLCStrategy, "Strategy::OnInterest(%" PRI_FaceId ",%s) out of scope", in_face->id(), interest->name()->ToUri().c_str());
+    ++CCNDH->interests_dropped;
+    return;
+  }
+  ++CCNDH->interests_accepted;
+  
+  Ptr<PitEntry> ie = this->global()->npt()->GetPit(interest);
+  Ptr<NamePrefixEntry> npe;
+  if (ie != nullptr) {
+    npe = ie->npe();
+  } else {
+    npe = this->global()->npt()->Seek(interest->name());
+  }
+  
+  npe->EnsureUpdatedFib();
+  if ((npe->npe()->flags & CCN_FORW_LOCAL) != 0 && in_face->kind() != FaceKind::kApp) {
+    this->Log(kLLWarn, kLCStrategy, "Strategy::OnInterest(%" PRI_FaceId ",%s) non local", in_face->id(), interest->name()->ToUri().c_str());
+    return;
+  }
+  
+  if (ie != nullptr) {
+    this->PropagateInterest(interest, npe);
+    return;
+  }
+  
+  // TODO match ContentStore
+
+  this->PropagateInterest(interest, npe);
 }
 
-void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
+void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
   bool is_new_ie = ie->ie()->strategy.renewals == 0;
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
@@ -71,7 +103,7 @@ void Strategy::PropagateInterest(Ptr<InterestMessage> interest, Ptr<NamePrefixEn
   this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
 }
 
-std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<InterestMessage> interest) {
+std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
   return ie->npe()->LookupFib(interest);
 }
 

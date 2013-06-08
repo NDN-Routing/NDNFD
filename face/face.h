@@ -94,9 +94,10 @@ class Face : public Element {
   // Close closes the face immediately.
   virtual void Close(void) { this->set_status(FaceStatus::kClosed); }
   
-  // CountBytesIn, CountBytesOut update face counters.
+  // Count* update face counters.
   void CountBytesIn(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }
   void CountBytesOut(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTO], static_cast<unsigned>(n)); }
+  void CountInterestIn(void) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_INTI], 1); }
 
  protected:
   Face(Ptr<FaceThread> face_thread = nullptr);
