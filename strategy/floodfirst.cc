@@ -6,7 +6,7 @@ namespace ndnfd {
 void FloodFirstStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   if (ie->beginUpstream() != ie->endUpstream()) {
     // has FIB match
-    this->Strategy::PropagateNewInterest(ie);
+    this->OriginalStrategy::PropagateNewInterest(ie);
     return;
   }
   // no FIB match, flood
@@ -51,7 +51,7 @@ void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Pt
 
   if (matching_suffix >= 0 && matching_suffix < 2) {
     this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), peer->id(), matching_suffix);
-    npe->UpdateBestFace(peer->id());
+    npe->strategy_extra<OriginalStrategy::NpeExtra>()->UpdateBestFace(peer->id());
   }
   
   if (this->fib_prefix_comps() == npe->name()->n_comps()) {

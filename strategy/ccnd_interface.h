@@ -9,7 +9,9 @@ int propagate_interest(struct ccnd_handle* h, struct face* face, uint8_t* msg, s
 void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face);
 void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix);
 void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid, const uint8_t* name, size_t name_size);
-void finalize_nameprefix_strategy_extra(struct ccnd_handle* h, struct nameprefix_entry* npe);
+
+void ndnfd_npe_strategy_extra_create(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size);
+void ndnfd_npe_strategy_extra_finalize(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size);
 
 #ifdef __cplusplus
 }
@@ -28,7 +30,8 @@ class CcndStrategyInterface : public Element {
   void WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream);
   void DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix);
   void DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name);
-  void FinalizeNpe(nameprefix_entry* npe);
+  void CreateNpe(nameprefix_entry* npe, Ptr<Name> name);
+  void FinalizeNpe(nameprefix_entry* npe, Ptr<Name> name);
   
  private:
   DISALLOW_COPY_AND_ASSIGN(CcndStrategyInterface);

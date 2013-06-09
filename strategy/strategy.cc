@@ -11,7 +11,6 @@ namespace ndnfd {
 
 void Strategy::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
-  this->global()->npt()->FinalizeNpeExtra = std::bind(&Strategy::FinalizeNpeExtra, this, std::placeholders::_1);
 }
 
 void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
@@ -118,84 +117,6 @@ void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<Face
 }
 
 void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
-  Ptr<NamePrefixEntry> npe = ie->npe();
-
-  // find downstream
-  auto first_downstream = ie->beginDownstream();
-  assert(first_downstream != ie->endDownstream());
-  Ptr<PitDownstreamRecord> downstream = *first_downstream;
-  assert(downstream != nullptr && downstream->pending());
-  
-  // get tap list: Interest is immediately sent to these faces; they are used for monitoring purpose and shouldn't respond
-  ccn_indexbuf* tap = nullptr;
-  Ptr<NamePrefixEntry> npe_fib = npe->FibNode();
-  if (npe_fib != nullptr) {
-    tap = npe_fib->native()->tap;
-  }
-  
-  // read the known best face
-  FaceId best = npe->GetBestFace();
-  bool use_first;// whether to send interest immediately to the first upstream
-  uint32_t defer_min, defer_range;// defer time for all but best and tap faces is within [defer_min,defer_min+defer_range) microseconds
-  if (best == FaceId_none) {
-    use_first = true;
-    defer_min = 4000;
-    defer_range = 75000;
-  } else {
-    use_first = false;
-    defer_min = static_cast<uint32_t>(npe->native()->usec);
-    defer_range = (defer_min + 1) / 2;
-  }
-
-  std::string debug_list;
-  char debug_buf[32];
-#define DEBUG_APPEND_FaceTime(face,s,time) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ":%s%" PRIu32 ",", face,s,time); debug_list.append(debug_buf); }
-  
-  // send interest to best and tap faces,
-  // set expiry time for first face if use_first, and previous best face,
-  // mark other faces as CCND_PFI_SENDUPST and ++n_upst
-  int n_upst = 0;
-  std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-    if (p->faceid() == best) {
-      this->global()->scheduler()->Schedule(std::chrono::microseconds(defer_min), [this,ie,best](void){
-        // don't assert(ie->npe()->best_faceid() == best), src may be aged out and set to CCN_NOFACEID
-        this->DidnotArriveOnBestFace(ie);
-        return Scheduler::kNoMore;
-      }, &ie->native()->strategy.ev, true);
-      DEBUG_APPEND_FaceTime(p->faceid(),"best+",defer_min);
-      this->SendInterest(ie, downstream, p);
-    } else if (ccn_indexbuf_member(tap, p->faceid()) >= 0) {
-      DEBUG_APPEND_FaceTime(p->faceid(),"tap+",0);
-      this->SendInterest(ie, downstream, p);
-    } else if (use_first) {
-      use_first = false;
-      // DoPropagate will send interest to this face;
-      // since we don't know who is the best, just pick the first one
-      p->SetExpiry(std::chrono::microseconds::zero());
-      DEBUG_APPEND_FaceTime(p->faceid(),"first",0);
-    } else if (p->faceid() == npe->prev_faceid()) {
-      p->SetExpiry(std::chrono::microseconds(defer_min));
-      DEBUG_APPEND_FaceTime(p->faceid(),"osrc",defer_min);
-    } else {
-      ++n_upst;
-      p->native()->pfi_flags |= CCND_PFI_SENDUPST;
-    }
-  });
-
-  if (n_upst > 0) {
-    uint32_t defer_max_inc = std::max(1U, (2 * defer_range + n_upst - 1) / n_upst);// max increment between defer times
-    uint32_t defer = defer_min;
-    std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-      if ((p->native()->pfi_flags & CCND_PFI_SENDUPST) == 0) return;
-      p->SetExpiry(std::chrono::microseconds(defer));
-      DEBUG_APPEND_FaceTime(p->faceid(),"",defer);
-      defer += nrand48(CCNDH->seed) % defer_max_inc;
-    });
-  }
-
-#undef DEBUG_APPEND_FaceTime
-  if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
-  this->Log(kLLDebug, kLCStrategy, "Strategy::PropagateNewInterest(%" PRI_PitEntrySerial ") best=%" PRI_FaceId " pending=%" PRI_FaceId " [%s]", ie->serial(), best, downstream->faceid(), debug_list.c_str());
 }
 
 std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
@@ -256,7 +177,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
     
     if (p->pending()) {// Interest sent but no response
       DEBUG_APPEND_FaceId('-',p);
-      if (npe->best_faceid() == p->faceid() || npe->prev_faceid() == p->faceid()) npe->UpdateBestFace(FaceId_none);
+      //TODO if (npe->best_faceid() == p->faceid() || npe->prev_faceid() == p->faceid()) npe->UpdateBestFace(FaceId_none);
       continue;// don't send another Interest
     }
     
@@ -318,11 +239,6 @@ void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstrea
 }
 
 void Strategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
-  this->Log(kLLDebug, kLCStrategy, "Strategy::DidnotArriveOnBestFace(%" PRI_PitEntrySerial ") face=%" PRI_FaceId "", ie->serial(), ie->npe()->best_faceid());
-  int limit = 2;
-  for (Ptr<NamePrefixEntry> npe1 = ie->npe(); npe1 != nullptr && --limit >= 0; npe1 = npe1->Parent()) {
-    npe1->AdjustPredictUp();
-  }
 }
 
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
@@ -340,9 +256,6 @@ void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> c
 }
 
 void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
-  FaceId upstream = co->incoming_face();
-  this->Log(kLLDebug, kLCStrategy, "Strategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
-  if (matching_suffix >= 0 && matching_suffix < 2) npe->UpdateBestFace(upstream);
 }
 
 void Strategy::OnNack(Ptr<const NackMessage> nack) {
@@ -354,32 +267,6 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
   Ptr<NamePrefixEntry> npe = forw->npe();
   FaceId faceid = forw->face();
   this->Log(kLLDebug, kLCStrategy, "Strategy::DidAddFibEntry(%s,%" PRI_FaceId ")", npe->name()->ToUri().c_str(), faceid);
-
-  std::chrono::microseconds defer(6000);
-
-  npe->ForeachPit([&] (Ptr<PitEntry> ie) ->ForeachAction {
-    if (ie->GetUpstream(faceid) != nullptr) FOREACH_CONTINUE;
-    
-    Ptr<Face> downstream = nullptr;
-    std::for_each(ie->beginDownstream(), ie->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
-      if (downstream == nullptr || downstream->kind() != FaceKind::kApp) {
-        downstream = this->global()->facemgr()->GetFace(p->faceid());
-      }
-    });
-    if (downstream == nullptr) FOREACH_CONTINUE;
-    
-    Ptr<const InterestMessage> interest = ie->interest();
-    std::unordered_set<FaceId> outbound = npe->LookupFib(interest);
-    if (outbound.find(faceid) == outbound.end()) FOREACH_CONTINUE;
-    
-    Ptr<PitUpstreamRecord> p = ie->SeekUpstream(faceid);
-    if (p->pending()) FOREACH_CONTINUE;
-    
-    p->SetExpiry(defer);
-    defer += std::chrono::microseconds(200);
-    this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
-    FOREACH_OK;
-  });
 }
 
 };//namespace ndnfd

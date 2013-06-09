@@ -1090,7 +1090,7 @@ finalize_nameprefix(struct hashtb_enumerator *e)
     struct ccnd_handle *h = hashtb_get_param(e->ht, NULL);
     struct nameprefix_entry *npe = e->data;
 #ifdef NDNFD
-    finalize_nameprefix_strategy_extra(h, npe);
+    ndnfd_npe_strategy_extra_finalize(h, npe, (const uint8_t*)e->key, e->keysize);
 #endif
     struct ielinks *head = &npe->ie_head;
     if (head->next != NULL) {
@@ -1844,6 +1844,7 @@ consume_matching_interests(struct ccnd_handle *h,
     return(matches);
 }
 
+#ifndef NDNFD
 /**
  * Adjust the predicted response associated with a name prefix entry.
  *
@@ -1851,7 +1852,7 @@ consume_matching_interests(struct ccnd_handle *h,
  * previous predicted value, and increased by a larger fraction if not.
  *
  */
-NDNFD_EXPOSE_static void
+static void
 adjust_npe_predicted_response(struct ccnd_handle *h,
                               struct nameprefix_entry *npe, int up)
 {
@@ -1874,7 +1875,7 @@ adjust_npe_predicted_response(struct ccnd_handle *h,
  * at the leaves.
  *
  */
-NDNFD_EXPOSE_static void
+static void
 adjust_predicted_response(struct ccnd_handle *h,
                           struct interest_entry *ie, int up)
 {
@@ -1888,7 +1889,6 @@ adjust_predicted_response(struct ccnd_handle *h,
         adjust_npe_predicted_response(h, npe->parent, up);
 }
 
-#ifndef NDNFD
 /**
  * Keep a little history about where matching content comes from.
  */
@@ -2298,9 +2298,14 @@ check_nameprefix_entries(struct ccnd_handle *h)
     
     hashtb_start(h->nameprefix_tab, e);
     for (npe = e->data; npe != NULL; npe = e->data) {
+#ifdef NDNFD
+        if (  npe->children == 0 &&
+              npe->forwarding == NULL) {
+#else
         if (  npe->src == CCN_NOFACEID &&
               npe->children == 0 &&
               npe->forwarding == NULL) {
+#endif
             head = &npe->ie_head;
             if (head == head->next) {
                 count += 1;
@@ -2314,8 +2319,10 @@ check_nameprefix_entries(struct ccnd_handle *h)
         }
         check_forward_to(h, &npe->forward_to);
         check_forward_to(h, &npe->tap);
+#ifndef NDNFD
         npe->osrc = npe->src;
         npe->src = CCN_NOFACEID;
+#endif
         hashtb_next(e);
     }
     hashtb_end(e);
@@ -4231,14 +4238,21 @@ nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
             if (parent != NULL) {
                 parent->children++;
                 npe->flags = parent->flags;
+#ifndef NDNFD
                 npe->src = parent->src;
                 npe->osrc = parent->osrc;
                 npe->usec = parent->usec;
+#endif
             }
             else {
+#ifndef NDNFD
                 npe->src = npe->osrc = CCN_NOFACEID;
                 npe->usec = (nrand48(h->seed) % 4096U) + 8192;
+#endif
             }
+#ifdef NDNFD
+            ndnfd_npe_strategy_extra_create(h, npe, msg + base, comps->buf[i] - base);
+#endif
         }
         parent = npe;
     }

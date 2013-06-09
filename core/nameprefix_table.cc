@@ -18,8 +18,6 @@ void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* 
 void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
 uint32_t WTHZ_value(void);
 int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
-void adjust_npe_predicted_response(struct ccnd_handle* h, struct nameprefix_entry* npe, int up);
-void adjust_predicted_response(struct ccnd_handle* h, struct interest_entry* ie, int up);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -57,6 +55,22 @@ Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool cr
   ccn_indexbuf_destroy(&comps);
   if (npe == nullptr) return nullptr;
   return this->New<NamePrefixEntry>(name, npe);
+}
+
+void NamePrefixTable::ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry>)> f) {
+  // ForeachNpe cannot be replaced with STL iterator due to the use of hashtb_enumerator.
+  hashtb_enumerator ee; hashtb_enumerator* e = &ee;
+  hashtb_start(CCNDH->nameprefix_tab, e);
+  for (nameprefix_entry* native = static_cast<nameprefix_entry*>(e->data); native != nullptr; native = static_cast<nameprefix_entry*>(e->data)) {
+    Ptr<Name> name = Name::FromCcnb(static_cast<const uint8_t*>(e->key), e->keysize);
+    Ptr<NamePrefixEntry> npe = this->New<NamePrefixEntry>(name, native);
+    ForeachAction act = f(npe);
+    if (ForeachAction_break(act)) {
+      break;
+    }
+    hashtb_next(e);
+  }
+  hashtb_end(e);
 }
 
 Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
@@ -173,35 +187,6 @@ void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) 
     hashtb_next(e);
   }
   hashtb_end(e);
-}
-
-FaceId NamePrefixEntry::GetBestFace(void) {
-  FaceId best = this->best_faceid();
-  if (best == FaceId_none) {
-    best = this->prev_faceid();
-    this->set_best_faceid(best);
-  }
-  return best;
-}
-
-void NamePrefixEntry::UpdateBestFace(FaceId value) {
-  if (value == FaceId_none) {
-    this->set_prev_faceid(value);
-    this->set_best_faceid(value);
-    return;
-  }
-  if (this->best_faceid() == value) {
-    adjust_npe_predicted_response(CCNDH, this->native(), 0);
-  } else if (this->best_faceid() == FaceId_none) {
-    this->set_best_faceid(value);
-  } else {
-    this->set_prev_faceid(this->best_faceid());
-    this->set_best_faceid(value);
-  }
-}
-
-void NamePrefixEntry::AdjustPredictUp(void) {
-  adjust_npe_predicted_response(CCNDH, this->native(), 1);
 }
 
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* native) : npe_(npe), native_(native) {

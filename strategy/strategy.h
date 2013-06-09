@@ -104,8 +104,12 @@ class Strategy : public Element {
   virtual void RemoveFace(FaceId face) {}//currently unused
   
   // -------- core table callbacks --------
-  
-  virtual void FinalizeNpeExtra(void* extra) {}
+  // NewNpeExtra adds extra information for root of a namespace.
+  virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe) {}
+  // InheritNpeExtra inherits extra information from parent node.
+  virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {}
+  // FinalizeNpeExtra deletes extra information on npe.
+  virtual void FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {}
   
   // DidAddFibEntry is invoked when a FIB entry is created.
   // (same as update_npe_children)

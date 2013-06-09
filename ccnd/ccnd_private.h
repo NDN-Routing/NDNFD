@@ -418,11 +418,12 @@ struct nameprefix_entry {
     int children;                /**< number of children */
     unsigned flags;              /**< CCN_FORW_* flags about namespace */
     int fgen;                    /**< used to decide when forward_to is stale */
+#ifdef NDNFD
+    void* ndnfd_strategy_extra;//extra information used by strategy
+#else
     unsigned src;                /**< faceid of recent content source */
     unsigned osrc;               /**< and of older matching content */
     unsigned usec;               /**< response-time prediction */
-#ifdef NDNFD
-    void* ndnfd_strategy_extra;//extra information used by strategy
 #endif
 };
 

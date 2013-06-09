@@ -1,6 +1,6 @@
 #ifndef NDNFD_STRATEGY_FLOODFIRST_H_
 #define NDNFD_STRATEGY_FLOODFIRST_H_
-#include "strategy.h"
+#include "original.h"
 namespace ndnfd {
 
 // FloodFirstStrategy is a simpler self-learning strategy without RttEstimator.
@@ -8,7 +8,7 @@ namespace ndnfd {
 // 2. When a ContentObject arrives, create a forwarding entry at fib_prefix_comps() components;
 //    the forwarding entry is valid for fib_entry_expires() seconds, and refreshed on every CO.
 // 3. In other situations, behave same as ccnd default strategy.
-class FloodFirstStrategy : public Strategy {
+class FloodFirstStrategy : public OriginalStrategy {
  public:
   FloodFirstStrategy(void) {}
   virtual ~FloodFirstStrategy(void) {}

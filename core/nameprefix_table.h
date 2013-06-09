@@ -27,6 +27,8 @@ class NamePrefixTable : public Element {
   // Seek returns the nameprefix entry for name,
   // or create it, together with its parents, if it does not exist.
   Ptr<NamePrefixEntry> Seek(Ptr<const Name> name) { return this->SeekInternal(name, true); }
+  // ForeachNpe invokes f with each NamePrefixEntry.
+  void ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry>)> f);
   
   // GetPit returns the PIT entry for interest,
   // or null if it does not exist.
@@ -39,11 +41,7 @@ class NamePrefixTable : public Element {
   // DeletePit consumes (deletes) a PIT entry.
   // Any reference to the PIT entry is invalidated.
   void DeletePit(Ptr<PitEntry> ie);
-  
-  // nameprefix_entry's extra field is pushed to this port,
-  // and the callback should finalize it.
-  PushPort<void*> FinalizeNpeExtra;
-  
+
  private:
   Ptr<NamePrefixEntry> SeekInternal(Ptr<const Name> name, bool create);
 
@@ -81,6 +79,7 @@ class NamePrefixEntry : public Element {
   // ForeachPit invokes f with each PitEntry whose name is under this prefix.
   void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
+  /*
   FaceId best_faceid(void) { return this->native()->src == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->src); }
   FaceId prev_faceid(void) const { return this->native()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->osrc); }
   // GetBestFace returns best_faceid.
@@ -91,6 +90,7 @@ class NamePrefixEntry : public Element {
   void UpdateBestFace(FaceId value);
   // AdjustPredictUp adjusts up predicted response time.
   void AdjustPredictUp(void);
+  */
   
   template <typename T>
   T* strategy_extra(void) const { return static_cast<T*>(this->native()->ndnfd_strategy_extra); }
@@ -101,9 +101,6 @@ class NamePrefixEntry : public Element {
   Ptr<const Name> name_;
   nameprefix_entry* native_;
 
-  void set_best_faceid(FaceId value) { this->native()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
-  void set_prev_faceid(FaceId value) { this->native()->osrc = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
-  
   Ptr<ForwardingEntry> SeekForwardingInternal(FaceId faceid, bool create);
   
   DISALLOW_COPY_AND_ASSIGN(NamePrefixEntry);
@@ -290,9 +287,6 @@ class PitDownstreamRecord : public PitFaceItem {
 
 template <typename T>
 void NamePrefixEntry::set_strategy_extra(T* value) {
-  if (this->native()->ndnfd_strategy_extra != nullptr) {
-    this->global()->npt()->FinalizeNpeExtra(this->native()->ndnfd_strategy_extra);
-  }
   this->native()->ndnfd_strategy_extra = value;
 }
 
