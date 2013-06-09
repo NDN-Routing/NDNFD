@@ -63,7 +63,7 @@ Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(const ns3::ndn::Interes
 
   ccnb_element_end(c);//</Interest>
   
-  Ptr<Buffer> buffer = new Buffer(0); buffer->Swap(c); ccn_charbuf_destroy(&c);
+  Ptr<Buffer> buffer = Buffer::Adopt(&c);
   Ptr<InterestMessage> m = InterestMessage::Parse(buffer->mutable_data(), buffer->length());
   if (m != nullptr) { m->set_source_buffer(buffer); }
   return m;
@@ -117,7 +117,7 @@ Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(const ns3::nd
 
   ccnb_element_end(c);//</ContentObject>
   
-  Ptr<Buffer> buffer = new Buffer(0); buffer->Swap(c); ccn_charbuf_destroy(&c);
+  Ptr<Buffer> buffer = Buffer::Adopt(&c);
   Ptr<ContentObjectMessage> m = ContentObjectMessage::Parse(buffer->mutable_data(), buffer->length());
   if (m != nullptr) { m->set_source_buffer(buffer); }
   return m;

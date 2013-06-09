@@ -17,6 +17,18 @@ Buffer::Buffer(uint8_t* data, size_t length) {
   this->c_->limit = length;
 }
 
+Buffer::Buffer(void) {
+  this->initial_headroom_ = this->headroom_ = this->initial_tailroom_ = 0;
+  this->c_ = nullptr;
+}
+
+Ptr<Buffer> Buffer::Adopt(ccn_charbuf** c) {
+  Ptr<Buffer> b = new Buffer();
+  b->c_ = *c;
+  *c = nullptr;
+  return b;
+}
+
 Buffer::~Buffer(void) {
   ccn_charbuf_destroy(&(this->c_));
 }

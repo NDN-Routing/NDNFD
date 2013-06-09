@@ -219,17 +219,13 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> FaceMgr::FaceMgmtReq
     struct ccn_charbuf* cb_msg = ccn_charbuf_create();
     cb_msg->length = 0;
     ccn_encode_StatusResponse(cb_msg, errnum, errmsg.c_str());
-    Ptr<Buffer> b1 = new Buffer(0);
-    b1->Swap(cb_msg);
-    ccn_charbuf_destroy(&cb_msg);
+    Ptr<Buffer> b1 = Buffer::Adopt(&cb_msg);
     return std::forward_as_tuple(InternalClientHandler::ResponseKind::kNack, b1);
   }
   face_instance->ccnd_id = CCNDH->ccnd_id;
   struct ccn_charbuf* cb_face_inst = ccn_charbuf_create();
   ccnb_append_face_instance(cb_face_inst, face_instance);
-  Ptr<Buffer> b = new Buffer(0);
-  b->Swap(cb_face_inst);
-  ccn_charbuf_destroy(&cb_face_inst);
+  Ptr<Buffer> b = Buffer::Adopt(&cb_face_inst);
   ccn_face_instance_destroy(&face_instance);
   return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, b);
 }

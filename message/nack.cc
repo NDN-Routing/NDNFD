@@ -67,10 +67,7 @@ Ptr<Buffer> Create(NackCode code, Ptr<InterestMessage> interest) {
   ccnb_tagged_putf(b, CCN_DTAG_StatusCode, "%d", static_cast<int>(code));
   ccn_charbuf_append(b, interest->msg(), interest->length());
   ccn_charbuf_append_closer(b);
-  Ptr<Buffer> buf = new Buffer(0);
-  buf->Swap(b);
-  ccn_charbuf_destroy(&b);
-  return buf;
+  return Buffer::Adopt(&b);
 }
 
 };//namespace ndnfd

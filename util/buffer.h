@@ -48,6 +48,8 @@ class Buffer : public BufferView {
   Buffer(size_t length, size_t headroom = 0, size_t tailroom = 0);
   Buffer(uint8_t* data, size_t length);
   virtual ~Buffer(void);
+  // Adopt adopts *c, and c becomes invalid.
+  static Ptr<Buffer> Adopt(ccn_charbuf** c);
   
   // pointer to data
   virtual uint8_t* mutable_data() const { return this->c_->buf + this->headroom_; }
@@ -86,6 +88,7 @@ class Buffer : public BufferView {
   void Swap(ccn_charbuf* c);
   
  private:
+  Buffer(void);
   ccn_charbuf* c_;
   size_t initial_headroom_;
   size_t initial_tailroom_;

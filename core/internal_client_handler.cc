@@ -42,9 +42,7 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
 
 std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqStats(const uint8_t* msg, size_t size) {
   ccn_charbuf* html = collect_stats_xml(CCNDH);
-  Ptr<Buffer> reply = new Buffer(0);
-  reply->Swap(html);
-  ccn_charbuf_destroy(&html);
+  Ptr<Buffer> reply = Buffer::Adopt(&html);
   return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, reply);
 }
 
