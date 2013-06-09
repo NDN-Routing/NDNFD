@@ -167,7 +167,7 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   this->global()->scheduler()->Schedule(flood_actual, [this,ie](void){
     this->StartFlood(ie);
     return Scheduler::kNoMore;
-  }, &ie->ie()->strategy.ev, true);
+  }, &ie->native()->strategy.ev, true);
 }
 
 void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream) {
@@ -179,7 +179,7 @@ void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> 
     this->global()->scheduler()->Schedule(std::chrono::microseconds(it->second.time_), [this,ie,upstream_face](void){
       this->DidnotArriveOnFace(ie, upstream_face);
       return Scheduler::kNoMore;
-    }, &upstream->p()->strategy_ev, true);
+    }, &upstream->native()->strategy_ev, true);
   }
   extra->interest_sent_time_[upstream_face] = CCNDH->wtnow;
   this->Strategy::SendInterest(ie, downstream, upstream);
@@ -273,14 +273,14 @@ void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
   if (outbounds.empty()) return;
   
   this->PopulateOutbounds(ie, outbounds);
-  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
 }
 
 void SelfLearnStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
   if (matching_suffix == 0) {
     npe->ForeachPit([&] (Ptr<PitEntry> ie) ->ForeachAction {
       Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(co->incoming_face());
-      if (upstream != nullptr) this->global()->scheduler()->Cancel(upstream->p()->strategy_ev);
+      if (upstream != nullptr) this->global()->scheduler()->Cancel(upstream->native()->strategy_ev);
       FOREACH_OK;
     });
   }

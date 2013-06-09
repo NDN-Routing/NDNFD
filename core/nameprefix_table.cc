@@ -73,7 +73,7 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
   hashtb_start(CCNDH->interest_tab, e);
 
   int res = hashtb_seek(e, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime], 1);
-  interest_entry* ie; ie = reinterpret_cast<interest_entry*>(e->data);
+  interest_entry* ie = reinterpret_cast<interest_entry*>(e->data);
   if (res == HT_NEW_ENTRY) {
     ie->serial = ++CCNDH->iserial;
     ie->strategy.birth = ie->strategy.renewed = CCNDH->wtnow;
@@ -81,7 +81,7 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
     this->Log(kLLDebug, kLCStrategy, "NamePrefixTable::SeekPit(%s) new PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), static_cast<uint32_t>(ie->serial));
   }
   if (ie->interest_msg == nullptr) {
-    link_interest_entry_to_nameprefix(CCNDH, ie, npe->npe());
+    link_interest_entry_to_nameprefix(CCNDH, ie, npe->native());
     ie->interest_msg = reinterpret_cast<const uint8_t*>(e->key);
     ie->size = interest->parsed()->offset[CCN_PI_B_InterestLifetime] + 1;
     const_cast<uint8_t*>(ie->interest_msg) [ie->size-1] = '\0';//set last byte to </Interest>
@@ -99,36 +99,36 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
 
 void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
   assert(ie != nullptr);
-  consume_interest(CCNDH, ie->ie());
+  consume_interest(CCNDH, ie->native());
 }
 
-NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* npe) : name_(name), npe_(npe) {
+NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* native) : name_(name), native_(native) {
   assert(name != nullptr);
-  assert(npe != nullptr);
+  assert(native != nullptr);
 }
 
 Ptr<NamePrefixEntry> NamePrefixEntry::Parent(void) const {
-  nameprefix_entry* parent = this->npe()->parent;
+  nameprefix_entry* parent = this->native()->parent;
   if (parent == nullptr) return nullptr;
   return this->New<NamePrefixEntry>(this->name()->StripSuffix(1), parent);
 }
   
 Ptr<NamePrefixEntry> NamePrefixEntry::FibNode(void) const {
   for (Ptr<NamePrefixEntry> n = const_cast<NamePrefixEntry*>(this); n != nullptr; n = n->Parent()) {
-    if (n->npe()->forwarding != nullptr) return n;
+    if (n->native()->forwarding != nullptr) return n;
   }
   return nullptr;
 }
 
 void NamePrefixEntry::EnsureUpdatedFib(void) const {
-  update_forward_to(CCNDH, this->npe());
+  update_forward_to(CCNDH, this->native());
 }
 
 std::unordered_set<FaceId> NamePrefixEntry::LookupFib(Ptr<const InterestMessage> interest) const {
   assert(interest != nullptr);
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
 
-  ccn_indexbuf* outbound = get_outbound_faces(CCNDH, inface==nullptr ? nullptr : inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->npe());
+  ccn_indexbuf* outbound = get_outbound_faces(CCNDH, inface==nullptr ? nullptr : inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->native());
 
   std::unordered_set<FaceId> s;
   for (size_t i = 0; i < outbound->n; ++i) {
@@ -142,10 +142,10 @@ Ptr<ForwardingEntry> NamePrefixEntry::SeekForwardingInternal(FaceId faceid, bool
   ccn_forwarding* f;
   
   if (create) {
-    f = seek_forwarding(CCNDH, this->npe(), static_cast<unsigned>(faceid));
+    f = seek_forwarding(CCNDH, this->native(), static_cast<unsigned>(faceid));
     ++(CCNDH->forward_to_gen);
   } else {
-    for (f = this->npe()->forwarding; f != nullptr; f = f->next) {
+    for (f = this->native()->forwarding; f != nullptr; f = f->next) {
       if (static_cast<FaceId>(f->faceid) == faceid) break;
     }
   }
@@ -161,7 +161,7 @@ void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) 
   for (interest_entry* ie = static_cast<interest_entry*>(e->data); ie != nullptr; ie = static_cast<interest_entry*>(e->data)) {
     ForeachAction act = ForeachAction::kNone;
     for (nameprefix_entry* x = ie->ll.npe; x != nullptr; x = x->parent) {
-      if (x == this->npe()) {
+      if (x == this->native()) {
         Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
         act = f(ie1);
         break;
@@ -191,7 +191,7 @@ void NamePrefixEntry::UpdateBestFace(FaceId value) {
     return;
   }
   if (this->best_faceid() == value) {
-    adjust_npe_predicted_response(CCNDH, this->npe(), 0);
+    adjust_npe_predicted_response(CCNDH, this->native(), 0);
   } else if (this->best_faceid() == FaceId_none) {
     this->set_best_faceid(value);
   } else {
@@ -201,51 +201,51 @@ void NamePrefixEntry::UpdateBestFace(FaceId value) {
 }
 
 void NamePrefixEntry::AdjustPredictUp(void) {
-  adjust_npe_predicted_response(CCNDH, this->npe(), 1);
+  adjust_npe_predicted_response(CCNDH, this->native(), 1);
 }
 
-ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* forw) : npe_(npe), forw_(forw) {
+ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* native) : npe_(npe), native_(native) {
   assert(npe != nullptr);
-  assert(forw != nullptr);
+  assert(native != nullptr);
 }
 
 void ForwardingEntry::Refresh(std::chrono::seconds expires) {
   if (expires < std::chrono::seconds::zero()) {
-    this->forw()->flags &= ~CCN_FORW_REFRESHED;
+    this->native()->flags &= ~CCN_FORW_REFRESHED;
     return;
   }
   
   if (expires.count() >= std::numeric_limits<int>::max()) {
-    this->forw()->expires = std::numeric_limits<int>::max();
+    this->native()->expires = std::numeric_limits<int>::max();
   } else {
-    this->forw()->expires = static_cast<int>(expires.count());
+    this->native()->expires = static_cast<int>(expires.count());
   }
-  this->forw()->flags |= CCN_FORW_REFRESHED;
+  this->native()->flags |= CCN_FORW_REFRESHED;
 }
 
 void ForwardingEntry::MakePermanent(void) {
   this->Refresh(std::chrono::seconds::max());
 }
 
-PitEntry::PitEntry(interest_entry* ie) : ie_(ie) {
-  assert(ie != nullptr);
-  assert(ie_ndnfdInterest(ie) != nullptr);
+PitEntry::PitEntry(interest_entry* native) : native_(native) {
+  assert(native != nullptr);
+  assert(ie_ndnfdInterest(native) != nullptr);
 }
 
 Ptr<NamePrefixEntry> PitEntry::npe(void) const {
-  return this->New<NamePrefixEntry>(this->name(), this->ie()->ll.npe);
+  return this->New<NamePrefixEntry>(this->name(), this->native()->ll.npe);
 }
 
 bool PitEntry::IsNonceUnique(Ptr<const PitFaceItem> p) {
-  return 1 == pfi_unique_nonce(CCNDH, this->ie(), p->p());
+  return 1 == pfi_unique_nonce(CCNDH, this->native(), p->native());
 }
 
 pit_face_item* PitEntry::SeekPfiInternal(FaceId face, bool create, unsigned flag) {
   if (create) {
-    return pfi_seek(CCNDH, this->ie(), static_cast<unsigned>(face), flag);
+    return pfi_seek(CCNDH, this->native(), static_cast<unsigned>(face), flag);
   }
   
-  for (pit_face_item* x = this->ie()->pfl; x != nullptr; x = x->next) {
+  for (pit_face_item* x = this->native()->pfl; x != nullptr; x = x->next) {
     if ((x->pfi_flags & flag) != 0 && static_cast<FaceId>(x->faceid) == face) {
       return x;
     }
@@ -254,12 +254,12 @@ pit_face_item* PitEntry::SeekPfiInternal(FaceId face, bool create, unsigned flag
 }
 
 void PitEntry::DeletePfiInternal(pit_face_item* p) {
-  pfi_destroy(CCNDH, this->ie(), p);
+  pfi_destroy(CCNDH, this->native(), p);
 }
 
 std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
   if (include_expired) {
-    int usec = ie_next_usec(CCNDH, this->ie(), nullptr);
+    int usec = ie_next_usec(CCNDH, this->native(), nullptr);
     return std::chrono::microseconds(std::max(1, usec));
   }
   
@@ -269,48 +269,46 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
 
   std::for_each(that->beginDownstream(), that->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
     if (p->pending()) {
-      mn = std::min(mn, p->p()->expiry-now);
-      //that->Log(kLLDebug, kLCStrategy, "PitEntry(%" PRI_PitEntrySerial ")::NextEventDelay downstream %" PRI_FaceId " %" PRIuMAX "", this->serial(), p->faceid(), static_cast<uintmax_t>((p->p()->expiry-now) * (1000000 / WTHZ_value())));
+      mn = std::min(mn, p->native()->expiry - now);
     }
   });
   std::for_each(that->beginUpstream(), that->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
     if (!p->IsExpired()) {
-      mn = std::min(mn, p->p()->expiry-now);
-      //that->Log(kLLDebug, kLCStrategy, "PitEntry(%" PRI_PitEntrySerial ")::NextEventDelay upstream %" PRI_FaceId " %" PRIuMAX "", this->serial(), p->faceid(), static_cast<uintmax_t>((p->p()->expiry-now) * (1000000 / WTHZ_value())));
+      mn = std::min(mn, p->native()->expiry - now);
     }
   });
   
   return std::chrono::microseconds(mn * (1000000 / WTHZ_value()));
 }
 
-PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p) : ie_(ie), p_(p) {
+PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* native) : ie_(ie), native_(native) {
   assert(ie != nullptr);
-  assert(p != nullptr);
+  assert(native != nullptr);
 }
 
 std::chrono::microseconds PitFaceItem::time_until_expiry(void) const {
-  ccn_wrappedtime delta = this->p()->expiry - CCNDH->wtnow;
+  ccn_wrappedtime delta = this->native()->expiry - CCNDH->wtnow;
   return std::chrono::microseconds(delta * 1000000 / WTHZ_value());
 }
 
 bool PitFaceItem::IsExpired(void) const {
-  return wt_compare(this->p()->expiry, CCNDH->wtnow) <= 0;
+  return wt_compare(this->native()->expiry, CCNDH->wtnow) <= 0;
 }
 
 int PitFaceItem::CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b) {
-  return wt_compare(a->p()->expiry, b->p()->expiry);
+  return wt_compare(a->native()->expiry, b->native()->expiry);
 }
 
-PitUpstreamRecord::PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* p) : PitFaceItem(ie, p) {
-  assert((p->pfi_flags & CCND_PFI_UPSTREAM) != 0);
+PitUpstreamRecord::PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* native) : PitFaceItem(ie, native) {
+  assert(this->GetFlag(CCND_PFI_UPSTREAM));
 }
 
 void PitUpstreamRecord::SetExpiry(std::chrono::microseconds t) {
-  pfi_set_expiry_from_micros(CCNDH, this->ie()->ie(), this->p(), static_cast<unsigned>(t.count()));
+  pfi_set_expiry_from_micros(CCNDH, this->ie()->native(), this->native(), static_cast<unsigned>(t.count()));
 }
 
-PitDownstreamRecord::PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* p) : PitFaceItem(ie, p) {
-  assert((p->pfi_flags & CCND_PFI_DNSTREAM) != 0);
+PitDownstreamRecord::PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* native) : PitFaceItem(ie, native) {
+  assert(this->GetFlag(CCND_PFI_DNSTREAM));
 }
 
 void PitDownstreamRecord::UpdateNonce(Ptr<const InterestMessage> interest) {
@@ -318,17 +316,17 @@ void PitDownstreamRecord::UpdateNonce(Ptr<const InterestMessage> interest) {
   if (interest->parsed()->offset[CCN_PI_B_Nonce] != interest->parsed()->offset[CCN_PI_E_Nonce]) {
     ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, interest->msg(), interest->parsed()->offset[CCN_PI_B_Nonce], interest->parsed()->offset[CCN_PI_E_Nonce], &nonce, &nonce_size);
   } else {
-    Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
-    assert(inface != nullptr);
-    nonce_size = (CCNDH->noncegen)(CCNDH, inface->ccnd_face(), generated_nonce_buf);
+    Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
+    assert(in_face != nullptr);
+    nonce_size = (CCNDH->noncegen)(CCNDH, in_face->ccnd_face(), generated_nonce_buf);
     nonce = generated_nonce_buf;
   }
   
-  this->set_p(pfi_set_nonce(CCNDH, this->ie()->ie(), this->p(), nonce, nonce_size));
+  this->set_native(pfi_set_nonce(CCNDH, this->ie()->native(), this->native(), nonce, nonce_size));
 }
 
 void PitDownstreamRecord::SetExpiryToLifetime(Ptr<const InterestMessage> interest) {
-  pfi_set_expiry_from_lifetime(CCNDH, this->ie()->ie(), this->p(), ccn_interest_lifetime(interest->msg(), interest->parsed()));
+  pfi_set_expiry_from_lifetime(CCNDH, this->ie()->native(), this->native(), ccn_interest_lifetime(interest->msg(), interest->parsed()));
 }
 
 };//namespace ndnfd

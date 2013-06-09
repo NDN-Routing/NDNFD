@@ -53,11 +53,11 @@ class NamePrefixTable : public Element {
 // A NamePrefixEntry is an entry in the NamePrefixTable.
 class NamePrefixEntry : public Element {
  public:
-  NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* npe);
+  NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* native);
   virtual ~NamePrefixEntry(void) {}
   
   Ptr<const Name> name(void) const { return this->name_; }
-  nameprefix_entry* npe(void) const { return this->npe_; }
+  nameprefix_entry* native(void) const { return this->native_; }
 
   // Parent returns the NamePrefixEntry for next shorter prefix.
   Ptr<NamePrefixEntry> Parent(void) const;
@@ -81,8 +81,8 @@ class NamePrefixEntry : public Element {
   // ForeachPit invokes f with each PitEntry whose name is under this prefix.
   void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
-  FaceId best_faceid(void) { return this->npe()->src == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->src); }
-  FaceId prev_faceid(void) const { return this->npe()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->npe()->osrc); }
+  FaceId best_faceid(void) { return this->native()->src == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->src); }
+  FaceId prev_faceid(void) const { return this->native()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->osrc); }
   // GetBestFace returns best_faceid.
   // If it's FaceId_none, it returns prev_faceid and writes that to best_faceid.
   FaceId GetBestFace(void);
@@ -93,16 +93,16 @@ class NamePrefixEntry : public Element {
   void AdjustPredictUp(void);
   
   template <typename T>
-  T* strategy_extra(void) const { return static_cast<T*>(this->npe()->ndnfd_strategy_extra); }
+  T* strategy_extra(void) const { return static_cast<T*>(this->native()->ndnfd_strategy_extra); }
   template <typename T>
   void set_strategy_extra(T* value);
   
  private:
   Ptr<const Name> name_;
-  nameprefix_entry* npe_;
+  nameprefix_entry* native_;
 
-  void set_best_faceid(FaceId value) { this->npe()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
-  void set_prev_faceid(FaceId value) { this->npe()->osrc = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
+  void set_best_faceid(FaceId value) { this->native()->src = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
+  void set_prev_faceid(FaceId value) { this->native()->osrc = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value); }
   
   Ptr<ForwardingEntry> SeekForwardingInternal(FaceId faceid, bool create);
   
@@ -112,13 +112,13 @@ class NamePrefixEntry : public Element {
 // A ForwardingEntry is a FIB entry.
 class ForwardingEntry : public Element {
  public:
-  ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* forw);
+  ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* native);
   virtual ~ForwardingEntry(void) {}
   
   Ptr<const Name> name(void) const { return this->npe_->name(); }
   Ptr<NamePrefixEntry> npe(void) const { return this->npe_; }
-  ccn_forwarding* forw(void) const { return this->forw_; }
-  FaceId face(void) const { return static_cast<FaceId>(this->forw()->faceid); }
+  ccn_forwarding* native(void) const { return this->native_; }
+  FaceId face(void) const { return static_cast<FaceId>(this->native()->faceid); }
   
   // Refresh makes the forwarding entry valid until now+expires,
   // or when face is closed.
@@ -129,7 +129,7 @@ class ForwardingEntry : public Element {
 
  private:
   Ptr<NamePrefixEntry> npe_;
-  ccn_forwarding* forw_;
+  ccn_forwarding* native_;
   
   DISALLOW_COPY_AND_ASSIGN(ForwardingEntry);
 };
@@ -165,18 +165,18 @@ class PitEntry : public Element {
   typedef uint32_t Serial;
 #define PRI_PitEntrySerial PRIu32
   
-  explicit PitEntry(interest_entry* ie);
+  explicit PitEntry(interest_entry* native);
   virtual ~PitEntry(void) {}
   
-  Serial serial(void) const { return static_cast<Serial>(this->ie()->serial); }
+  Serial serial(void) const { return static_cast<Serial>(this->native()->serial); }
   Ptr<const Name> name(void) const { return this->interest()->name(); }
-  interest_entry* ie(void) const { return this->ie_; }
+  interest_entry* native(void) const { return this->native_; }
   
   // related NamePrefixEntry
   Ptr<NamePrefixEntry> npe(void) const;
 
   // related InterestMessage (without InterestLifetime and Nonce)
-  Ptr<const InterestMessage> interest() const { return ie_ndnfdInterest(this->ie()); }
+  Ptr<const InterestMessage> interest() const { return ie_ndnfdInterest(this->native()); }
   
   // IsNonceUnique returns true if there's no other upstream/downstream record with same nonce as p.
   bool IsNonceUnique(Ptr<const PitFaceItem> p);
@@ -187,7 +187,7 @@ class PitEntry : public Element {
   // If it does not exist, one is created.
   Ptr<PitUpstreamRecord> SeekUpstream(FaceId face) { return this->MakePfi<PitUpstreamRecord>(this->SeekPfiInternal(face, true, CCND_PFI_UPSTREAM)); }
   // beginUpstream and endUpstream iterates over upstream records.
-  UpstreamIterator beginUpstream(void) { return UpstreamIterator(this, this->ie()->pfl); }
+  UpstreamIterator beginUpstream(void) { return UpstreamIterator(this, this->native()->pfl); }
   UpstreamIterator endUpstream(void) { return UpstreamIterator(this, nullptr); }
 
   // GetDownstream returns the downstream record for face, or null.
@@ -196,7 +196,7 @@ class PitEntry : public Element {
   // If it does not exist, one is created.
   Ptr<PitDownstreamRecord> SeekDownstream(FaceId face) { return this->MakePfi<PitDownstreamRecord>(this->SeekPfiInternal(face, true, CCND_PFI_DNSTREAM)); }
   // beginDownstream and endDownstream iterates over downstream records.
-  DownstreamIterator beginDownstream(void) { return DownstreamIterator(this, this->ie()->pfl); }
+  DownstreamIterator beginDownstream(void) { return DownstreamIterator(this, this->native()->pfl); }
   DownstreamIterator endDownstream(void) { return DownstreamIterator(this, nullptr); }
   
   // Delete pit_face_item.
@@ -210,7 +210,7 @@ class PitEntry : public Element {
 
  private:
   Ptr<const Name> name_;
-  interest_entry* ie_;
+  interest_entry* native_;
   
   pit_face_item* SeekPfiInternal(FaceId face, bool create, unsigned flag);
   template <typename TPfi> Ptr<TPfi> MakePfi(pit_face_item* p) { if (p == nullptr) return nullptr; return this->New<TPfi>(this, p); }
@@ -223,10 +223,10 @@ class PitFaceItem : public Element {
  public:
   virtual ~PitFaceItem(void) {}
   Ptr<PitEntry> ie(void) const { return this->ie_; }
-  FaceId faceid(void) const { return static_cast<FaceId>(this->p_->faceid); }
+  FaceId faceid(void) const { return static_cast<FaceId>(this->native()->faceid); }
   
-  pit_face_item* p(void) const { return this->p_; }
-  void set_p(pit_face_item* value) { assert(value != nullptr); this->p_ = value; }
+  pit_face_item* native(void) const { return this->native_; }
+  void set_native(pit_face_item* value) { assert(value != nullptr); this->native_ = value; }
   
   std::chrono::microseconds time_until_expiry(void) const;
   bool IsExpired(void) const;
@@ -234,14 +234,14 @@ class PitFaceItem : public Element {
   static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
 
  protected:
-  PitFaceItem(Ptr<PitEntry> ie, pit_face_item* p);
+  PitFaceItem(Ptr<PitEntry> ie, pit_face_item* native);
 
-  bool GetFlag(unsigned flag) const { return 0 != (this->p_->pfi_flags & flag); }
-  void SetFlag(unsigned flag, bool value) { if (value) this->p_->pfi_flags |= flag; else this->p_->pfi_flags &= ~flag; }
+  bool GetFlag(unsigned flag) const { return 0 != (this->native()->pfi_flags & flag); }
+  void SetFlag(unsigned flag, bool value) { if (value) this->native()->pfi_flags |= flag; else this->native()->pfi_flags &= ~flag; }
   
  private:
   Ptr<PitEntry> ie_;
-  pit_face_item* p_;
+  pit_face_item* native_;
   DISALLOW_COPY_AND_ASSIGN(PitFaceItem);
 };
 
@@ -250,7 +250,7 @@ class PitUpstreamRecord : public PitFaceItem {
  public:
   static const unsigned ccnd_pfi_flag = CCND_PFI_UPSTREAM;
 
-  PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* p);
+  PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* native);
   virtual ~PitUpstreamRecord(void) {}
   
   bool pending(void) const { return this->GetFlag(CCND_PFI_UPENDING); }
@@ -268,7 +268,7 @@ class PitDownstreamRecord : public PitFaceItem {
  public:
   static const unsigned ccnd_pfi_flag = CCND_PFI_DNSTREAM;
 
-  PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* p);
+  PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* native);
   virtual ~PitDownstreamRecord(void) {}
   
   bool pending(void) const { return this->GetFlag(CCND_PFI_PENDING); }
@@ -290,16 +290,16 @@ class PitDownstreamRecord : public PitFaceItem {
 
 template <typename T>
 void NamePrefixEntry::set_strategy_extra(T* value) {
-  if (this->npe()->ndnfd_strategy_extra != nullptr) {
-    this->global()->npt()->FinalizeNpeExtra(this->npe()->ndnfd_strategy_extra);
+  if (this->native()->ndnfd_strategy_extra != nullptr) {
+    this->global()->npt()->FinalizeNpeExtra(this->native()->ndnfd_strategy_extra);
   }
-  this->npe()->ndnfd_strategy_extra = value;
+  this->native()->ndnfd_strategy_extra = value;
 }
 
 template <typename TPfi>
 void PitEntry::PitFaceItemIterator<TPfi>::Delete(void) {
   assert(this->p_ != nullptr);
-  this->ie_->DeletePfiInternal(this->p_->p());
+  this->ie_->DeletePfiInternal(this->p_->native());
   this->p_ = nullptr;
 }
 

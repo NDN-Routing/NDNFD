@@ -36,7 +36,7 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
   }
   
   npe->EnsureUpdatedFib();
-  if ((npe->npe()->flags & CCN_FORW_LOCAL) != 0 && in_face->kind() != FaceKind::kApp) {
+  if ((npe->native()->flags & CCN_FORW_LOCAL) != 0 && in_face->kind() != FaceKind::kApp) {
     this->Log(kLLWarn, kLCStrategy, "Strategy::OnInterest(%" PRI_FaceId ",%s) non local", in_face->id(), interest->name()->ToUri().c_str());
     return;
   }
@@ -53,7 +53,7 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
 
 void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
-  bool is_new_ie = ie->ie()->strategy.renewals == 0;
+  bool is_new_ie = ie->native()->strategy.renewals == 0;
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
   if (inface == nullptr) return;// face is gone in another thread
 
@@ -75,8 +75,8 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
   // verify whether nonce is unique
   if (ie->IsNonceUnique(p)) {
     // unique nonce
-    ie->ie()->strategy.renewed = CCNDH->wtnow;
-    ie->ie()->strategy.renewals += 1;
+    ie->native()->strategy.renewed = CCNDH->wtnow;
+    ie->native()->strategy.renewals += 1;
     if (!p->pending()) {
       p->set_pending(true);
       inface->ccnd_face()->pending_interests += 1;
@@ -100,7 +100,7 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
     this->PropagateNewInterest(ie);
   }
   std::chrono::microseconds next_evt = outbounds.empty() ? std::chrono::microseconds(0) : ie->NextEventDelay(true);
-  this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+  this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
 }
 
 std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
@@ -112,7 +112,7 @@ void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<Face
     Ptr<PitUpstreamRecord> p = ie->SeekUpstream(face);
     if (p->IsExpired()) {
       p->SetExpiry(std::chrono::microseconds::zero());
-      p->p()->pfi_flags &= ~CCND_PFI_UPHUNGRY;
+      p->native()->pfi_flags &= ~CCND_PFI_UPHUNGRY;
     }
   }
 }
@@ -130,7 +130,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   ccn_indexbuf* tap = nullptr;
   Ptr<NamePrefixEntry> npe_fib = npe->FibNode();
   if (npe_fib != nullptr) {
-    tap = npe_fib->npe()->tap;
+    tap = npe_fib->native()->tap;
   }
   
   // read the known best face
@@ -143,7 +143,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
     defer_range = 75000;
   } else {
     use_first = false;
-    defer_min = static_cast<uint32_t>(npe->npe()->usec);
+    defer_min = static_cast<uint32_t>(npe->native()->usec);
     defer_range = (defer_min + 1) / 2;
   }
 
@@ -161,10 +161,10 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
         // don't assert(ie->npe()->best_faceid() == best), src may be aged out and set to CCN_NOFACEID
         this->DidnotArriveOnBestFace(ie);
         return Scheduler::kNoMore;
-      }, &ie->ie()->strategy.ev, true);
+      }, &ie->native()->strategy.ev, true);
       DEBUG_APPEND_FaceTime(p->faceid(),"best+",defer_min);
       this->SendInterest(ie, downstream, p);
-    } else if (ccn_indexbuf_member(tap, p->p()->faceid) >= 0) {
+    } else if (ccn_indexbuf_member(tap, p->faceid()) >= 0) {
       DEBUG_APPEND_FaceTime(p->faceid(),"tap+",0);
       this->SendInterest(ie, downstream, p);
     } else if (use_first) {
@@ -178,7 +178,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       DEBUG_APPEND_FaceTime(p->faceid(),"osrc",defer_min);
     } else {
       ++n_upst;
-      p->p()->pfi_flags |= CCND_PFI_SENDUPST;
+      p->native()->pfi_flags |= CCND_PFI_SENDUPST;
     }
   });
 
@@ -186,7 +186,7 @@ void Strategy::PropagateNewInterest(Ptr<PitEntry> ie) {
     uint32_t defer_max_inc = std::max(1U, (2 * defer_range + n_upst - 1) / n_upst);// max increment between defer times
     uint32_t defer = defer_min;
     std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-      if ((p->p()->pfi_flags & CCND_PFI_SENDUPST) == 0) return;
+      if ((p->native()->pfi_flags & CCND_PFI_SENDUPST) == 0) return;
       p->SetExpiry(std::chrono::microseconds(defer));
       DEBUG_APPEND_FaceTime(p->faceid(),"",defer);
       defer += nrand48(CCNDH->seed) % defer_max_inc;
@@ -218,7 +218,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
     }
     if (!p->pending()) continue;
     ++pending;
-    if ((p->p()->expiry - now) * 8 <= (p->p()->expiry - p->p()->renewed)) {// will expire soon (less than 1/8 remaining lifetime)
+    if ((p->native()->expiry - now) * 8 <= (p->native()->expiry - p->native()->renewed)) {// will expire soon (less than 1/8 remaining lifetime)
       DEBUG_APPEND_FaceId('~',p);
       continue;
     }
@@ -274,7 +274,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       ++upstreams;
     } else {
       DEBUG_APPEND_FaceId('~',p);
-      p->p()->pfi_flags |= CCND_PFI_UPHUNGRY;
+      p->native()->pfi_flags |= CCND_PFI_UPHUNGRY;
     }
   }
   
@@ -285,7 +285,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
 
   if (upstreams == 0 && pending == 0) {
     this->WillEraseTimedOutPendingInterest(ie);
-    ie->ie()->ev = nullptr;
+    ie->native()->ev = nullptr;
     this->global()->npt()->DeletePit(ie);
     ie = nullptr;
     return Scheduler::kNoMore;
@@ -299,7 +299,7 @@ void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstrea
   assert(ie != nullptr);
   assert(downstream != nullptr);
   assert(upstream != nullptr);
-  upstream->set_p(send_interest(CCNDH, ie->ie(), downstream->p(), upstream->p()));
+  upstream->set_native(send_interest(CCNDH, ie->native(), downstream->native(), upstream->native()));
 
 #ifdef NDNFD_STRATEGY_TRACE
   Ptr<Face> outface = this->global()->facemgr()->GetFace(upstream->faceid());
@@ -377,7 +377,7 @@ void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
     
     p->SetExpiry(defer);
     defer += std::chrono::microseconds(200);
-    this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+    this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
     FOREACH_OK;
   });
 }

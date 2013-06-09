@@ -38,7 +38,7 @@ void FloodFirstStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::PropagateNewInterest(%" PRI_PitEntrySerial ") flood", ie->serial());
   
   this->PopulateOutbounds(ie, outbounds);
-  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->ie()->ev, true);
+  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
 }
 
 void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
