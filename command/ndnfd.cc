@@ -8,11 +8,13 @@ extern "C" {
 #include "core/scheduler.h"
 #include "face/ip.h"
 #include "face/ether.h"
+#include "strategy/strategy.h"
 namespace ndnfd {
 
 void NdnfdProgram::Init(void) {
   ccnd_handle* h = ccnd_create("ndnfd", &Logging::CcndLogger, this->global()->logging());
   this->global()->set_ccndh(h);
+  this->global()->strategy()->Init2();
   this->global()->facemgr()->AddFaceThreads(2);
   
   this->internal_client_ = this->New<InternalClientFace>();

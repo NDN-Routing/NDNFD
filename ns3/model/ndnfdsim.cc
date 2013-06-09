@@ -3,6 +3,7 @@
 #include "core/scheduler.h"
 #include "global.h"
 #include "facemgr.h"
+#include "strategy/strategy.h"
 extern "C" {
 #include "ndnld/ndnld.h"
 uint32_t WTHZ_value(void);
@@ -18,6 +19,7 @@ void NdnfdSim::Init(void) {
   h->starttime = h->sec;
   h->starttime_usec = h->usec;
   this->global()->set_ccndh(h);
+  this->global()->strategy()->Init2();
   
   this->internal_client_ = this->New<InternalClientFace>();
   this->global()->facemgr()->StartDefaultListeners();

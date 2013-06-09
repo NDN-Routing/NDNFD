@@ -10,6 +10,7 @@ void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigne
 namespace ndnfd {
 
 void Strategy::Init(void) {
+  // TODO move this to strategy layer master
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
 }
 

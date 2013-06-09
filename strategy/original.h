@@ -1,13 +1,15 @@
 #ifndef NDNFD_STRATEGY_ORIGINAL_H_
 #define NDNFD_STRATEGY_ORIGINAL_H_
 #include "strategy.h"
+#include "core/scheduler.h"
 namespace ndnfd {
 
 // OriginalStrategy is an reimplementation of ccnd default strategy.
 class OriginalStrategy : public Strategy {
  public:
   OriginalStrategy(void) {}
-  virtual ~OriginalStrategy(void) {}
+  virtual void Init2(void);
+  virtual ~OriginalStrategy(void);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
@@ -34,7 +36,12 @@ class OriginalStrategy : public Strategy {
     void UpdateBestFace(FaceId value);
     // AdjustPredictUp adjusts up predicted response time.
     void AdjustPredictUp(void);
+    // AgeBestFace clears best face information.
+    void AgeBestFace(void);
   };
+
+  SchedulerEvent agebestface_evt_;
+  std::chrono::microseconds AgeBestFace(void);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(OriginalStrategy);

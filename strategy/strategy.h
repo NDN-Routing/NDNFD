@@ -11,7 +11,8 @@ namespace ndnfd {
 class Strategy : public Element {
  public:
   Strategy(void) {}
-  virtual void Init(void);
+  virtual void Init(void);//invoked before ccnd_create
+  virtual void Init2(void) {}//invoked after ccnd_create
   virtual ~Strategy(void) {}
   Ptr<CcndStrategyInterface> ccnd_strategy_interface(void) const { return this->ccnd_strategy_interface_; }
 

@@ -1,8 +1,15 @@
 #include "original.h"
 #include <algorithm>
-#include "core/scheduler.h"
 #include "face/facemgr.h"
 namespace ndnfd {
+
+void OriginalStrategy::Init2(void) {
+  this->agebestface_evt_ = this->global()->scheduler()->Schedule(std::chrono::microseconds(8000000), std::bind(&OriginalStrategy::AgeBestFace, this));
+}
+
+OriginalStrategy::~OriginalStrategy(void) {
+  this->global()->scheduler()->Cancel(this->agebestface_evt_);
+}
 
 void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   Ptr<NamePrefixEntry> npe = ie->npe();
@@ -148,6 +155,17 @@ void OriginalStrategy::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
   delete extra;
 }
 
+std::chrono::microseconds OriginalStrategy::AgeBestFace(void) {
+  int count = 0;
+  this->global()->npt()->ForeachNpe([&] (Ptr<NamePrefixEntry> npe) ->ForeachAction {
+    npe->strategy_extra<NpeExtra>()->AgeBestFace();
+    ++count;
+    FOREACH_OK;
+  });
+  this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::AgeBestFace() count=%d", count);
+  return std::chrono::microseconds(8000000);
+}
+
 OriginalStrategy::NpeExtra::NpeExtra(void) {
   this->best_faceid_ = this->prev_faceid_ = FaceId_none;
   this->prediction_ = std::chrono::microseconds(8192);
@@ -185,5 +203,9 @@ void OriginalStrategy::NpeExtra::AdjustPredictUp(void) {
   this->prediction_ = std::chrono::microseconds(t);
 }
 
+void OriginalStrategy::NpeExtra::AgeBestFace(void) {
+  this->prev_faceid_ = this->best_faceid_;
+  this->best_faceid_ = FaceId_none;
+}
 
 };//namespace ndnfd
