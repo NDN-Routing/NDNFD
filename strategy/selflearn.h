@@ -18,7 +18,10 @@ class SelfLearnStrategy : public Strategy {
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie) { assert(false); }
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
-  virtual void FinalizeNpeExtra(void* extra);
+
+  virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe);
+  virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);
+  virtual void FinalizeNpeExtra(Ptr<NamePrefixEntry> npe);
 
  protected:
   // SendInterest sends Interest, and calls DidnotArriveOnFace if no ContentObject comes back in predict time.
@@ -34,12 +37,10 @@ class SelfLearnStrategy : public Strategy {
   struct NpeExtra {
     std::unordered_map<FaceId,PredictRecord> predicts_;
     std::unordered_map<FaceId,ccn_wrappedtime> interest_sent_time_;//per upstream: last time an Interest was sent
+    void RankPredicts(void);
   };
   
   static std::chrono::microseconds initial_prediction(void) { return std::chrono::microseconds(15000); }
-  // GetExtra returns extra field for npe,
-  // copy from parent or create for root if it does not exist.
-  NpeExtra* GetExtra(Ptr<NamePrefixEntry> npe);
   // RankPredicts sorts the predicts set by increasing prediction.
   void RankPredicts(NpeExtra* extra);
 
