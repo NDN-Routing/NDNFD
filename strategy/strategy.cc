@@ -239,9 +239,6 @@ void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstrea
 #endif
 }
 
-void Strategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
-}
-
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
 }

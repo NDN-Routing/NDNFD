@@ -63,11 +63,6 @@ class Strategy : public Element {
   // (same as ccnd do_propagate)
   virtual std::chrono::microseconds DoPropagate(Ptr<PitEntry> ie);
   
-  // DidnotArriveOnBestFace is invoked when ContentObject didn't arrived on best face
-  // in predicted time.
-  // (same as ccnd strategy_callout CCNST_TIMER)
-  virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
-  
   // WillEraseTimedOutPendingInterest is invoked when there's no more pending downstreams
   // and no more unexpired upstreams.
   // (same as ccnd strategy_callout CCNST_TIMEOUT)

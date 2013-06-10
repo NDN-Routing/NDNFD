@@ -12,9 +12,7 @@ class OriginalStrategy : public Strategy {
   virtual ~OriginalStrategy(void);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
-  virtual void FinalizeNpeExtra(void* extra) {}
   virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw);
 
   virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe);
@@ -42,6 +40,11 @@ class OriginalStrategy : public Strategy {
 
   SchedulerEvent agebestface_evt_;
   std::chrono::microseconds AgeBestFace(void);
+
+  // DidnotArriveOnBestFace is invoked when ContentObject didn't arrived on best face
+  // in predicted time.
+  // (same as ccnd strategy_callout CCNST_TIMER)
+  virtual void DidnotArriveOnBestFace(Ptr<PitEntry> ie);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(OriginalStrategy);
