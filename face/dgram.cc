@@ -81,7 +81,6 @@ DgramChannel::DgramChannel(int fd, const NetworkAddress& local_addr, Ptr<const A
   this->local_addr_ = local_addr;
   this->av_ = av;
   this->wp_ = wp;
-  this->recvbuf_ = new Buffer(0);
   this->closed_ = false;
 }
 
@@ -191,7 +190,8 @@ void DgramChannel::PollCallback(int fd, short revents) {
 }
 
 void DgramChannel::ReceiveFrom(void) {
-  Ptr<Buffer> pkt = this->recvbuf(); pkt->Reset(); size_t buflen = 65536;
+  const size_t buflen = 65536;
+  Ptr<Buffer> pkt = new Buffer(0, 0, buflen);
   NetworkAddress peer;
   ssize_t res = recvfrom(this->fd(), pkt->Reserve(buflen), buflen, 0, reinterpret_cast<sockaddr*>(&peer.who), &peer.wholen);
   if (res <= 0) return;

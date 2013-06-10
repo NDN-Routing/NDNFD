@@ -57,14 +57,14 @@ void FaceThread::NewFace(Ptr<Face> face) {
 
 void FaceThread::Send(FaceId face, Ptr<Message> message) {
   assert(this->global()->IsCoreThread());
-  this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::Send(%" PRI_FaceId ")", this, face);
+  //this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::Send(%" PRI_FaceId ")", this, face);
   this->out_queue_.push(std::make_tuple(face, message));
   write(this->notify_fds_[0], ".", 1);
 }
 
 void FaceThread::FaceReceive(Ptr<Message> message) {
   assert(this->IsFaceThread());
-  this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::FaceReceive(%" PRI_FaceId ")", this, message->incoming_face());
+  //this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::FaceReceive(%" PRI_FaceId ")", this, message->incoming_face());
   this->in_queue_.push(message);
   write(this->notify_fds_[1], ".", 1);
 }
@@ -108,7 +108,7 @@ void FaceThread::PullOutQueue() {
     //this->Log(kLLWarn, kLCFace, "FaceThread(%" PRIxPTR ")::PullOutQueue() Face(%" PRI_FaceId ")::Send(type=%" PRIu32 ")", this, face->id(), message->type());
     face->Send(message);
   }
-  this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::PullOutQueue() %d messages", this, count);
+  //this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::PullOutQueue() %d messages", this, count);
 }
 
 void FaceThread::PullInQueue() {
@@ -119,7 +119,7 @@ void FaceThread::PullInQueue() {
     ++count;
     this->Receive(message);
   }
-  this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::PullInQueue() %d messages", this, count);
+  //this->Log(kLLDebug, kLCFace, "FaceThread(%" PRIxPTR ")::PullInQueue() %d messages", this, count);
 }
 
 void IntegratedFaceThread::Init(void) {
@@ -131,7 +131,7 @@ void IntegratedFaceThread::Init(void) {
 
 void IntegratedFaceThread::Send(FaceId face, Ptr<Message> message) {
   assert(this->global()->IsCoreThread());
-  this->Log(kLLDebug, kLCFace, "IntegratedFaceThread(%" PRIxPTR ")::Send(%" PRI_FaceId ")", this, face);
+  //this->Log(kLLDebug, kLCFace, "IntegratedFaceThread(%" PRIxPTR ")::Send(%" PRI_FaceId ")", this, face);
   Ptr<Face> f = this->global()->facemgr()->GetFace(face);
   if (f == nullptr) return;
   assert(f->face_thread() == this);
@@ -141,7 +141,7 @@ void IntegratedFaceThread::Send(FaceId face, Ptr<Message> message) {
 
 void IntegratedFaceThread::FaceReceive(Ptr<Message> message) {
   assert(this->global()->IsCoreThread());
-  this->Log(kLLDebug, kLCFace, "IntegratedFaceThread(%" PRIxPTR ")::FaceReceive(%" PRI_FaceId ")", this, message->incoming_face());
+  //this->Log(kLLDebug, kLCFace, "IntegratedFaceThread(%" PRIxPTR ")::FaceReceive(%" PRI_FaceId ")", this, message->incoming_face());
   this->Receive(message);
 }
 

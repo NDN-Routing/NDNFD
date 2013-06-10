@@ -138,7 +138,6 @@ class DgramChannel : public Element, public IPollClient {
   bool closed_;
   int fd(void) const { return this->fd_; }
   std::unordered_map<AddressHashKey,Ptr<PeerEntry>>& peers(void) { return this->peers_; }
-  Ptr<Buffer> recvbuf(void) const { return this->recvbuf_; }
 
   // CloseFd closes fd
   virtual void CloseFd(void);
@@ -194,7 +193,6 @@ class DgramChannel : public Element, public IPollClient {
   std::unordered_map<AddressHashKey,Ptr<PeerEntry>> peers_;
   Ptr<DgramFallbackFace> fallback_face_;
   std::vector<Ptr<McastEntry>> mcasts_;//there's a small number of McastEntry, so vector would be faster than unordered_map
-  Ptr<Buffer> recvbuf_;
   NetworkAddress local_addr_;
   SchedulerEvent reap_evt_;
   
