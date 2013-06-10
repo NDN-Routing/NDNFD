@@ -51,13 +51,19 @@ CcnbWireProtocol::State::State(void) {
 Ptr<Buffer> CcnbWireProtocol::State::GetReceiveBuffer(void) {
   Ptr<Buffer> b = WireProtocolState::GetReceiveBuffer();
   ccn_skeleton_decoder* d = &this->d_;
-  if (this->msgstart_ < b->length()) { 
-    b->Pull(this->msgstart_);
-    b->Rebase();
-    d->index -= this->msgstart_;
-  } else {
-    b->Reset();
-    d->index = 0;
+  if (this->msgstart_ > 0) {
+    // One or more messages have been received on this buffer.
+    // We cannot overwrite this buffer because another thread may use it.
+    this->CreateReceiveBuffer();
+    Ptr<Buffer> b2 = this->receive_buffer();
+    if (this->msgstart_ < b->length()) {
+      size_t partial_length = b->length() - this->msgstart_;
+      memcpy(b2->Put(partial_length), b->data() + this->msgstart_, partial_length);
+      d->index -= this->msgstart_;
+    } else {
+      d->index = 0;
+    }
+    b = b2;
   }
   return b;
 }

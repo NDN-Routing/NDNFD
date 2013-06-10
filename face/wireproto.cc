@@ -9,7 +9,7 @@ Ptr<Buffer> WireProtocolState::GetReceiveBuffer(void) {
 }
 
 void WireProtocolState::CreateReceiveBuffer(void) {
-  this->set_receive_buffer(new Buffer(0, 0, 1<<20));
+  this->set_receive_buffer(new Buffer(0, 0, 1<<14));
 }
 
 };//namespace ndnfd
