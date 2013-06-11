@@ -82,7 +82,7 @@ class Strategy : public Element {
   
   // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
   // (same as ccnd strategy_callout CCNST_SATISFIED)
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co);
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
   // DidSatisfyPendingInterests is invoked after some PIT entries are satisfied in npe.
   // If matching_suffix is zero, some PIT entries are matched on this npe;
   // if matching_suffix is positive, some PIT entries are matched on a child of this npe;

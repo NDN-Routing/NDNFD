@@ -8,9 +8,9 @@ int propagate_interest(struct ccnd_handle* h, struct face* face, uint8_t* msg, s
   return global->strategy()->ccnd_strategy_interface()->PropagateInterest(face, msg, pi, npe);
 }
 
-void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face) {
+void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face, int pending_downstreams) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->strategy()->ccnd_strategy_interface()->WillSatisfyPendingInterest(ie, static_cast<ndnfd::FaceId>(from_face->faceid));
+  return global->strategy()->ccnd_strategy_interface()->WillSatisfyPendingInterest(ie, static_cast<ndnfd::FaceId>(from_face->faceid), pending_downstreams);
 }
 
 void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix) {
@@ -43,7 +43,7 @@ int CcndStrategyInterface::PropagateInterest(face* face, uint8_t* msg, ccn_parse
   return 0;
 }
 
-void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream) {
+void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream, int pending_downstreams) {
   Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
   // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
   // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
@@ -54,7 +54,7 @@ void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceI
   }
 
   Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
-  this->global()->strategy()->WillSatisfyPendingInterest(ie1, co);
+  this->global()->strategy()->WillSatisfyPendingInterest(ie1, co, pending_downstreams);
 }
 
 void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix) {

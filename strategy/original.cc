@@ -101,9 +101,9 @@ void OriginalStrategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
   }
 }
 
-void OriginalStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co) {
-  this->Strategy::WillSatisfyPendingInterest(ie, co);
-  this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
+void OriginalStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
+  this->Strategy::WillSatisfyPendingInterest(ie, co, pending_downstreams);
+  if (pending_downstreams > 0) this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
 }
 
 void OriginalStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {

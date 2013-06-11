@@ -245,25 +245,27 @@ void Strategy::OnContent(Ptr<const ContentObjectMessage> co) {
   process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
 }
 
-void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co) {
+void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
   FaceId upstream = co->incoming_face();
-  this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId "", ie->serial(), upstream);
+  this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " count(pending_downstreams)=%d", ie->serial(), upstream, pending_downstreams);
   
-  // mark PitEntry as consumed, so that new Interest is considered new
-  ie->native()->strategy.renewals = 0;
-  
-  // schedule delete PitEntry on last upstream expiry
-  ccn_wrappedtime now = CCNDH->wtnow;
-  ccn_wrappedtime last = 0;
-  std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-    if (!p->IsExpired()) {
-      last = std::max(last, p->native()->expiry - now);
-    }
-  });
-  this->global()->scheduler()->Schedule(std::chrono::microseconds(last * (1000000 / WTHZ_value())), [this,ie]{
-    this->global()->npt()->DeletePit(ie);
-    return Scheduler::kNoMore_NoCleanup;
-  }, &ie->native()->ev, true);
+  if (pending_downstreams > 0) {
+    // mark PitEntry as consumed, so that new Interest is considered new
+    ie->native()->strategy.renewals = 0;
+    
+    // schedule delete PitEntry on last upstream expiry
+    ccn_wrappedtime now = CCNDH->wtnow;
+    ccn_wrappedtime last = 0;
+    std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
+      if (!p->IsExpired()) {
+        last = std::max(last, p->native()->expiry - now);
+      }
+    });
+    this->global()->scheduler()->Schedule(std::chrono::microseconds(last * (1000000 / WTHZ_value())), [this,ie]{
+      this->global()->npt()->DeletePit(ie);
+      return Scheduler::kNoMore_NoCleanup;
+    }, &ie->native()->ev, true);
+  }
 }
 
 void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {

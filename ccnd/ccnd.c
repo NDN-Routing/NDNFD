@@ -1821,23 +1821,34 @@ consume_matching_interests(struct ccnd_handle *h,
 #ifdef NDNFD
         if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
                                          p->interest_msg, p->size, ndnfd_ie_pi(p))) {
+            int pending_downstreams = 0;
+            for (x = p->pfl; x != NULL; x = x->next) {
+                if ((x->pfi_flags & CCND_PFI_PENDING) != 0) {
+                    face_send_queue_insert(h, face_from_faceid(h, x->faceid),
+                                           content);
+                    ++pending_downstreams;
+                    x->pfi_flags = x->pfi_flags & ~CCND_PFI_PENDING;
+                }
+                if ((x->pfi_flags & CCND_PFI_UPENDING) != 0 && face != NULL && x->faceid == face->faceid) {
+                    x->pfi_flags = x->pfi_flags & ~CCND_PFI_UPENDING;
+                }
+            }
+            if (pending_downstreams > 0) ++matches;
+            strategy_callout2_SATISFIED(h, p, from_face, pending_downstreams);
+        }
 #else
         if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
                                          p->interest_msg, p->size, NULL)) {
-#endif
             for (x = p->pfl; x != NULL; x = x->next) {
                 if ((x->pfi_flags & CCND_PFI_PENDING) != 0)
                     face_send_queue_insert(h, face_from_faceid(h, x->faceid),
                                            content);
             }
             matches += 1;
-#ifdef NDNFD
-            strategy_callout2_SATISFIED(h, p, from_face);
-#else
             strategy_callout(h, p, CCNST_SATISFIED);
             consume_interest(h, p);
-#endif
         }
+#endif
     }
     return(matches);
 }

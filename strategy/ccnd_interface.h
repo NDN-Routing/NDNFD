@@ -6,7 +6,7 @@ extern "C" {
 #include "ccnd/ccnd_private.h"
 
 int propagate_interest(struct ccnd_handle* h, struct face* face, uint8_t* msg, struct ccn_parsed_interest* pi, struct nameprefix_entry* npe);
-void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face);
+void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face, int pending_downstreams);
 void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix);
 void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid, const uint8_t* name, size_t name_size);
 
@@ -27,7 +27,7 @@ class CcndStrategyInterface : public Element {
   virtual ~CcndStrategyInterface(void) {}
   
   int PropagateInterest(face* face, uint8_t* msg, ccn_parsed_interest* pi, nameprefix_entry* npe);
-  void WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream);
+  void WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream, int pending_downstreams);
   void DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix);
   void DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name);
   void CreateNpe(nameprefix_entry* npe, Ptr<Name> name);

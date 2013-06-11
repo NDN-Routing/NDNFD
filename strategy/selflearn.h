@@ -16,7 +16,7 @@ class SelfLearnStrategy : public Strategy {
 
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
 
   virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe);
   virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);
@@ -35,7 +35,6 @@ class SelfLearnStrategy : public Strategy {
   };
   struct NpeExtra {
     std::unordered_map<FaceId,PredictRecord> predicts_;
-    std::unordered_map<FaceId,ccn_wrappedtime> interest_sent_time_;//per upstream: last time an Interest was sent
     void RankPredicts(void);
   };
   

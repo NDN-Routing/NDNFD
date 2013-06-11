@@ -12,7 +12,7 @@ class OriginalStrategy : public Strategy {
   virtual ~OriginalStrategy(void);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co);
+  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
   virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
   virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw);
 
