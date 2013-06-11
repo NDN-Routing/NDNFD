@@ -85,10 +85,8 @@ static struct face *record_connection(struct ccnd_handle *h,
                                       struct sockaddr *who,
                                       socklen_t wholen,
                                       int setflags);
-#endif
 static void process_input_message(struct ccnd_handle *h, struct face *face,
                                   unsigned char *msg, size_t size, int pdu_ok);
-#ifndef NDNFD
 static void process_input(struct ccnd_handle *h, int fd);
 static int ccn_stuff_interest(struct ccnd_handle *h,
                               struct face *face, struct ccn_charbuf *c);
@@ -130,8 +128,8 @@ static void ccn_append_link_stuff(struct ccnd_handle *h,
 static int process_incoming_link_message(struct ccnd_handle *h,
                                          struct face *face, enum ccn_dtag dtag,
                                          unsigned char *msg, size_t size);
+static void process_internal_client_buffer(struct ccnd_handle *h);
 #endif
-NDNFD_EXPOSE_static void process_internal_client_buffer(struct ccnd_handle *h);
 NDNFD_EXPOSE_static void
 pfi_destroy(struct ccnd_handle *h, struct interest_entry *ie,
             struct pit_face_item *p);
@@ -4339,26 +4337,26 @@ drop_nonlocal_interest(struct ccnd_handle *h, struct nameprefix_entry *npe,
  * Otherwise, initiate propagation of the interest.
  */
 #ifdef NDNFD
-void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps);
-#endif
+void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps)
+#else
 static void
 process_incoming_interest(struct ccnd_handle *h, struct face *face,
                           unsigned char *msg, size_t size)
+#endif
 {
-#ifndef NDNFD
     struct hashtb_enumerator ee;
     struct hashtb_enumerator *e = &ee;
-#endif
+#ifndef NDNFD
     struct ccn_parsed_interest parsed_interest = {0};
     struct ccn_parsed_interest *pi = &parsed_interest;
 #ifndef NDNFD_FIXCCNDWARNINGS
     size_t namesize = 0;
 #endif
-#ifndef NDNFD
-    int k;
 #endif
-    int res;
+    int k;
 #ifndef NDNFD
+    int res;
+#endif
     int try;
     int matched;
     int s_ok;
@@ -4366,7 +4364,7 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
     struct nameprefix_entry *npe = NULL;
     struct content_entry *content = NULL;
     struct content_entry *last_match = NULL;
-#endif
+#ifndef NDNFD
     struct ccn_indexbuf *comps = indexbuf_obtain(h);
     if (size > 65535)
         res = -__LINE__;
@@ -4377,21 +4375,6 @@ process_incoming_interest(struct ccnd_handle *h, struct face *face,
         ccn_indexbuf_destroy(&comps);
         return;
     }
-#ifdef NDNFD
-    process_incoming_interest2(h, face, msg, size, pi, comps);
-    indexbuf_release(h, comps);
-}
-void process_incoming_interest2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_interest* pi, struct ccn_indexbuf* comps) {
-    struct hashtb_enumerator ee;
-    struct hashtb_enumerator *e = &ee;
-    int k;
-    int try;
-    int matched;
-    int s_ok;
-    struct interest_entry *ie = NULL;
-    struct nameprefix_entry *npe = NULL;
-    struct content_entry *content = NULL;
-    struct content_entry *last_match = NULL;
 #endif
     ccnd_meter_bump(h, face->meter[FM_INTI], 1);
     if (pi->scope >= 0 && pi->scope < 2 &&
@@ -4636,21 +4619,24 @@ Finish:
  * matching PIT entry.
  */
 #ifdef NDNFD
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
-#endif
+void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co)
+#define obj (*co)
+#else
 static void
 process_incoming_content(struct ccnd_handle *h, struct face *face,
                          unsigned char *wire_msg, size_t wire_size)
+#endif
 {
+#ifndef NDNFD
     unsigned char *msg;
     size_t size;
-#ifndef NDNFD
+#endif
     struct hashtb_enumerator ee;
     struct hashtb_enumerator *e = &ee;
-#endif
-    struct ccn_parsed_ContentObject obj = {0};
-    int res;
 #ifndef NDNFD
+    struct ccn_parsed_ContentObject obj = {0};
+#endif
+    int res;
     size_t keysize = 0;
     size_t tailsize = 0;
     unsigned char *tail = NULL;
@@ -4658,39 +4644,16 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
     int i;
     struct ccn_indexbuf *comps = indexbuf_obtain(h);
     struct ccn_charbuf *cb = charbuf_obtain(h);
-#endif
     
+#ifndef NDNFD
     msg = wire_msg;
     size = wire_size;
     
-#ifdef NDNFD
-    res = ccn_parse_ContentObject(msg, size, &obj, NULL);
-#else
     res = ccn_parse_ContentObject(msg, size, &obj, comps);
-#endif
     if (res < 0) {
         ccnd_msg(h, "error parsing ContentObject - code %d", res);
-#ifdef NDNFD
-        return;
-#else
         goto Bail;
-#endif
     }
-#ifdef NDNFD
-    process_incoming_content2(h, face, msg, size, &obj);
-}
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co) {
-#define obj (*co)
-    struct hashtb_enumerator ee;
-    struct hashtb_enumerator *e = &ee;
-    int res;
-    size_t keysize = 0;
-    size_t tailsize = 0;
-    unsigned char *tail = NULL;
-    struct content_entry *content = NULL;
-    int i;
-    struct ccn_indexbuf *comps = indexbuf_obtain(h);
-    struct ccn_charbuf *cb = charbuf_obtain(h);
 #endif
     ccnd_meter_bump(h, face->meter[FM_DATI], 1);
 #ifdef NDNFD
@@ -4846,6 +4809,7 @@ Bail:
 #endif
 }
 
+#ifndef NDNFD
 /**
  * Process an incoming message.
  *
@@ -4906,11 +4870,9 @@ process_input_message(struct ccnd_handle *h, struct face *face,
         case CCN_DTAG_ContentObject:
             process_incoming_content(h, face, msg, size);
             return;
-#ifndef NDNFD
         case CCN_DTAG_SequenceNumber:
             process_incoming_link_message(h, face, dtag, msg, size);
             return;
-#endif
         default:
             break;
     }
@@ -4919,7 +4881,6 @@ process_input_message(struct ccnd_handle *h, struct face *face,
              (unsigned long)size);
 }
 
-#ifndef NDNFD
 /**
  * Log a notification that a new datagram face has been created.
  */
@@ -5023,7 +4984,6 @@ get_dgram_source(struct ccnd_handle *h, struct face *face,
     hashtb_end(e);
     return(source);
 }
-#endif
 
 /**
  * Break up data in a face's input buffer buffer into individual messages,
@@ -5060,7 +5020,6 @@ process_input_buffer(struct ccnd_handle *h, struct face *face)
     memset(d, 0, sizeof(*d));
 }
 
-#ifndef NDNFD
 /**
  * Process the input from a socket.
  *
@@ -5184,14 +5143,13 @@ process_input(struct ccnd_handle *h, int fd)
         }
     }
 }
-#endif
 
 /**
  * Process messages from our internal client.
  *
  * The internal client's output is input to us.
  */
-NDNFD_EXPOSE_static void
+static void
 process_internal_client_buffer(struct ccnd_handle *h)
 {
     struct face *face = h->face0;
@@ -5235,7 +5193,6 @@ ccnd_internal_client_has_somthing_to_say(struct ccnd_handle *h)
     ccn_schedule_event(h->sched, 0, process_icb_action, NULL, 0);
 }
 
-#ifndef NDNFD
 /**
  * Handle errors after send() or sendto().
  * @returns -1 if error has been dealt with, or 0 to defer sending.

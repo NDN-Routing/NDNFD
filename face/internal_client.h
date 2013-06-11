@@ -3,6 +3,7 @@
 extern "C" {
 #include <ccn/ccn_private.h>
 #include "ccnd/ccnd_private.h"
+void ccnd_internal_client_has_somthing_to_say(struct ccnd_handle* h);
 }
 #include "face/face.h"
 #include "message/ccnb.h"
@@ -24,12 +25,15 @@ class InternalClientFace : public Face {
 
   virtual void Send(Ptr<const Message> message);
 
-  // Grab receives messages from internal client by reading its buffer.
+  // Run receives messages from internal client by reading its buffer.
   // This should be called in main loop.
-  void Grab(void);
+  void Run(void);
   
  private:
   ccn* internal_client(void) const { return const_cast<ccn*>(CCNDH->internal_client); }
+  Ptr<WireProtocol> wp_;
+  Ptr<WireProtocolState> wps_;
+  
   DISALLOW_COPY_AND_ASSIGN(InternalClientFace);
 };
 

@@ -70,9 +70,8 @@ void NdnfdSim::RunOnce(void) {
     this->next_run_actions_.pop();
   }
 
-  //this->internal_client_->Grab();
+  this->internal_client_->Run();
   std::chrono::microseconds next_scheduler_evt = this->global()->scheduler()->Run();
-  //this->internal_client_->Grab();
 
   uint64_t next_us = 10000;
   if (next_scheduler_evt != Scheduler::kNoMore) {

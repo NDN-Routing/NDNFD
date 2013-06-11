@@ -32,7 +32,9 @@ void NdnfdProgram::Init(void) {
 
 void NdnfdProgram::Run(void) {
   while (true) {
-    this->internal_client_->Grab();
+    this->internal_client_->Run();
+    this->global()->scheduler()->Run();
+    this->internal_client_->Run();
     std::chrono::microseconds next_scheduler_evt = this->global()->scheduler()->Run();
     std::chrono::milliseconds poll_timeout = next_scheduler_evt.count()<0 ? PollMgr::kNoTimeout : std::chrono::duration_cast<std::chrono::milliseconds>(next_scheduler_evt);
     this->global()->pollmgr()->Poll(poll_timeout);

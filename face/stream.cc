@@ -162,8 +162,6 @@ void StreamFace::Read(void) {
 
   if (!msgs.empty()) this->set_status(FaceStatus::kEstablished);
   for (Ptr<Message> msg : msgs) {
-    CcnbMessage* m = static_cast<CcnbMessage*>(PeekPointer(msg));
-    assert(m->Verify());
     this->ReceiveMessage(msg);
   }
 }

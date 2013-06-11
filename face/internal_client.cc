@@ -1,8 +1,10 @@
 #include "internal_client.h"
 #include "face/facemgr.h"
-extern "C" {
-void process_internal_client_buffer(struct ccnd_handle* h);
+
+void ccnd_internal_client_has_somthing_to_say(struct ccnd_handle* h) {
+  // This is used for sending adjancency Interest, which is not supported.
 }
+
 namespace ndnfd {
 
 void InternalClientFace::Init(void) {
@@ -10,6 +12,11 @@ void InternalClientFace::Init(void) {
   this->set_face_thread(this->global()->facemgr()->integrated_face_thread());
   this->global()->facemgr()->AddFace(this);
   CCNDH->face0 = this->ccnd_face();
+
+  this->wp_ = this->New<CcnbWireProtocol>(true);
+  assert(this->wp_->IsStateful());
+  this->wps_ = this->wp_->CreateState(NetworkAddress());
+
   int res = ccnd_internal_client_start(CCNDH);
   if (res < 0) {
     this->Log(kLLError, kLCCcndFace, "InternalClientFace::Init ccnd_internal_client_start fails");
@@ -31,13 +38,42 @@ FaceDescription InternalClientFace::GetDescription(void) const {
 }
 
 void InternalClientFace::Send(Ptr<const Message> message) {
-  this->Log(kLLDebug, kLCCcndFace, "InternalClientFace::Send interest_faceid=%u", CCNDH->interest_faceid);
-  const CcnbMessage* msg = static_cast<const CcnbMessage*>(PeekPointer(message));
-  ccn_dispatch_message(this->internal_client(), const_cast<uint8_t*>(msg->msg()), msg->length());
+  bool ok; std::list<Ptr<Buffer>> pkts;
+  std::tie(ok, pkts) = this->wp_->Encode(NetworkAddress(), this->wps_, message);
+  if (!ok) {
+    this->set_status(FaceStatus::kProtocolError);
+    return;
+  }
+  
+  for (Ptr<Buffer> pkt : pkts) {
+    this->CountBytesOut(pkt->length());
+    ccn_dispatch_message(this->internal_client(), const_cast<uint8_t*>(pkt->data()), pkt->length());
+  }
 }
 
-void InternalClientFace::Grab(void) {
-  process_internal_client_buffer(CCNDH);
+void InternalClientFace::Run(void) {
+  ccn_charbuf* inbuf = ccn_grab_buffered_output(CCNDH->internal_client);
+  if (inbuf == nullptr) return;
+  this->CountBytesIn(inbuf->length);
+  
+  Ptr<Buffer> pkt = this->wps_->GetReceiveBuffer();
+  if (pkt->length() == 0) {
+    pkt->Swap(inbuf);
+  } else {
+    memcpy(pkt->Put(inbuf->length), inbuf->buf, inbuf->length);
+  }
+  ccn_charbuf_destroy(&inbuf);
+  
+  bool ok; std::list<Ptr<Message>> msgs;
+  std::tie(ok, msgs) = this->wp_->Decode(NetworkAddress(), this->wps_, pkt);
+  if (!ok) {
+    this->set_status(FaceStatus::kProtocolError);
+    return;
+  }
+
+  for (Ptr<Message> msg : msgs) {
+    this->ReceiveMessage(msg);
+  }
 }
 
 
