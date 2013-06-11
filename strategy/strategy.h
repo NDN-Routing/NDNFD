@@ -51,7 +51,7 @@ class Strategy : public Element {
   // PropagateNewInterest propagates the first Interest that causes creation of PIT entry.
   // Possible upstreams is populated in ie->pfl with CCND_PFI_UPSTREAM flag.
   // (same as ccnd strategy_callout CCNST_FIRST)
-  virtual void PropagateNewInterest(Ptr<PitEntry> ie);
+  virtual void PropagateNewInterest(Ptr<PitEntry> ie) =0;
 
   // DoPropagate is invoked when
   // * a similar Interest is received from a new/expired downstream

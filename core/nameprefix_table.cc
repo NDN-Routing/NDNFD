@@ -113,6 +113,7 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
 
 void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
   assert(ie != nullptr);
+  //this->Log(kLLDebug, kLCTable, "NamePrefixTable::DeletePit(%" PRIxPTR ")", ie->native());
   consume_interest(CCNDH, ie->native());
 }
 

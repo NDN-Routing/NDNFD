@@ -1837,8 +1837,8 @@ consume_matching_interests(struct ccnd_handle *h,
             strategy_callout2_SATISFIED(h, p, from_face);
 #else
             strategy_callout(h, p, CCNST_SATISFIED);
-#endif
             consume_interest(h, p);
+#endif
         }
     }
     return(matches);

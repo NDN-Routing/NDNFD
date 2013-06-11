@@ -17,7 +17,10 @@ class Scheduler : public Element {
   // or kNoMore to indicate the event shouldn't be rescheduled.
   typedef std::function<std::chrono::microseconds(void)> Callback;
   
+  // event shouldn't be scheduled again; scheduler queue is empty
   static constexpr std::chrono::microseconds kNoMore = std::chrono::microseconds(-1);
+  // event shouldn't be scheduled again, and Cancel has been called in Callback
+  static constexpr std::chrono::microseconds kNoMore_NoCleanup = std::chrono::microseconds(-2);
  
   Scheduler(void);// use global schedule
   Scheduler(ccn_schedule* sched);// use local schedule; will be destroy in dtor

@@ -16,6 +16,7 @@ typedef uint32_t LoggingComponent;
 const LoggingComponent kLCPollMgr    = 0x0001;
 const LoggingComponent kLCScheduler  = 0x0002;
 const LoggingComponent kLCIntClientH = 0x0004;
+const LoggingComponent kLCTable      = 0x0008;
 const LoggingComponent kLCWireProto  = 0x0010;
 const LoggingComponent kLCFace       = 0x0020;
 const LoggingComponent kLCFaceMgr    = 0x0040;

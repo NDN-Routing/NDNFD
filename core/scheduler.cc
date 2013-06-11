@@ -5,6 +5,7 @@ void ccnd_gettime(const struct ccn_gettime *self, struct ccn_timeval *result);
 namespace ndnfd {
 
 constexpr std::chrono::microseconds Scheduler::kNoMore;
+constexpr std::chrono::microseconds Scheduler::kNoMore_NoCleanup;
 
 Scheduler::Scheduler(void) {
   this->sched_ = nullptr;
@@ -56,14 +57,17 @@ std::chrono::microseconds Scheduler::Run(void) {
 
 int Scheduler::ScheduledAction(ccn_schedule* sched, void* clienth, ccn_scheduled_event* ev, int flags) {
   EvData* evdata = static_cast<EvData*>(ev->evdata);
+  std::chrono::microseconds delay(0);
   if ((flags & CCN_SCHEDULE_CANCEL) == 0) {
-    std::chrono::microseconds delay = evdata->cb();
+    delay = evdata->cb();
     if (delay.count() > 0) {
       return static_cast<int>(delay.count());
     }
   }
-  if (evdata->evt_ptr != nullptr) *(evdata->evt_ptr) = nullptr;
-  delete evdata;
+  if (delay != Scheduler::kNoMore_NoCleanup) {
+    if (evdata->evt_ptr != nullptr) *(evdata->evt_ptr) = nullptr;
+    delete evdata;
+  }
   return -1;
 }
 

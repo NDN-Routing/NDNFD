@@ -101,6 +101,11 @@ void OriginalStrategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
   }
 }
 
+void OriginalStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co) {
+  this->Strategy::WillSatisfyPendingInterest(ie, co);
+  this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
+}
+
 void OriginalStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
   FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
