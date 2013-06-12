@@ -27,7 +27,7 @@ std::string NackCode_string(NackCode code) {
   return "";
 }
 
-const MessageType NackMessage::kType;
+MessageType_def(NackMessage);
 
 NackMessage::NackMessage(const uint8_t* msg, size_t length) : CcnbMessage(msg, length) {}
 

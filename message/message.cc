@@ -1,6 +1,6 @@
 #include "message.h"
 namespace ndnfd {
 
-const MessageType Message::kType;
+MessageType_def(Message);
 
 };//namespace ndnfd

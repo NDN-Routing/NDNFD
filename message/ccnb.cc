@@ -26,7 +26,7 @@ Ptr<CcnbMessage> CcnbMessage::Parse(const uint8_t* msg, size_t length) {
   }
 }
 
-const MessageType CcnbMessage::kType;
+MessageType_def(CcnbMessage);
 
 bool CcnbMessage::Verify(void) const {
   ccn_skeleton_decoder d;

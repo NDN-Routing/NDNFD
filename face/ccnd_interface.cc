@@ -52,20 +52,17 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   
   this->last_received_message_ = message;
   
-  switch (message->type()) {
-    case InterestMessage::kType: {
-      InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
-      this->global()->strategy()->OnInterest(interest);
-    } break;
-    case ContentObjectMessage::kType: {
-      ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
-      this->global()->strategy()->OnContent(co);
-    } break;
-    case NackMessage::kType: {
-      NackMessage* nack = static_cast<NackMessage*>(PeekPointer(message));
-      this->global()->strategy()->OnNack(nack);
-    } break;
-    default: assert(false); break;
+  if (message->type() == InterestMessage::kType) {
+    InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
+    this->global()->strategy()->OnInterest(interest);
+  } else if (message->type() == ContentObjectMessage::kType) {
+    ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
+    this->global()->strategy()->OnContent(co);
+  } else if (message->type() == NackMessage::kType) {
+    NackMessage* nack = static_cast<NackMessage*>(PeekPointer(message));
+    this->global()->strategy()->OnNack(nack);
+  } else {
+    assert(false);
   }
 }
 

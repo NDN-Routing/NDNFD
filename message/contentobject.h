@@ -8,8 +8,7 @@ namespace ndnfd {
 // This is not currently used.
 class ContentObjectMessage : public CcnbMessage {
  public:
-  static const MessageType kType = 1002;
-  virtual MessageType type(void) const { return ContentObjectMessage::kType; }
+  MessageType_decl;
   
   // Parse parses a buffer and returns parsed ContentObjectMessage,
   // or null if buffer is not a CCNB ContentObject.

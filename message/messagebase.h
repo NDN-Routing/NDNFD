@@ -7,12 +7,18 @@ namespace ndnfd {
 // Each subclass of MessageBase must have a unique MessageType.
 typedef uint16_t MessageType;
 
+MessageType MessageType_New(void);
+#define MessageType_decl \
+  static const MessageType kType; \
+  virtual MessageType type(void) const { return kType; }
+#define MessageType_def(cls) \
+  const MessageType cls::kType = MessageType_New();
+
 // MessageBase is the base class for most information moving between Elements.
 class MessageBase : public Object {
  public:
-  static const MessageType kType = 1;
   virtual ~MessageBase(void) {}
-  virtual MessageType type(void) const { return MessageBase::kType; }
+  MessageType_decl;
 
  protected:
   MessageBase(void) {}

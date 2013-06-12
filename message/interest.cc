@@ -1,7 +1,7 @@
 #include "interest.h"
 namespace ndnfd {
 
-const MessageType InterestMessage::kType;
+MessageType_def(InterestMessage);
 
 InterestMessage::InterestMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed)
     : CcnbMessage(msg, length) {

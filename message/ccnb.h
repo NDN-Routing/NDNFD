@@ -12,10 +12,9 @@ namespace ndnfd {
 // It does not own the buffer.
 class CcnbMessage : public Message {
  public:
-  static const MessageType kType = 1099;
   CcnbMessage(const uint8_t* msg, size_t length) { this->msg_ = msg; this->length_ = length; }
   virtual ~CcnbMessage(void) {}
-  virtual MessageType type(void) const { return CcnbMessage::kType; }
+  MessageType_decl;
   
   // Parse parses a CCNB message into a specific subtype,
   // or returns null.

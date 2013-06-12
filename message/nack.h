@@ -15,11 +15,9 @@ std::string NackCode_string(NackCode code);
 // An NackMessage represents a decoded Nack.
 class NackMessage : public CcnbMessage {
  public:
-  static const MessageType kType = 1003;
-  virtual MessageType type(void) const { return NackMessage::kType; }
-  
   //NackMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed);
   virtual ~NackMessage(void) {}
+  MessageType_decl;
   
   // Parse parses a buffer and returns parsed NackMessage,
   // or null if buffer is not a CCNB Nack.

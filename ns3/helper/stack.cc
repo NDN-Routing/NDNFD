@@ -28,7 +28,7 @@ void StackHelper::Install(ns3::Ptr<ns3::Node> node) const {
     for (auto tuple : l3->global()->facemgr()->ether_channels()) {
       Ptr<Face> face = std::get<2>(tuple);
       Ptr<ForwardingEntry> f = npe->SeekForwarding(face->id());
-      f->forw()->flags |= CCN_FORW_LAST;
+      f->native()->flags |= CCN_FORW_LAST;
       f->MakePermanent();
     }
   }

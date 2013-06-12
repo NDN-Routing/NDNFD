@@ -7,9 +7,8 @@ namespace ndnfd {
 // A Message is a logical unit that can be sent or received through a Face.
 class Message : public MessageBase {
  public:
-  static const MessageType kType = 1000;
   virtual ~Message(void) {}
-  virtual MessageType type(void) const { return Message::kType; }
+  MessageType_decl;
 
   // Face through which this Message enters the router
   FaceId incoming_face(void) const { return this->incoming_face_; }
