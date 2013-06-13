@@ -6,7 +6,6 @@ namespace ndnfd {
 // MessageType indicates the type of a MessageBase subclass.
 // Each subclass of MessageBase must have a unique MessageType.
 typedef uint16_t MessageType;
-
 MessageType MessageType_New(void);
 #define MessageType_decl \
   static const MessageType kType; \

@@ -1,7 +1,8 @@
 #include "floodfirst.h"
-#include <algorithm>
 #include "face/facemgr.h"
 namespace ndnfd {
+
+StrategyType_def(FloodFirstStrategy, floodfirst);
 
 void FloodFirstStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   if (ie->beginUpstream() != ie->endUpstream()) {
@@ -38,7 +39,7 @@ void FloodFirstStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::PropagateNewInterest(%" PRI_PitEntrySerial ") flood", ie->serial());
   
   this->PopulateOutbounds(ie, outbounds);
-  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
+  this->SchedulePropagate(ie, ie->NextEventDelay(true));
 }
 
 void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {

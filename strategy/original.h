@@ -8,8 +8,9 @@ namespace ndnfd {
 class OriginalStrategy : public Strategy {
  public:
   OriginalStrategy(void) {}
-  virtual void Init2(void);
+  virtual void Init(void);
   virtual ~OriginalStrategy(void);
+  StrategyType_decl(OriginalStrategy);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
   virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);

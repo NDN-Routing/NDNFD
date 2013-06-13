@@ -12,6 +12,7 @@ class FloodFirstStrategy : public OriginalStrategy {
  public:
   FloodFirstStrategy(void) {}
   virtual ~FloodFirstStrategy(void) {}
+  StrategyType_decl(FloodFirstStrategy);
   uint16_t fib_prefix_comps(void) const { return 1; }
   std::chrono::seconds fib_entry_expires(void) const { return std::chrono::seconds(2); }
 

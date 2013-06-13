@@ -1,6 +1,5 @@
 #include "util/rtt.h"
 #include <cmath>
-#include <algorithm>
 namespace ndnfd {
 
 // reference: ns3::RttMeanDeviation

@@ -1,9 +1,10 @@
 #include "original.h"
-#include <algorithm>
 #include "face/facemgr.h"
 namespace ndnfd {
 
-void OriginalStrategy::Init2(void) {
+StrategyType_def(OriginalStrategy, original);
+
+void OriginalStrategy::Init(void) {
   this->agebestface_evt_ = this->global()->scheduler()->Schedule(std::chrono::microseconds(8000000), std::bind(&OriginalStrategy::AgeBestFace, this));
 }
 
@@ -140,7 +141,7 @@ void OriginalStrategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
     
     p->SetExpiry(defer);
     defer += std::chrono::microseconds(200);
-    this->global()->scheduler()->Schedule(defer, std::bind(&OriginalStrategy::DoPropagate, this, ie), &ie->native()->ev, true);
+    this->SchedulePropagate(ie, defer);
     FOREACH_OK;
   });
 }

@@ -17,7 +17,7 @@ class Scheduler;
 class FaceMgr;
 class InternalClientHandler;
 class NamePrefixTable;
-class Strategy;
+class StrategyLayer;
 
 // A Global contains all global structures of a router.
 // A pointer to the Global object is provided in every Element.
@@ -42,8 +42,8 @@ class Global {
   void set_internal_client_handler(Ptr<InternalClientHandler> value);
   NamePrefixTable* npt(void) const { return this->npt_; }
   void set_npt(Ptr<NamePrefixTable> value);
-  Strategy* strategy(void) const { return this->strategy_; }
-  void set_strategy(Ptr<Strategy> value);
+  StrategyLayer* sl(void) const { return this->sl_; }
+  void set_sl(Ptr<StrategyLayer> value);
   
  private:
   std::thread::id core_thread_;
@@ -54,7 +54,7 @@ class Global {
   FaceMgr* facemgr_;
   InternalClientHandler* internal_client_handler_;
   NamePrefixTable* npt_;
-  Strategy* strategy_;
+  StrategyLayer* sl_;
   
   DISALLOW_COPY_AND_ASSIGN(Global);
 };

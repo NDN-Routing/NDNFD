@@ -1,5 +1,4 @@
 #include "nameprefix_table.h"
-#include <algorithm>
 #include <limits>
 extern "C" {
 #include <ccn/hashtb.h>

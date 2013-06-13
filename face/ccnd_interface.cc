@@ -2,7 +2,7 @@
 #include "face/facemgr.h"
 #include "message/interest.h"
 #include "message/contentobject.h"
-#include "strategy/strategy.h"
+#include "strategy/layer.h"
 extern "C" {
 void register_new_face(struct ccnd_handle *h, struct face *face);
 void process_input_message(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, int pdu_ok);
@@ -54,13 +54,13 @@ void CcndFaceInterface::Receive(Ptr<Message> message) {
   
   if (message->type() == InterestMessage::kType) {
     InterestMessage* interest = static_cast<InterestMessage*>(PeekPointer(message));
-    this->global()->strategy()->OnInterest(interest);
+    this->global()->sl()->OnInterest(interest);
   } else if (message->type() == ContentObjectMessage::kType) {
     ContentObjectMessage* co = static_cast<ContentObjectMessage*>(PeekPointer(message));
-    this->global()->strategy()->OnContent(co);
+    this->global()->sl()->OnContent(co);
   } else if (message->type() == NackMessage::kType) {
     NackMessage* nack = static_cast<NackMessage*>(PeekPointer(message));
-    this->global()->strategy()->OnNack(nack);
+    this->global()->sl()->OnNack(nack);
   } else {
     assert(false);
   }

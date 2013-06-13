@@ -1,11 +1,12 @@
 #include "selflearn.h"
-#include <algorithm>
 #include "face/facemgr.h"
 #include "core/scheduler.h"
 extern "C" {
 uint32_t WTHZ_value(void);
 }
 namespace ndnfd {
+
+StrategyType_def(SelfLearnStrategy,selflearn);
 
 std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
   Ptr<NamePrefixEntry> npe = ie->npe();
@@ -230,7 +231,7 @@ void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
   if (outbounds.empty()) return;
   
   this->PopulateOutbounds(ie, outbounds);
-  this->global()->scheduler()->Schedule(ie->NextEventDelay(true), std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
+  this->SchedulePropagate(ie, ie->NextEventDelay(true));
 }
 
 void SelfLearnStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {

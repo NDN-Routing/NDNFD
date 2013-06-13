@@ -13,6 +13,7 @@ class SelfLearnStrategy : public Strategy {
  public:
   SelfLearnStrategy(void) {}
   virtual ~SelfLearnStrategy(void) {}
+  StrategyType_decl(SelfLearnStrategy);
 
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);

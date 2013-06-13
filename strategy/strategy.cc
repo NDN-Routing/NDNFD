@@ -1,47 +1,32 @@
 #include "strategy.h"
-#include <algorithm>
-extern "C" {
-struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* x, struct pit_face_item* p);
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
-uint32_t WTHZ_value(void);
-}
 #include "core/scheduler.h"
 #include "face/facemgr.h"
 namespace ndnfd {
 
-void Strategy::Init(void) {
-  // TODO move this to strategy layer master
-  this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
+static uint8_t StrategyType_last = 0;
+static std::map<StrategyType,std::tuple<std::string,StrategyCtor>>* StrategyType_list_;
+const std::map<StrategyType,std::tuple<std::string,StrategyCtor>>& StrategyType_list(void) { return *StrategyType_list_; }
+StrategyType StrategyType_Register(std::string description, StrategyCtor ctor) {
+  if (StrategyType_last == 0) {
+    StrategyType_list_ = new std::map<StrategyType,std::tuple<std::string,StrategyCtor>>();
+  }
+  StrategyType t = static_cast<StrategyType>(++StrategyType_last);
+  (*StrategyType_list_)[t] = std::make_tuple(description,ctor);
+  return t;
 }
 
-void Strategy::OnInterest(Ptr<const InterestMessage> interest) {
-  Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
-  if (in_face == nullptr) return;
-  in_face->CountInterestIn();
 
-  int interest_scope = interest->parsed()->scope;
-  if ((interest_scope == 0 || interest_scope == 1) && in_face->kind() != FaceKind::kApp) {
-    this->Log(kLLWarn, kLCStrategy, "Strategy::OnInterest(%" PRI_FaceId ",%s) out of scope", in_face->id(), interest->name()->ToUri().c_str());
-    ++CCNDH->interests_dropped;
-    return;
-  }
-  ++CCNDH->interests_accepted;
-  
-  Ptr<PitEntry> ie = this->global()->npt()->GetPit(interest);
-  Ptr<NamePrefixEntry> npe;
-  if (ie != nullptr) {
-    npe = ie->npe();
-  } else {
-    npe = this->global()->npt()->Seek(interest->name());
-  }
-  
+void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe, Ptr<PitEntry> ie) {
+  Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
+
   npe->EnsureUpdatedFib();
+  // drop if npe is under local namespace but in_face is not local
   if ((npe->native()->flags & CCN_FORW_LOCAL) != 0 && in_face->kind() != FaceKind::kApp) {
     this->Log(kLLWarn, kLCStrategy, "Strategy::OnInterest(%" PRI_FaceId ",%s) non local", in_face->id(), interest->name()->ToUri().c_str());
     return;
   }
   
-  if (ie != nullptr) {
+  if (ie != nullptr && ie->native()->strategy.renewals != 0) {
     this->PropagateInterest(interest, npe);
     return;
   }
@@ -55,20 +40,7 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
   bool is_new_ie = ie->native()->strategy.renewals == 0;
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
-  if (in_face == nullptr) return;// face is gone in another thread
 
-#ifdef NDNFD_STRATEGY_TRACE
-  switch (in_face->kind()) {
-    case FaceKind::kMulticast:
-      this->Trace(TraceEvt::kMcastRecv, interest->name());
-      break;
-    case FaceKind::kUnicast:
-      this->Trace(TraceEvt::kUnicastRecv, interest->name());
-      break;
-    default: break;
-  }
-#endif
-  
   Ptr<PitDownstreamRecord> p = ie->SeekDownstream(in_face->id());
   // read nonce from Interest, or generate one.
   p->UpdateNonce(interest);
@@ -100,21 +72,11 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
     this->PropagateNewInterest(ie);
   }
   std::chrono::microseconds next_evt = outbounds.empty() ? std::chrono::microseconds(0) : ie->NextEventDelay(true);
-  this->global()->scheduler()->Schedule(next_evt, std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
+  this->SchedulePropagate(ie, next_evt);
 }
 
-std::unordered_set<FaceId> Strategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
-  return ie->npe()->LookupFib(interest);
-}
-
-void Strategy::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<FaceId>& outbounds) {
-  for (FaceId face : outbounds) {
-    Ptr<PitUpstreamRecord> p = ie->SeekUpstream(face);
-    if (p->IsExpired()) { // new PitUpstreamRecord is created as expired
-      p->SetExpiry(std::chrono::microseconds::zero());
-      p->native()->pfi_flags &= ~CCND_PFI_UPHUNGRY;
-    }
-  }
+void Strategy::SchedulePropagate(Ptr<PitEntry> ie, std::chrono::microseconds defer) {
+  this->global()->scheduler()->Schedule(defer, std::bind(&Strategy::DoPropagate, this, ie), &ie->native()->ev, true);
 }
 
 std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
@@ -213,62 +175,11 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   return ie->NextEventDelay(false);
 }
 
-void Strategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream) {
-  //this->Log(kLLDebug, kLCStrategy, "Strategy::SendInterest(%" PRI_PitEntrySerial ") %" PRI_FaceId " => %" PRI_FaceId "", ie->serial(), downstream, upstream);
-  assert(ie != nullptr);
-  assert(downstream != nullptr);
-  assert(upstream != nullptr);
-  upstream->set_native(send_interest(CCNDH, ie->native(), downstream->native(), upstream->native()));
-
-#ifdef NDNFD_STRATEGY_TRACE
-  Ptr<Face> outface = this->global()->facemgr()->GetFace(upstream->faceid());
-  if (outface != nullptr) {
-    switch (outface->kind()) {
-      case FaceKind::kMulticast:
-        this->Trace(TraceEvt::kMcastSend, ie->name());
-        break;
-      case FaceKind::kUnicast:
-        this->Trace(TraceEvt::kUnicastSend, ie->name());
-        break;
-      default: break;
-    }
-  }
-#endif
-}
-
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
 }
 
 void Strategy::OnContent(Ptr<const ContentObjectMessage> co) {
-  Ptr<Face> in_face = this->global()->facemgr()->GetFace(co->incoming_face());
-  process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
-}
-
-void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
-  FaceId upstream = co->incoming_face();
-  this->Log(kLLDebug, kLCStrategy, "Strategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " count(pending_downstreams)=%d", ie->serial(), upstream, pending_downstreams);
-  
-  if (pending_downstreams > 0) {
-    // mark PitEntry as consumed, so that new Interest is considered new
-    ie->native()->strategy.renewals = 0;
-    
-    // schedule delete PitEntry on last upstream expiry
-    ccn_wrappedtime now = CCNDH->wtnow;
-    ccn_wrappedtime last = 0;
-    std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-      if (!p->IsExpired()) {
-        last = std::max(last, p->native()->expiry - now);
-      }
-    });
-    this->global()->scheduler()->Schedule(std::chrono::microseconds(last * (1000000 / WTHZ_value())), [this,ie]{
-      this->global()->npt()->DeletePit(ie);
-      return Scheduler::kNoMore_NoCleanup;
-    }, &ie->native()->ev, true);
-  }
-}
-
-void Strategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
 }
 
 void Strategy::OnNack(Ptr<const NackMessage> nack) {

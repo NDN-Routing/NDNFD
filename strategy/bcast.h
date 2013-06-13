@@ -9,6 +9,7 @@ class BcastStrategy : public Strategy {
  public:
   BcastStrategy(void) {}
   virtual ~BcastStrategy(void) {}
+  StrategyType_decl(BcastStrategy);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
 

@@ -19,7 +19,6 @@ void NdnfdSim::Init(void) {
   h->starttime = h->sec;
   h->starttime_usec = h->usec;
   this->global()->set_ccndh(h);
-  this->global()->strategy()->Init2();
   
   this->internal_client_ = this->New<InternalClientFace>();
   this->global()->facemgr()->StartDefaultListeners();
