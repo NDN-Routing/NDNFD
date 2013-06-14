@@ -189,6 +189,13 @@ void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) 
   hashtb_end(e);
 }
 
+Ptr<NamePrefixEntry> NamePrefixEntry::StrategyNode(void) const {
+  for (Ptr<NamePrefixEntry> n = const_cast<NamePrefixEntry*>(this); n != nullptr; n = n->Parent()) {
+    if (n->native()->ndnfd_strategy_type != 0) return n;
+  }
+  return nullptr;
+}
+
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* native) : npe_(npe), native_(native) {
   assert(npe != nullptr);
   assert(native != nullptr);

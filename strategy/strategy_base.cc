@@ -1,4 +1,4 @@
-#include "strategy.h"
+#include "strategy_base.h"
 extern "C" {
 struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* x, struct pit_face_item* p);
 }

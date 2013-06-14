@@ -1,5 +1,6 @@
 #ifndef NDNFD_STRATEGY_LAYER_H_
 #define NDNFD_STRATEGY_LAYER_H_
+#include <array>
 #include "strategy.h"
 #include "core/internal_client_handler.h"
 namespace ndnfd {
@@ -53,6 +54,7 @@ class StrategyLayer : public StrategyBase {
 
  private:
   Ptr<CcndStrategyInterface> ccnd_strategy_interface_;
+  std::array<Ptr<Strategy>,std::numeric_limits<StrategyType>::max()> strategy_arr_;
   Ptr<Strategy> the_strategy_;//TODO remove this and get strategy from npe
   
   // FindStrategy returns a Strategy responsible for Name.

@@ -2320,7 +2320,9 @@ check_nameprefix_entries(struct ccnd_handle *h)
                 count += 1;
                 if (npe->parent != NULL) {
                     npe->parent->children--;
+#ifndef NDNFD
                     npe->parent = NULL;
+#endif
                 }
                 hashtb_delete(e);
                 continue;

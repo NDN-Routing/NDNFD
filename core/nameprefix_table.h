@@ -6,6 +6,7 @@ extern "C" {
 #include "core/element.h"
 #include "util/foreach.h"
 #include "message/interest.h"
+#include "strategy/strategy_type.h"
 namespace ndnfd {
 
 class NamePrefixEntry;
@@ -59,13 +60,10 @@ class NamePrefixEntry : public Element {
 
   // Parent returns the NamePrefixEntry for next shorter prefix.
   Ptr<NamePrefixEntry> Parent(void) const;
-  
   // FibNode returns the current or parent NamePrefixEntry that has one or more forwarding entries.
   Ptr<NamePrefixEntry> FibNode(void) const;
-  
   // EnsureUpdatedFib ensures npe->forwarding and npe->tap are updated.
   void EnsureUpdatedFib(void) const;
-  
   // LookupFib returns a set of outbound faces an Interest should be forwarded to.
   std::unordered_set<FaceId> LookupFib(Ptr<const InterestMessage> interest) const;
   
@@ -79,18 +77,11 @@ class NamePrefixEntry : public Element {
   // ForeachPit invokes f with each PitEntry whose name is under this prefix.
   void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
-  /*
-  FaceId best_faceid(void) { return this->native()->src == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->src); }
-  FaceId prev_faceid(void) const { return this->native()->osrc == CCN_NOFACEID ? FaceId_none : static_cast<FaceId>(this->native()->osrc); }
-  // GetBestFace returns best_faceid.
-  // If it's FaceId_none, it returns prev_faceid and writes that to best_faceid.
-  FaceId GetBestFace(void);
-  // UpdateBestFace updates best_faceid.
-  // If best_faceid is same as value, it also adjusts down predicted response time.
-  void UpdateBestFace(FaceId value);
-  // AdjustPredictUp adjusts up predicted response time.
-  void AdjustPredictUp(void);
-  */
+  // StrategyType associated with this NamePrefixEntry
+  StrategyType strategy_type(void) const { return static_cast<StrategyType>(this->native()->ndnfd_strategy_type); }
+  void set_strategy_type(StrategyType value) { this->native()->ndnfd_strategy_type = static_cast<uint8_t>(value); }
+  // StrategyNode returns the current or parent NamePrefixEntry that has a non-inherit StrategyType.
+  Ptr<NamePrefixEntry> StrategyNode(void) const;
   
   template <typename T>
   T* strategy_extra(void) const { return static_cast<T*>(this->native()->ndnfd_strategy_extra); }

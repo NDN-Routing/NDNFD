@@ -14,19 +14,34 @@ namespace ndnfd {
 
 void StrategyLayer::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
+  // TODO set strategy on "ccnx:/"
 }
 
 Ptr<Strategy> StrategyLayer::FindStrategy(Ptr<const Name> name) {
-  // TODO get longest matching npe, and invoke FindStrategy(npe)
-  return this->FindStrategy(Ptr<const NamePrefixEntry>());
+  for (Ptr<const Name> n = name; n != nullptr; n = n->StripSuffix(1)) {
+    Ptr<NamePrefixEntry> npe = this->global()->npt()->Get(n);
+    if (npe != nullptr) return this->FindStrategy(npe);
+  }
+  return nullptr;
 }
 
 Ptr<Strategy> StrategyLayer::FindStrategy(Ptr<const NamePrefixEntry> npe) {
-  // TODO get strategy from npe or its parents
-  if (this->the_strategy_ == nullptr) {
-    this->the_strategy_ = this->New<STRATEGY_TYPE>();
+  Ptr<NamePrefixEntry> root = npe->StrategyNode();
+  if (root == nullptr) {
+    // set default strategy type
+    Ptr<Name> root_name = Name::FromUri("/");
+    root = this->global()->npt()->Seek(root_name);
+    root->set_strategy_type(STRATEGY_TYPE::kType);
+    root = npe->StrategyNode();
   }
-  return this->the_strategy_;
+  assert(root != nullptr);
+  StrategyType t = root->strategy_type();
+  Ptr<Strategy> strategy = this->strategy_arr_.at(t);
+  if (strategy == nullptr) {
+    StrategyCtor ctor = std::get<1>(StrategyType_list().at(t));
+    this->strategy_arr_[t] = strategy = ctor(this);
+  }
+  return strategy;
 }
 
 void StrategyLayer::OnInterest(Ptr<const InterestMessage> interest) {
