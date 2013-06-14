@@ -52,6 +52,16 @@ class StrategyBase : public Element {
   // It should not send the Content.
   // TODO substitute content_entry* with a C++ type
   virtual content_entry* MatchContentStore(Ptr<InterestMessage> interest) { return nullptr; }//TODO impl
+  
+  // EnrollContent adds a Content to the ContentStore,
+  // or refreshes an existing entry if it's stale.
+  // It returns null when there's a failure.
+  // TODO substitute content_entry* with a C++ type
+  virtual content_entry* EnrollContent(Ptr<ContentObjectMessage> co) { return nullptr; }//TODO impl
+  
+  // RemoveContent removes a Content from the ContentStore.
+  // TODO substitute content_entry* with a C++ type
+  virtual void RemoveContent(content_entry* content) {}//TODO impl
 
  private:
   DISALLOW_COPY_AND_ASSIGN(StrategyBase);
