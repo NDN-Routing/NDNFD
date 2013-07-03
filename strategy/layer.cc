@@ -1,4 +1,5 @@
 #include "layer.h"
+#include <stack>
 #include "core/scheduler.h"
 #include "face/facemgr.h"
 extern "C" {
@@ -8,6 +9,7 @@ uint32_t WTHZ_value(void);
 
 // TODO remove these after impl dispatch
 #include "strategy/original.h"
+#include "strategy/selflearn.h"
 #define STRATEGY_TYPE OriginalStrategy
 
 namespace ndnfd {
@@ -15,6 +17,15 @@ namespace ndnfd {
 void StrategyLayer::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
   // TODO set strategy on "ccnx:/"
+}
+
+Ptr<Strategy> StrategyLayer::GetStrategy(StrategyType t) {
+  Ptr<Strategy> s = this->strategy_arr_.at(t);
+  if (s == nullptr) {
+    StrategyCtor ctor = std::get<1>(StrategyType_list().at(t));
+    this->strategy_arr_[t] = s = ctor(this);
+  }
+  return s;
 }
 
 Ptr<Strategy> StrategyLayer::FindStrategy(Ptr<const Name> name) {
@@ -36,13 +47,14 @@ Ptr<Strategy> StrategyLayer::FindStrategy(Ptr<const NamePrefixEntry> npe) {
   }
   assert(root != nullptr);
   StrategyType t = root->strategy_type();
-  Ptr<Strategy> strategy = this->strategy_arr_.at(t);
-  if (strategy == nullptr) {
-    StrategyCtor ctor = std::get<1>(StrategyType_list().at(t));
-    this->strategy_arr_[t] = strategy = ctor(this);
-  }
-  return strategy;
+  return this->GetStrategy(t);
 }
+
+void StrategyLayer::SetStrategy(Ptr<const Name> prefix, StrategyType t) {
+  Ptr<NamePrefixEntry> npe = this->global()->npt()->Seek(prefix);
+  npe->set_strategy_type(t);
+}
+
 
 void StrategyLayer::OnInterest(Ptr<const InterestMessage> interest) {
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
@@ -108,14 +120,11 @@ void StrategyLayer::OnNack(Ptr<const NackMessage> nack) {
 }
 
 void StrategyLayer::NewNpeExtra(Ptr<NamePrefixEntry> npe) {
+  this->Log(kLLDebug, kLCStrategy, "StrategyLayer::NewNpeExtra(%s)", npe->name()->ToUri().c_str());
   Ptr<Strategy> strategy = this->FindStrategy(npe);
-  strategy->NewNpeExtra(npe);
-}
-
-void StrategyLayer::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {
-  Ptr<Strategy> strategy = this->FindStrategy(npe);
-  Ptr<Strategy> strategy_parent = this->FindStrategy(parent);
-  if (strategy == strategy_parent) {
+  npe->set_strategy_extra_type(strategy->strategy_type());
+  Ptr<NamePrefixEntry> parent = npe->Parent();
+  if (parent != nullptr && this->FindStrategy(parent) == strategy) {
     strategy->InheritNpeExtra(npe, parent);
   } else {
     strategy->NewNpeExtra(npe);
@@ -125,6 +134,34 @@ void StrategyLayer::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePref
 void StrategyLayer::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
   Ptr<Strategy> strategy = this->FindStrategy(npe);
   strategy->FinalizeNpeExtra(npe);
+}
+
+void StrategyLayer::UpdateNpeExtra(Ptr<NamePrefixEntry> npe) {
+  this->Log(kLLDebug, kLCStrategy, "StrategyLayer::UpdateNpeExtra(%s)", npe->name()->ToUri().c_str());
+  Ptr<NamePrefixEntry> root = npe->StrategyNode();
+  assert(root != nullptr);
+  std::stack<Ptr<NamePrefixEntry>> stack;
+  for (; ; npe = npe->Parent()) {
+    StrategyType old_type = npe->strategy_extra_type();
+    if (old_type == root->strategy_type()) break;
+    if (old_type != StrategyType_none) {
+      Ptr<Strategy> old_strategy = this->GetStrategy(old_type);
+      old_strategy->FinalizeNpeExtra(npe);
+    }
+    stack.push(npe);
+    if (npe == root) break;
+  }
+  Ptr<Strategy> strategy = this->GetStrategy(root->strategy_type());
+  while (!stack.empty()) {
+    auto n = stack.top();
+    n->set_strategy_extra_type(root->strategy_type());
+    if (n == root) {
+      strategy->NewNpeExtra(n);
+    } else {
+      strategy->InheritNpeExtra(n, n->Parent());
+    }
+    stack.pop();
+  }
 }
 
 void StrategyLayer::DidAddFibEntry(Ptr<ForwardingEntry> forw) {

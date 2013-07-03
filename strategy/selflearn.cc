@@ -25,7 +25,7 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
   //candidates.insert(npe->GetBestFace());
   //candidates.insert(npe->prev_faceid());
   //candidates.erase(FaceId_none);
-  for (auto tuple : npe->strategy_extra<NpeExtra>()->predicts_) {
+  for (auto tuple : npe->GetStrategyExtra<NpeExtra>()->predicts_) {
     candidates.insert(std::get<0>(tuple));
   }
   
@@ -78,7 +78,7 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   
   // assign expiry time for outbounds
   Ptr<NamePrefixEntry> npe = ie->npe();
-  NpeExtra* extra = npe->strategy_extra<NpeExtra>();
+  NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
   extra->RankPredicts();
   
   std::string debug_list;
@@ -132,7 +132,7 @@ void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream) {
   Ptr<NamePrefixEntry> npe = ie->npe();
   FaceId upstream_face = upstream->faceid();
-  NpeExtra* extra = npe->strategy_extra<NpeExtra>();
+  NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
   auto it = extra->predicts_.find(upstream_face);
   if (it != extra->predicts_.end()) {
     this->global()->scheduler()->Schedule(std::chrono::microseconds(it->second.time_), [this,ie,upstream_face](void){
@@ -250,8 +250,8 @@ void SelfLearnStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const M
   }
   
   std::chrono::microseconds rtt_sample((CCNDH->wtnow - upstream->native()->renewed) * (1000000 / WTHZ_value()));
-  for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr; npe = npe->Parent()) {
-    NpeExtra* extra = npe->strategy_extra<NpeExtra>();
+  for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr && npe->strategy_extra_type() == SelfLearnStrategy::kType; npe = npe->Parent()) {
+    NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
     PredictRecord& pr = extra->predicts_[co->incoming_face()];
     pr.rtt_.Measurement(rtt_sample);
   }
@@ -263,25 +263,26 @@ void SelfLearnStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidnotArriveOnFace(%" PRI_PitEntrySerial ",%" PRI_FaceId ")", ie->serial(), face);
 
   for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr; npe = npe->Parent()) {
-    NpeExtra* extra = npe->strategy_extra<NpeExtra>();
+    NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
     PredictRecord& pr = extra->predicts_[face];
     pr.rtt_.IncreaseMultiplier();
   }
 }
 
 void SelfLearnStrategy::NewNpeExtra(Ptr<NamePrefixEntry> npe) {
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::NewNpeExtra");
   npe->set_strategy_extra(new NpeExtra());
 }
 
 void SelfLearnStrategy::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::InheritNpeExtra");
   NpeExtra* extra = new NpeExtra();
-  extra->predicts_ = parent->strategy_extra<NpeExtra>()->predicts_;
+  extra->predicts_ = parent->GetStrategyExtra<NpeExtra>()->predicts_;
   npe->set_strategy_extra(extra);
 }
 
 void SelfLearnStrategy::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
-  NpeExtra* extra = npe->strategy_extra<NpeExtra>();
-  npe->set_strategy_extra<NpeExtra>(nullptr);
+  NpeExtra* extra = npe->detach_strategy_extra<NpeExtra>();
   delete extra;
 }
 

@@ -52,7 +52,7 @@ void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Pt
 
   if (matching_suffix >= 0 && matching_suffix < 2) {
     this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), peer->id(), matching_suffix);
-    npe->strategy_extra<OriginalStrategy::NpeExtra>()->UpdateBestFace(peer->id());
+    npe->GetStrategyExtra<OriginalStrategy::NpeExtra>()->UpdateBestFace(peer->id());
   }
   
   if (this->fib_prefix_comps() == npe->name()->n_comps()) {
@@ -61,5 +61,7 @@ void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Pt
     forw->Refresh(this->fib_entry_expires());
   }
 }
+
+// TODO AgeBestFace; OriginalStrategy::AgeBestFace doesn't apply because extra type doesn't match
 
 };//namespace ndnfd

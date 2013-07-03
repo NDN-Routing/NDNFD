@@ -31,6 +31,11 @@ class NamePrefixTable : public Element {
   // ForeachNpe invokes f with each NamePrefixEntry.
   void ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry>)> f);
   
+  // AttachNpe attaches NamePrefixEntry to nameprefix_entry.
+  void AttachNpe(nameprefix_entry* native, const uint8_t* name, size_t name_size);
+  // FinalizeNpe removes NamePrefixEntry from nameprefix_entry.
+  void FinalizeNpe(nameprefix_entry* native);
+  
   // GetPit returns the PIT entry for interest,
   // or null if it does not exist.
   Ptr<PitEntry> GetPit(Ptr<const InterestMessage> interest);
@@ -57,6 +62,9 @@ class NamePrefixEntry : public Element {
   
   Ptr<const Name> name(void) const { return this->name_; }
   nameprefix_entry* native(void) const { return this->native_; }
+  
+  // no_reap == true prevents deletion of this NPE
+  bool no_reap(void) const { return this->strategy_type() != StrategyType_inherit; }
 
   // Parent returns the NamePrefixEntry for next shorter prefix.
   Ptr<NamePrefixEntry> Parent(void) const;
@@ -78,21 +86,35 @@ class NamePrefixEntry : public Element {
   void ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f);
   
   // StrategyType associated with this NamePrefixEntry
-  StrategyType strategy_type(void) const { return static_cast<StrategyType>(this->native()->ndnfd_strategy_type); }
-  void set_strategy_type(StrategyType value) { this->native()->ndnfd_strategy_type = static_cast<uint8_t>(value); }
+  StrategyType strategy_type(void) const { return this->strategy_type_; }
+  void set_strategy_type(StrategyType value) { this->strategy_type_ = value; }
   // StrategyNode returns the current or parent NamePrefixEntry that has a non-inherit StrategyType.
   Ptr<NamePrefixEntry> StrategyNode(void) const;
   
+  // strategy extra information
   template <typename T>
-  T* strategy_extra(void) const { return static_cast<T*>(this->native()->ndnfd_strategy_extra); }
+  T* strategy_extra(void) const { return static_cast<T*>(this->strategy_extra_); }
   template <typename T>
-  void set_strategy_extra(T* value);
+  void set_strategy_extra(T* value) { this->strategy_extra_ = value; }
+  template <typename T>
+  T* detach_strategy_extra(void);
+  // the strategy that created strategy_extra
+  StrategyType strategy_extra_type(void) const { return this->strategy_extra_type_; }
+  void set_strategy_extra_type(StrategyType value) { this->strategy_extra_type_ = value; }
+  // GetStrategyExtra returns strategy extra information,
+  // and ensures it's created by current strategy.
+  template <typename T>
+  T* GetStrategyExtra(void) const { return static_cast<T*>(this->GetStrategyExtraInternal()); }
   
  private:
   Ptr<const Name> name_;
   nameprefix_entry* native_;
+  StrategyType strategy_type_;
+  void* strategy_extra_;
+  StrategyType strategy_extra_type_;
 
   Ptr<ForwardingEntry> SeekForwardingInternal(FaceId faceid, bool create);
+  void* GetStrategyExtraInternal(void) const;
   
   DISALLOW_COPY_AND_ASSIGN(NamePrefixEntry);
 };
@@ -275,10 +297,12 @@ class PitDownstreamRecord : public PitFaceItem {
   DISALLOW_COPY_AND_ASSIGN(PitDownstreamRecord);
 };
 
-
 template <typename T>
-void NamePrefixEntry::set_strategy_extra(T* value) {
-  this->native()->ndnfd_strategy_extra = value;
+T* NamePrefixEntry::detach_strategy_extra(void) {
+  auto extra = this->strategy_extra<T>();
+  this->strategy_extra_ = nullptr;
+  this->strategy_extra_type_ = StrategyType_none;
+  return extra;
 }
 
 template <typename TPfi>

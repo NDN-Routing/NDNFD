@@ -419,14 +419,18 @@ struct nameprefix_entry {
     unsigned flags;              /**< CCN_FORW_* flags about namespace */
     int fgen;                    /**< used to decide when forward_to is stale */
 #ifdef NDNFD
-    uint8_t ndnfd_strategy_type;//StrategyType, 0=inherit
-    void* ndnfd_strategy_extra;//extra information used by strategy
+    void* ndnfd_npe;//NamePrefixEntry*
 #else
     unsigned src;                /**< faceid of recent content source */
     unsigned osrc;               /**< and of older matching content */
     unsigned usec;               /**< response-time prediction */
 #endif
 };
+#ifdef NDNFD
+void ndnfd_attach_npe(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size);
+void ndnfd_finalize_npe(struct ccnd_handle* h, struct nameprefix_entry* npe);
+int ndnfd_keep_npe(struct ccnd_handle* h, struct nameprefix_entry* npe);// if this callback returns 1, check_nameprefix_entries must not delete npe
+#endif
 
 /**
  * Keeps track of the faces that interests matching a given name prefix may be

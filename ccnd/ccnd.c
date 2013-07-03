@@ -1088,7 +1088,7 @@ finalize_nameprefix(struct hashtb_enumerator *e)
     struct ccnd_handle *h = hashtb_get_param(e->ht, NULL);
     struct nameprefix_entry *npe = e->data;
 #ifdef NDNFD
-    ndnfd_npe_strategy_extra_finalize(h, npe, (const uint8_t*)e->key, e->keysize);
+    ndnfd_finalize_npe(h, npe);
 #endif
     struct ielinks *head = &npe->ie_head;
     if (head->next != NULL) {
@@ -2309,7 +2309,8 @@ check_nameprefix_entries(struct ccnd_handle *h)
     for (npe = e->data; npe != NULL; npe = e->data) {
 #ifdef NDNFD
         if (  npe->children == 0 &&
-              npe->forwarding == NULL) {
+              npe->forwarding == NULL &&
+              ndnfd_keep_npe(h, npe) == 0) {
 #else
         if (  npe->src == CCN_NOFACEID &&
               npe->children == 0 &&
@@ -4262,7 +4263,7 @@ nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
 #endif
             }
 #ifdef NDNFD
-            ndnfd_npe_strategy_extra_create(h, npe, msg + base, comps->buf[i] - base);
+            ndnfd_attach_npe(h, npe, msg + base, comps->buf[i] - base);
 #endif
         }
         parent = npe;

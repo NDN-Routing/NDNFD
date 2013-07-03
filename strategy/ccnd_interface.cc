@@ -18,16 +18,6 @@ void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, u
   return global->sl()->ccnd_strategy_interface()->DidAddFibEntry(npe, static_cast<ndnfd::FaceId>(faceid), ndnfd::Name::FromCcnb(name, name_size));
 }
 
-void ndnfd_npe_strategy_extra_create(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size) {
-  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->sl()->ccnd_strategy_interface()->CreateNpe(npe, ndnfd::Name::FromCcnb(name, name_size));
-}
-
-void ndnfd_npe_strategy_extra_finalize(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size) {
-  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->sl()->ccnd_strategy_interface()->FinalizeNpe(npe, ndnfd::Name::FromCcnb(name, name_size));
-}
-
 namespace ndnfd {
 
 void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream, int pending_downstreams) {
@@ -63,19 +53,6 @@ void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid,
   Ptr<ForwardingEntry> forw = npe1->GetForwarding(faceid);
   assert(forw != nullptr);
   this->global()->sl()->DidAddFibEntry(forw);
-}
-
-void CcndStrategyInterface::CreateNpe(nameprefix_entry* npe, Ptr<Name> name) {
-  Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
-  Ptr<NamePrefixEntry> parent = npe1->Parent();
-  if (parent == nullptr) this->global()->sl()->NewNpeExtra(npe1);
-  else this->global()->sl()->InheritNpeExtra(npe1, parent);
-  // TODO invoke NewNpeExtra if child namespace is using a different strategy
-}
-
-void CcndStrategyInterface::FinalizeNpe(nameprefix_entry* npe, Ptr<Name> name) {
-  Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
-  this->global()->sl()->FinalizeNpeExtra(npe1);
 }
 
 };//namespace ndnfd

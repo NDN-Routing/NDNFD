@@ -8,6 +8,7 @@ namespace ndnfd {
 class Strategy : public StrategyBase {
  public:
   virtual ~Strategy(void) {}
+  virtual StrategyType strategy_type(void) const =0;
 
   // -------- Interest processing --------
 

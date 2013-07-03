@@ -21,6 +21,7 @@ int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 #include "core/scheduler.h"
 #include "face/facemgr.h"
 #include "message/interest.h"
+#include "strategy/layer.h"
 extern "C" {
 
 void ndnfd_finalize_interest(struct interest_entry* ie) {
@@ -31,6 +32,21 @@ void ndnfd_finalize_interest(struct interest_entry* ie) {
 const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie) {
   ndnfd::InterestMessage* interest = ie_ndnfdInterest(ie);
   return interest->parsed();
+}
+
+void ndnfd_attach_npe(struct ccnd_handle* h, struct nameprefix_entry* npe, const uint8_t* name, size_t name_size) {
+  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
+  global->npt()->AttachNpe(npe, name, name_size);
+}
+
+void ndnfd_finalize_npe(struct ccnd_handle* h, struct nameprefix_entry* npe) {
+  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
+  global->npt()->FinalizeNpe(npe);
+}
+
+int ndnfd_keep_npe(struct ccnd_handle* h, struct nameprefix_entry* npe) {
+  ndnfd::NamePrefixEntry* n = static_cast<ndnfd::NamePrefixEntry*>(npe->ndnfd_npe);
+  return n->no_reap() ? 1 : 0;
 }
 
 }
@@ -53,7 +69,7 @@ Ptr<NamePrefixEntry> NamePrefixTable::SeekInternal(Ptr<const Name> name, bool cr
 
   ccn_indexbuf_destroy(&comps);
   if (npe == nullptr) return nullptr;
-  return this->New<NamePrefixEntry>(name, npe);
+  return static_cast<NamePrefixEntry*>(npe->ndnfd_npe);
 }
 
 void NamePrefixTable::ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry>)> f) {
@@ -61,8 +77,7 @@ void NamePrefixTable::ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry
   hashtb_enumerator ee; hashtb_enumerator* e = &ee;
   hashtb_start(CCNDH->nameprefix_tab, e);
   for (nameprefix_entry* native = static_cast<nameprefix_entry*>(e->data); native != nullptr; native = static_cast<nameprefix_entry*>(e->data)) {
-    Ptr<Name> name = Name::FromCcnb(static_cast<const uint8_t*>(e->key), e->keysize);
-    Ptr<NamePrefixEntry> npe = this->New<NamePrefixEntry>(name, native);
+    Ptr<NamePrefixEntry> npe = static_cast<NamePrefixEntry*>(native->ndnfd_npe);
     ForeachAction act = f(npe);
     if (ForeachAction_break(act)) {
       break;
@@ -70,6 +85,19 @@ void NamePrefixTable::ForeachNpe(std::function<ForeachAction(Ptr<NamePrefixEntry
     hashtb_next(e);
   }
   hashtb_end(e);
+}
+
+void NamePrefixTable::AttachNpe(nameprefix_entry* native, const uint8_t* name, size_t name_size) {
+  Ptr<Name> n = Name::FromCcnb(name, name_size);
+  Ptr<NamePrefixEntry> npe = this->New<NamePrefixEntry>(n, native);
+  native->ndnfd_npe = GetPointer(npe);
+}
+
+void NamePrefixTable::FinalizeNpe(nameprefix_entry* native) {
+  NamePrefixEntry* npe = static_cast<NamePrefixEntry*>(native->ndnfd_npe);
+  assert(npe != nullptr);
+  npe->Unref();
+  native->ndnfd_npe = nullptr;
 }
 
 Ptr<PitEntry> NamePrefixTable::GetPit(Ptr<const InterestMessage> interest) {
@@ -116,7 +144,8 @@ void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
   consume_interest(CCNDH, ie->native());
 }
 
-NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* native) : name_(name), native_(native) {
+NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* native)
+    : name_(name), native_(native), strategy_type_(StrategyType_inherit), strategy_extra_(nullptr), strategy_extra_type_(StrategyType_none) {
   assert(name != nullptr);
   assert(native != nullptr);
 }
@@ -124,7 +153,7 @@ NamePrefixEntry::NamePrefixEntry(Ptr<const Name> name, nameprefix_entry* native)
 Ptr<NamePrefixEntry> NamePrefixEntry::Parent(void) const {
   nameprefix_entry* parent = this->native()->parent;
   if (parent == nullptr) return nullptr;
-  return this->New<NamePrefixEntry>(this->name()->StripSuffix(1), parent);
+  return static_cast<NamePrefixEntry*>(parent->ndnfd_npe);
 }
   
 Ptr<NamePrefixEntry> NamePrefixEntry::FibNode(void) const {
@@ -191,9 +220,18 @@ void NamePrefixEntry::ForeachPit(std::function<ForeachAction(Ptr<PitEntry>)> f) 
 
 Ptr<NamePrefixEntry> NamePrefixEntry::StrategyNode(void) const {
   for (Ptr<NamePrefixEntry> n = const_cast<NamePrefixEntry*>(this); n != nullptr; n = n->Parent()) {
-    if (n->native()->ndnfd_strategy_type != 0) return n;
+    if (n->strategy_type() != StrategyType_inherit) return n;
   }
   return nullptr;
+}
+
+void* NamePrefixEntry::GetStrategyExtraInternal(void) const {
+  Ptr<NamePrefixEntry> root = this->StrategyNode();
+  assert(root != nullptr);
+  if (this->strategy_extra_type() != root->strategy_type()) {
+    this->global()->sl()->UpdateNpeExtra(const_cast<NamePrefixEntry*>(this));
+  }
+  return this->strategy_extra_;
 }
 
 ForwardingEntry::ForwardingEntry(Ptr<NamePrefixEntry> npe, ccn_forwarding* native) : npe_(npe), native_(native) {
@@ -225,7 +263,7 @@ PitEntry::PitEntry(interest_entry* native) : native_(native) {
 }
 
 Ptr<NamePrefixEntry> PitEntry::npe(void) const {
-  return this->New<NamePrefixEntry>(this->name(), this->native()->ll.npe);
+  return static_cast<NamePrefixEntry*>(this->native()->ll.npe->ndnfd_npe);
 }
 
 bool PitEntry::IsNonceUnique(Ptr<const PitFaceItem> p) {

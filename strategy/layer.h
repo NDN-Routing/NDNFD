@@ -16,7 +16,7 @@ class StrategyLayer : public StrategyBase {
   // -------- management --------
   
   // SetStrategy sets the strategy for a namespace.
-  void SetStrategy(Ptr<const Name> prefix, StrategyType type) { assert(false); }//TODO impl: seek NPE, set strategy, recreate NpeExtra if strategy changed
+  void SetStrategy(Ptr<const Name> prefix, StrategyType t);
 
   // -------- message entrypoint --------
   
@@ -40,12 +40,13 @@ class StrategyLayer : public StrategyBase {
 
   // -------- table callbacks --------
 
-  // NewNpeExtra adds extra information for root of a namespace.
+  // NewNpeExtra adds extra information for root of a namespace,
+  // or inherits from parent node.
   void NewNpeExtra(Ptr<NamePrefixEntry> npe);
-  // InheritNpeExtra inherits extra information from parent node.
-  void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);
   // FinalizeNpeExtra deletes extra information on npe.
   void FinalizeNpeExtra(Ptr<NamePrefixEntry> npe);
+  // UpdateNpeExtra ensures npe->strategy_extra() has correct type.
+  void UpdateNpeExtra(Ptr<NamePrefixEntry> npe);
   
   // DidAddFibEntry is invoked when a FIB entry is created.
   void DidAddFibEntry(Ptr<ForwardingEntry> forw);
@@ -55,8 +56,10 @@ class StrategyLayer : public StrategyBase {
  private:
   Ptr<CcndStrategyInterface> ccnd_strategy_interface_;
   std::array<Ptr<Strategy>,std::numeric_limits<StrategyType>::max()> strategy_arr_;
-  Ptr<Strategy> the_strategy_;//TODO remove this and get strategy from npe
   
+  // GetStrategy returns the Strategy object from a StrategyType,
+  // and creates one if it doesn't exist.
+  Ptr<Strategy> GetStrategy(StrategyType t);
   // FindStrategy returns a Strategy responsible for Name.
   Ptr<Strategy> FindStrategy(Ptr<const Name> name);
   Ptr<Strategy> FindStrategy(Ptr<Name> name) { return this->FindStrategy(const_cast<const Name*>(PeekPointer(name))); }

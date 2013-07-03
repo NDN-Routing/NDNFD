@@ -14,7 +14,7 @@ OriginalStrategy::~OriginalStrategy(void) {
 
 void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   Ptr<NamePrefixEntry> npe = ie->npe();
-  NpeExtra* extra = npe->strategy_extra<NpeExtra>();
+  NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
 
   // find downstream
   auto first_downstream = ie->beginDownstream();
@@ -95,10 +95,10 @@ void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 }
 
 void OriginalStrategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
-  this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidnotArriveOnBestFace(%" PRI_PitEntrySerial ") face=%" PRI_FaceId "", ie->serial(), ie->npe()->strategy_extra<NpeExtra>()->best_faceid_);
+  this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidnotArriveOnBestFace(%" PRI_PitEntrySerial ") face=%" PRI_FaceId "", ie->serial(), ie->npe()->GetStrategyExtra<NpeExtra>()->best_faceid_);
   int limit = 2;
   for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr && --limit >= 0; npe = npe->Parent()) {
-    npe->strategy_extra<NpeExtra>()->AdjustPredictUp();
+    npe->GetStrategyExtra<NpeExtra>()->AdjustPredictUp();
   }
 }
 
@@ -110,7 +110,7 @@ void OriginalStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Me
 void OriginalStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
   FaceId upstream = co->incoming_face();
   this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
-  if (matching_suffix >= 0 && matching_suffix < 2) npe->strategy_extra<NpeExtra>()->UpdateBestFace(upstream);
+  if (matching_suffix >= 0 && matching_suffix < 2) npe->GetStrategyExtra<NpeExtra>()->UpdateBestFace(upstream);
 }
 
 void OriginalStrategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {
@@ -151,20 +151,20 @@ void OriginalStrategy::NewNpeExtra(Ptr<NamePrefixEntry> npe) {
 }
 
 void OriginalStrategy::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {
-  NpeExtra* parent_extra = parent->strategy_extra<NpeExtra>();
+  NpeExtra* parent_extra = parent->GetStrategyExtra<NpeExtra>();
   npe->set_strategy_extra(new NpeExtra(*parent_extra));
 }
 
 void OriginalStrategy::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
-  NpeExtra* extra = npe->strategy_extra<NpeExtra>();
-  npe->set_strategy_extra<NpeExtra>(nullptr);
+  NpeExtra* extra = npe->detach_strategy_extra<NpeExtra>();
   delete extra;
 }
 
 std::chrono::microseconds OriginalStrategy::AgeBestFace(void) {
   int count = 0;
   this->global()->npt()->ForeachNpe([&] (Ptr<NamePrefixEntry> npe) ->ForeachAction {
-    npe->strategy_extra<NpeExtra>()->AgeBestFace();
+    if (npe->strategy_extra_type() != OriginalStrategy::kType) FOREACH_CONTINUE;
+    npe->GetStrategyExtra<NpeExtra>()->AgeBestFace();
     ++count;
     FOREACH_OK;
   });
