@@ -17,6 +17,7 @@ class Scheduler;
 class FaceMgr;
 class InternalClientHandler;
 class NamePrefixTable;
+class ContentStore;
 class StrategyLayer;
 
 // A Global contains all global structures of a router.
@@ -40,6 +41,8 @@ class Global {
   void set_facemgr(Ptr<FaceMgr> value);
   InternalClientHandler* internal_client_handler(void) const { return this->internal_client_handler_; }
   void set_internal_client_handler(Ptr<InternalClientHandler> value);
+  ContentStore* cs(void) const { return this->cs_; }
+  void set_cs(Ptr<ContentStore> value);
   NamePrefixTable* npt(void) const { return this->npt_; }
   void set_npt(Ptr<NamePrefixTable> value);
   StrategyLayer* sl(void) const { return this->sl_; }
@@ -54,6 +57,7 @@ class Global {
   FaceMgr* facemgr_;
   InternalClientHandler* internal_client_handler_;
   NamePrefixTable* npt_;
+  ContentStore* cs_;
   StrategyLayer* sl_;
   
   DISALLOW_COPY_AND_ASSIGN(Global);

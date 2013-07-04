@@ -297,7 +297,13 @@ struct content_entry {
     int key_size;               /**< Size of fragment prior to Content */
     int size;                   /**< Size of ContentObject */
     struct ccn_indexbuf *skiplinks; /**< skiplist for name-ordered ops */
+#ifdef NDNFD
+    void* ndnfd_ce;//ContentEntry*
+#endif
 };
+#ifdef NDNFD
+void ndnfd_finalize_ce(struct ccnd_handle* h, struct content_entry* entry);
+#endif
 
 /**
  * content_entry flags

@@ -9,6 +9,7 @@ namespace ndnfd {
 class ContentObjectMessage : public CcnbMessage {
  public:
   MessageType_decl;
+  virtual ~ContentObjectMessage(void);
   
   // Parse parses a buffer and returns parsed ContentObjectMessage,
   // or null if buffer is not a CCNB ContentObject.
@@ -23,9 +24,13 @@ class ContentObjectMessage : public CcnbMessage {
   // Content blob
   std::tuple<const uint8_t*,size_t> payload(void) const;
 
+  // name components indexbuf structure
+  const ccn_indexbuf* comps(void) const { return this->comps_; }
+
  private:
   ccn_parsed_ContentObject parsed_;
   Ptr<Name> name_;
+  ccn_indexbuf* comps_;
   
   ContentObjectMessage(const uint8_t* msg, size_t length);
   DISALLOW_COPY_AND_ASSIGN(ContentObjectMessage);

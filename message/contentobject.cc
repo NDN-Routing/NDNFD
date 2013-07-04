@@ -5,12 +5,17 @@ MessageType_def(ContentObjectMessage);
 
 Ptr<ContentObjectMessage> ContentObjectMessage::Parse(const uint8_t* msg, size_t length) {
   Ptr<ContentObjectMessage> m = new ContentObjectMessage(msg, length);
-  int res = ccn_parse_ContentObject(msg, length, &m->parsed_, nullptr);
+  m->comps_ = ccn_indexbuf_create();
+  int res = ccn_parse_ContentObject(msg, length, &m->parsed_, m->comps_);
   if (res < 0) return nullptr;
   return m;
 }
 
 ContentObjectMessage::ContentObjectMessage(const uint8_t* msg, size_t length) : CcnbMessage(msg, length) {}
+
+ContentObjectMessage::~ContentObjectMessage(void) {
+  if (this->comps_ != nullptr) ccn_indexbuf_destroy(&this->comps_);
+}
 
 Ptr<Name> ContentObjectMessage::name(void) const {
   if (this->name_ == nullptr) {

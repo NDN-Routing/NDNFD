@@ -92,19 +92,19 @@ static int ccn_stuff_interest(struct ccnd_handle *h,
                               struct face *face, struct ccn_charbuf *c);
 static void do_deferred_write(struct ccnd_handle *h, int fd);
 #endif
-static void clean_needed(struct ccnd_handle *h);
+NDNFD_EXPOSE_static void clean_needed(struct ccnd_handle *h);
 #ifndef NDNFD
 static struct face *get_dgram_source(struct ccnd_handle *h, struct face *face,
                                      struct sockaddr *addr, socklen_t addrlen,
                                      int why);
 #endif
-static void content_skiplist_insert(struct ccnd_handle *h,
+NDNFD_EXPOSE_static void content_skiplist_insert(struct ccnd_handle *h,
                                     struct content_entry *content);
 static void content_skiplist_remove(struct ccnd_handle *h,
                                     struct content_entry *content);
 static void mark_stale(struct ccnd_handle *h,
                        struct content_entry *content);
-static ccn_accession_t content_skiplist_next(struct ccnd_handle *h,
+NDNFD_EXPOSE_static ccn_accession_t content_skiplist_next(struct ccnd_handle *h,
                                              struct content_entry *content);
 static void reap_needed(struct ccnd_handle *h, int init_delay_usec);
 static void check_comm_file(struct ccnd_handle *h);
@@ -698,7 +698,7 @@ finalize_face(struct hashtb_enumerator *e)
  *
  * @returns content handle, or NULL if it is no longer available.
  */
-static struct content_entry *
+NDNFD_EXPOSE_static struct content_entry *
 content_from_accession(struct ccnd_handle *h, ccn_accession_t accession)
 {
     struct content_entry *ans = NULL;
@@ -788,7 +788,7 @@ cleanout_empties(struct ccnd_handle *h)
 /**
  * Assign an accession number to a content object
  */
-static void
+NDNFD_EXPOSE_static void
 enroll_content(struct ccnd_handle *h, struct content_entry *content)
 {
     unsigned new_window;
@@ -849,6 +849,9 @@ finalize_content(struct hashtb_enumerator *content_enumerator)
         hashtb_delete(e);
         hashtb_end(e);
     }
+#ifdef NDNFD
+    ndnfd_finalize_ce(h, entry);
+#endif
     if (entry->comps != NULL) {
         free(entry->comps);
         entry->comps = NULL;
@@ -908,7 +911,7 @@ content_skiplist_findbefore(struct ccnd_handle *h,
 /**
  * Insert a new entry into the skiplist.
  */
-static void
+NDNFD_EXPOSE_static void
 content_skiplist_insert(struct ccnd_handle *h, struct content_entry *content)
 {
     int d;
@@ -963,7 +966,7 @@ content_skiplist_remove(struct ccnd_handle *h, struct content_entry *content)
 /**
  * Find the first candidate that might match the given interest.
  */
-static struct content_entry *
+NDNFD_EXPOSE_static struct content_entry *
 find_first_match_candidate(struct ccnd_handle *h,
                            const unsigned char *interest_msg,
                            const struct ccn_parsed_interest *pi)
@@ -1025,7 +1028,7 @@ find_first_match_candidate(struct ccnd_handle *h,
 /**
  * Check for a prefix match.
  */
-static int
+NDNFD_EXPOSE_static int
 content_matches_interest_prefix(struct ccnd_handle *h,
                                 struct content_entry *content,
                                 const unsigned char *interest_msg,
@@ -1051,7 +1054,7 @@ content_matches_interest_prefix(struct ccnd_handle *h,
 /**
  * Advance to the next entry in the skiplist.
  */
-static ccn_accession_t
+NDNFD_EXPOSE_static ccn_accession_t
 content_skiplist_next(struct ccnd_handle *h, struct content_entry *content)
 {
     if (content == NULL)
@@ -2525,7 +2528,7 @@ clean_daemon(struct ccn_schedule *sched,
 /**
  * Schedule clean_daemon, if it is not already scheduled.
  */
-static void
+NDNFD_EXPOSE_static void
 clean_needed(struct ccnd_handle *h)
 {
     if (h->clean == NULL)
@@ -4273,7 +4276,7 @@ nameprefix_seek(struct ccnd_handle *h, struct hashtb_enumerator *e,
 
 // ZZZZ - not in the most obvious place - move closer to other content table stuff
 // XXX - missing doxy
-static struct content_entry *
+NDNFD_EXPOSE_static struct content_entry *
 next_child_at_level(struct ccnd_handle *h,
                     struct content_entry *content, int level)
 {
@@ -4315,20 +4318,6 @@ next_child_at_level(struct ccnd_handle *h,
     }
     ccn_charbuf_destroy(&name);
     return(next);
-}
-
-// dummy code to prevent compiler warning of unused functions
-// TODO remove this and referenced functions once ContentStore is integrated in NDNFD
-void dummy_process_incoming_interest_dummy(void) {
-  struct ccnd_handle* h = NULL;
-  unsigned char* msg = NULL;
-  struct ccn_parsed_interest* pi = NULL;
-  struct content_entry* content = NULL;
-  struct ccn_indexbuf* comps = NULL;
-  
-  find_first_match_candidate(h, msg, pi);
-  content_matches_interest_prefix(h, content, msg, comps, pi->prefix_comps);
-  next_child_at_level(h, content, comps->n - 1);
 }
 
 #ifndef NDNFD
@@ -4577,7 +4566,7 @@ expire_content(struct ccn_schedule *sched,
  * Schedules content expiration based on its FreshnessSeconds, and the
  * configured default and limit.
  */
-static void
+NDNFD_EXPOSE_static void
 set_content_timer(struct ccnd_handle *h, struct content_entry *content,
                   struct ccn_parsed_ContentObject *pco)
 {
