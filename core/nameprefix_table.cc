@@ -270,6 +270,12 @@ bool PitEntry::IsNonceUnique(Ptr<const PitFaceItem> p) {
   return 1 == pfi_unique_nonce(CCNDH, this->native(), p->native());
 }
 
+Ptr<PitDownstreamRecord> PitEntry::FindPendingDownstream(void) {
+  auto it = std::find_if(this->beginDownstream(), this->endDownstream(), [](Ptr<PitDownstreamRecord> p) { return p->pending(); });
+  if (it == this->endDownstream()) return nullptr;
+  return *it;
+}
+
 pit_face_item* PitEntry::SeekPfiInternal(FaceId face, bool create, unsigned flag) {
   if (create) {
     return pfi_seek(CCNDH, this->native(), static_cast<unsigned>(face), flag);

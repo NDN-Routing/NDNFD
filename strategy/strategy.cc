@@ -171,6 +171,13 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
   return ie->NextEventDelay(false);
 }
 
+void Strategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
+  Ptr<PitUpstreamRecord> p = ie->GetUpstream(co->incoming_face());
+  if (p != nullptr) {
+    p->set_pending(false);
+  }
+}
+
 void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
   this->Log(kLLDebug, kLCStrategy, "Strategy::WillEraseTimedOutPendingInterest(%" PRI_PitEntrySerial ")", ie->serial());
 }

@@ -208,6 +208,9 @@ class PitEntry : public Element {
   // beginDownstream and endDownstream iterates over downstream records.
   DownstreamIterator beginDownstream(void) { return DownstreamIterator(this, this->native()->pfl); }
   DownstreamIterator endDownstream(void) { return DownstreamIterator(this, nullptr); }
+  // FindPendingDownstream returns the first pending downstream,
+  // or null if not found.
+  Ptr<PitDownstreamRecord> FindPendingDownstream(void);
   
   // Delete pit_face_item.
   // Called by PitFaceItemIterator::Delete.

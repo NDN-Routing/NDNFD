@@ -17,10 +17,8 @@ void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
 
   // find downstream
-  auto first_downstream = ie->beginDownstream();
-  assert(first_downstream != ie->endDownstream());
-  Ptr<PitDownstreamRecord> downstream = *first_downstream;
-  assert(downstream != nullptr && downstream->pending());
+  Ptr<PitDownstreamRecord> downstream = ie->FindPendingDownstream();
+  assert(downstream != nullptr);
   
   // get tap list: Interest is immediately sent to these faces; they are used for monitoring purpose and shouldn't respond
   ccn_indexbuf* tap = nullptr;
