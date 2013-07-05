@@ -2,9 +2,10 @@
 #include <stack>
 #include "core/scheduler.h"
 #include "face/facemgr.h"
+#include "core/content_store.h"
 extern "C" {
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co);
 uint32_t WTHZ_value(void);
+int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
 }
 
 // TODO remove these after impl dispatch
@@ -82,9 +83,24 @@ void StrategyLayer::OnInterest(Ptr<const InterestMessage> interest) {
 }
 
 void StrategyLayer::OnContent(Ptr<const ContentObjectMessage> co) {
-  // TODO impl common procedures & dispatch
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(co->incoming_face());
-  process_incoming_content2(CCNDH, in_face->ccnd_face(), static_cast<unsigned char*>(const_cast<uint8_t*>(co->msg())), co->length(), const_cast<ccn_parsed_ContentObject*>(co->parsed()));
+  if (in_face == nullptr) return;
+  in_face->CountContentObjectIn();
+  
+  ContentStore::AddResult res; Ptr<ContentEntry> ce;
+  std::tie(res, ce) = this->global()->cs()->Add(co);
+  
+  if (res == ContentStore::AddResult::New || res == ContentStore::AddResult::Refreshed) {
+    int n_matches = match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(co->parsed()), nullptr, in_face->ccnd_face());
+    if (res == ContentStore::AddResult::New) {
+      if (n_matches < 0) {
+        this->global()->cs()->Remove(ce);
+      }
+      if (n_matches == 0 && in_face->kind() != FaceKind::kApp && in_face->kind() != FaceKind::kInternal) {
+        ce->set_unsolicited(true);
+      }
+    }
+  }
 }
 
 void StrategyLayer::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {

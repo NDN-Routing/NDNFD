@@ -98,6 +98,7 @@ class Face : public Element {
   void CountBytesIn(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }
   void CountBytesOut(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTO], static_cast<unsigned>(n)); }
   void CountInterestIn(void) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_INTI], 1); }
+  void CountContentObjectIn(void) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_DATI], 1); }
 
  protected:
   Face(Ptr<FaceThread> face_thread = nullptr);

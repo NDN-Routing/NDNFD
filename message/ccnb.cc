@@ -105,6 +105,10 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
       if (msg != nullptr) {
         //assert(msg->Verify());
         msg->set_source_buffer(packet);
+        if (msg->type() == ContentObjectMessage::kType) {
+          // add digest in CO because ContentStore needs it
+          msg = static_cast<ContentObjectMessage*>(PeekPointer(msg))->AddExplicitDigest();
+        }
         results.push_back(msg);
       }
     }

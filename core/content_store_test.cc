@@ -46,6 +46,8 @@ Ptr<ContentObjectMessage> ContentStoreTest_MakeCO(std::string name_uri) {
 
   Ptr<ContentObjectMessage> co = ContentObjectMessage::Parse(c->buf, c->length);
   assert(co != nullptr);
+  co = co->AddExplicitDigest();
+  assert(co != nullptr);
   return co;
 }
 

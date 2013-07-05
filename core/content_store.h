@@ -20,6 +20,7 @@ class ContentStore : public Element {
     Refreshed,// stale Content entry is refreshed
     Duplicate,// ContentObject is a duplicate
     Collision,// key collision happens
+    OverSize, // key is oversized
     Fail      // operation fails
   };
   
@@ -37,7 +38,10 @@ class ContentStore : public Element {
   
   // Add adds a ContentObject to CS.
   // co must have an explicit digest component.
-  std::tuple<AddResult,Ptr<ContentEntry>> Add(Ptr<ContentObjectMessage> co);
+  std::tuple<AddResult,Ptr<ContentEntry>> Add(Ptr<const ContentObjectMessage> co);
+  
+  // Remove deletes a ContentEntry.
+  void Remove(Ptr<ContentEntry> ce);
   
  private:
   void CleanIfNecessary(void);
@@ -49,7 +53,7 @@ class ContentStore : public Element {
 // A ContentEntry is an entry in the ContentStore.
 class ContentEntry : public Element {
  public:
-  ContentEntry(content_entry* native, Ptr<ContentObjectMessage> co);
+  ContentEntry(content_entry* native, Ptr<const ContentObjectMessage> co);
   virtual ~ContentEntry(void) {}
   
   content_entry* native(void) const { return this->native_; }

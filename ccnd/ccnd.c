@@ -239,7 +239,6 @@ comm_file_ok(void)
         return(0);
     return(1);
 }
-#endif
 
 /**
  * Obtain a charbuf for short-term use
@@ -295,7 +294,6 @@ indexbuf_release(struct ccnd_handle *h, struct ccn_indexbuf *c)
         ccn_indexbuf_destroy(&c);
 }
 
-#ifndef NDNFD
 /**
  * Looks up a face based on its faceid (private).
  */
@@ -1934,7 +1932,7 @@ note_content_from(struct ccnd_handle *h,
  * For new content, from_face is the source; for old content, from_face is NULL.
  * @returns number of matches, or -1 if the new content should be dropped.
  */
-static int
+NDNFD_EXPOSE_static int
 match_interests(struct ccnd_handle *h, struct content_entry *content,
                            struct ccn_parsed_ContentObject *pc,
                            struct face *face, struct face *from_face)
@@ -2391,7 +2389,7 @@ reap_needed(struct ccnd_handle *h, int init_delay_usec)
 /**
  * Remove a content object from the store
  */
-static int
+NDNFD_EXPOSE_static int
 remove_content(struct ccnd_handle *h, struct content_entry *content)
 {
     struct hashtb_enumerator ee;
@@ -4601,6 +4599,7 @@ Finish:
                        &expire_content, NULL, content->accession);
 }
 
+#ifndef NDNFD
 /**
  * Process an arriving ContentObject.
  *
@@ -4619,24 +4618,15 @@ Finish:
  * XXX - the change to staleness should also not happen if there was no
  * matching PIT entry.
  */
-#ifdef NDNFD
-void process_incoming_content2(struct ccnd_handle* h, struct face* face, unsigned char* msg, size_t size, struct ccn_parsed_ContentObject* co)
-#define obj (*co)
-#else
 static void
 process_incoming_content(struct ccnd_handle *h, struct face *face,
                          unsigned char *wire_msg, size_t wire_size)
-#endif
 {
-#ifndef NDNFD
     unsigned char *msg;
     size_t size;
-#endif
     struct hashtb_enumerator ee;
     struct hashtb_enumerator *e = &ee;
-#ifndef NDNFD
     struct ccn_parsed_ContentObject obj = {0};
-#endif
     int res;
     size_t keysize = 0;
     size_t tailsize = 0;
@@ -4646,7 +4636,6 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
     struct ccn_indexbuf *comps = indexbuf_obtain(h);
     struct ccn_charbuf *cb = charbuf_obtain(h);
     
-#ifndef NDNFD
     msg = wire_msg;
     size = wire_size;
     
@@ -4655,15 +4644,9 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
         ccnd_msg(h, "error parsing ContentObject - code %d", res);
         goto Bail;
     }
-#endif
     ccnd_meter_bump(h, face->meter[FM_DATI], 1);
-#ifdef NDNFD
-    if (co->name_ncomps < 1 ||
-        (keysize = co->offset[CCN_PCO_E_ComponentLast]) > 65535 - 36) {
-#else
     if (comps->n < 1 ||
         (keysize = comps->buf[comps->n - 1]) > 65535 - 36) {
-#endif
         ccnd_msg(h, "ContentObject with keysize %lu discarded",
                  (unsigned long)keysize);
         ccnd_debug_ccnb(h, __LINE__, "oversize", face, msg, size);
@@ -4676,11 +4659,7 @@ process_incoming_content(struct ccnd_handle *h, struct face *face,
         ccnd_debug_ccnb(h, __LINE__, "indigestible", face, msg, size);
         goto Bail;
     }
-#ifdef NDNFD
-    i = co->offset[CCN_PCO_E_ComponentLast];
-#else
     i = comps->buf[comps->n - 1];
-#endif
     ccn_charbuf_append(cb, msg, i);
     ccn_charbuf_append_tt(cb, CCN_DTAG_Component, CCN_DTAG);
     ccn_charbuf_append_tt(cb, obj.digest_bytes, CCN_BLOB);
@@ -4805,12 +4784,8 @@ Bail:
             }
         }
     }
-#ifdef NDNFD
-#undef obj
-#endif
 }
 
-#ifndef NDNFD
 /**
  * Process an incoming message.
  *
@@ -6066,10 +6041,14 @@ ccnd_destroy(struct ccnd_handle **pccnd)
         h->content_by_accession_window = 0;
     }
     ccn_charbuf_destroy(&h->send_interest_scratch);
+#ifndef NDNFD
     ccn_charbuf_destroy(&h->scratch_charbuf);
+#endif
     ccn_charbuf_destroy(&h->autoreg);
     ccn_indexbuf_destroy(&h->skiplinks);
+#ifndef NDNFD
     ccn_indexbuf_destroy(&h->scratch_indexbuf);
+#endif
     ccn_indexbuf_destroy(&h->unsol);
     if (h->face0 != NULL) {
         ccn_charbuf_destroy(&h->face0->inbuf);

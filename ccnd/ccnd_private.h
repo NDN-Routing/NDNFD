@@ -118,8 +118,10 @@ struct ccnd_handle {
     unsigned iserial;               /**< interest serial number (for logs) */
     struct ccn_schedule *sched;     /**< our schedule */
     struct ccn_charbuf *send_interest_scratch; /**< for use by send_interest */
+#ifndef NDNFD
     struct ccn_charbuf *scratch_charbuf; /**< one-slot scratch cache */
     struct ccn_indexbuf *scratch_indexbuf; /**< one-slot scratch cache */
+#endif
     /** Next three fields are used for direct accession-to-content table */
     ccn_accession_t accession_base;
     unsigned content_by_accession_window;

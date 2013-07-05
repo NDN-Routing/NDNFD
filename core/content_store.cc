@@ -10,6 +10,7 @@ void enroll_content(struct ccnd_handle* h, struct content_entry* content);
 void content_skiplist_insert(struct ccnd_handle* h, struct content_entry* content);
 void clean_needed(struct ccnd_handle* h);
 void set_content_timer(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pco);
+int remove_content(struct ccnd_handle* h, struct content_entry* content);
 }
 extern "C" {
 void ndnfd_finalize_ce(struct ccnd_handle* h, struct content_entry* entry) {
@@ -71,12 +72,17 @@ Ptr<ContentEntry> ContentStore::Lookup(Ptr<InterestMessage> interest) {
   return static_cast<ContentEntry*>(content->ndnfd_ce);
 }
 
-std::tuple<ContentStore::AddResult,Ptr<ContentEntry>> ContentStore::Add(Ptr<ContentObjectMessage> co) {
+std::tuple<ContentStore::AddResult,Ptr<ContentEntry>> ContentStore::Add(Ptr<const ContentObjectMessage> co) {
+  assert(co->has_explicit_digest());
   struct hashtb_enumerator ee;
   struct hashtb_enumerator* e = &ee;
   hashtb_start(CCNDH->content_tab, e);
   
   size_t keysize = co->parsed()->offset[CCN_PCO_B_Content];
+  if (keysize >= 65536) {
+    hashtb_end(e);
+    return std::forward_as_tuple(AddResult::OverSize, nullptr);
+  }
   const uint8_t* tail = co->msg() + keysize;
   size_t tailsize = co->length() - keysize;
   int res = hashtb_seek(e, co->msg(), keysize, tailsize);
@@ -131,7 +137,11 @@ ContentAccession ContentStore::NewAccession(void) {
   return ++(CCNDH->accession);
 }
 
-ContentEntry::ContentEntry(content_entry* native, Ptr<ContentObjectMessage> co) : native_(native) {
+void ContentStore::Remove(Ptr<ContentEntry> ce) {
+  remove_content(CCNDH, ce->native());
+}
+
+ContentEntry::ContentEntry(content_entry* native, Ptr<const ContentObjectMessage> co) : native_(native) {
   memcpy(&this->parsed_, co->parsed(), sizeof(this->parsed_));
   this->set_arrival_face(co->incoming_face());
   const ccn_indexbuf* comps = co->comps();
@@ -152,8 +162,10 @@ bool ContentEntry::unsolicited(void) const {
 
 void ContentEntry::set_unsolicited(bool value) {
   if (value) {
+    this->native()->flags |= CCN_CONTENT_ENTRY_SLOWSEND;
     ccn_indexbuf_set_insert(CCNDH->unsol, this->accession());
   } else {
+    this->native()->flags &= ~CCN_CONTENT_ENTRY_SLOWSEND;
     ccn_indexbuf_remove_element(CCNDH->unsol, this->accession());
   }
 }
