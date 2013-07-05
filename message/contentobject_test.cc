@@ -35,6 +35,11 @@ TEST(MessageTest, ContentObject) {
   EXPECT_EQ(26U, payload_size);
   EXPECT_EQ('A', static_cast<char>(payload[0]));
   
+  EXPECT_FALSE(co1->has_explicit_digest());
+  Ptr<ContentObjectMessage> co1digest = co1->AddExplicitDigest();
+  EXPECT_TRUE(co1digest->has_explicit_digest());
+  EXPECT_GT(co1digest->length(), co1->length() + 32);
+  
   ccn_charbuf_destroy(&c1);
 }
 
