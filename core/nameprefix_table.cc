@@ -171,7 +171,7 @@ std::unordered_set<FaceId> NamePrefixEntry::LookupFib(Ptr<const InterestMessage>
   assert(interest != nullptr);
   Ptr<Face> inface = this->global()->facemgr()->GetFace(interest->incoming_face());
 
-  ccn_indexbuf* outbound = get_outbound_faces(CCNDH, inface==nullptr ? nullptr : inface->ccnd_face(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->native());
+  ccn_indexbuf* outbound = get_outbound_faces(CCNDH, inface==nullptr ? nullptr : inface->native(), interest->msg(), const_cast<ccn_parsed_interest*>(interest->parsed()), this->native());
 
   std::unordered_set<FaceId> s;
   for (size_t i = 0; i < outbound->n; ++i) {
@@ -354,7 +354,7 @@ void PitDownstreamRecord::UpdateNonce(Ptr<const InterestMessage> interest) {
   } else {
     Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
     assert(in_face != nullptr);
-    nonce_size = (CCNDH->noncegen)(CCNDH, in_face->ccnd_face(), generated_nonce_buf);
+    nonce_size = (CCNDH->noncegen)(CCNDH, in_face->native(), generated_nonce_buf);
     nonce = generated_nonce_buf;
   }
   

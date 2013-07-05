@@ -18,7 +18,7 @@ void StrategyBase::SendContent(FaceId downstream, Ptr<ContentEntry> ce) {
   assert(ce != nullptr);
   Ptr<Face> face = this->global()->facemgr()->GetFace(downstream);
   if (face == nullptr) return;
-  face_send_queue_insert(CCNDH, face->ccnd_face(), ce->native());
+  face_send_queue_insert(CCNDH, face->native(), ce->native());
 }
 
 std::unordered_set<FaceId> StrategyBase::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {

@@ -91,7 +91,7 @@ void StrategyLayer::OnContent(Ptr<const ContentObjectMessage> co) {
   
   if (res == ContentStore::AddResult::New || res == ContentStore::AddResult::Refreshed) {
     // TODO wrap match_interests
-    int n_matches = match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(co->parsed()), nullptr, in_face->ccnd_face());
+    int n_matches = match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(co->parsed()), nullptr, in_face->native());
     if (res == ContentStore::AddResult::New) {
       if (n_matches < 0) {
         this->global()->cs()->Remove(ce);

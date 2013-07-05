@@ -18,7 +18,7 @@ struct face* face_from_faceid(struct ccnd_handle *h, unsigned faceid) {
   assert(global->IsCoreThread());
   Ptr<Face> face = global->facemgr()->GetFace(static_cast<FaceId>(faceid));
   if (face == nullptr) return nullptr;
-  return face->ccnd_face();
+  return face->native();
 }
 
 void stuff_and_send(struct ccnd_handle* h, struct face* face, const unsigned char *data1, size_t size1, const unsigned char *data2, size_t size2, const char *tag, int lineno) {
@@ -34,7 +34,7 @@ void CcndFaceInterface::BindFaceThread(Ptr<FaceThread> face_thread) {
 
 void CcndFaceInterface::BindFace(Ptr<Face> face) {
   //face->Receive = std::bind(&CcndFaceInterface::Receive, this, std::placeholders::_1);
-  register_new_face(CCNDH, face->ccnd_face());
+  register_new_face(CCNDH, face->native());
 }
 
 void CcndFaceInterface::Receive(Ptr<Message> message) {

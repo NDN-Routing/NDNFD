@@ -60,7 +60,7 @@ class Face : public Element {
   FaceStatus status(void) const { return this->status_; }
   Ptr<FaceThread> face_thread(void) const;
   void set_face_thread(Ptr<FaceThread> value);
-  face* ccnd_face(void) const { return const_cast<face*>(&this->ccnd_face_); }
+  face* native(void) const { return const_cast<face*>(&this->native_); }
   
   virtual FaceDescription GetDescription(void) const =0;
 
@@ -69,7 +69,7 @@ class Face : public Element {
   // Send enqueues a message for sending.
   virtual void Send(Ptr<const Message> message) { assert(false); }
   // whether sending is likely blocked
-  bool send_blocked(void) const { return (this->ccnd_face()->flags & CCN_FACE_NOSEND) != 0; }
+  bool send_blocked(void) const { return (this->native()->flags & CCN_FACE_NOSEND) != 0; }
   // SendReachable returns true if a message sent on this face
   // is likely to reach all recipients on other face.
   virtual bool SendReachable(Ptr<const Face> other) const { return false; }
@@ -95,16 +95,16 @@ class Face : public Element {
   virtual void Close(void) { this->set_status(FaceStatus::kClosed); }
   
   // Count* update face counters.
-  void CountBytesIn(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTI], static_cast<unsigned>(n)); }
-  void CountBytesOut(size_t n) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_BYTO], static_cast<unsigned>(n)); }
-  void CountInterestIn(void) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_INTI], 1); }
-  void CountContentObjectIn(void) { ccnd_meter_bump(CCNDH, this->ccnd_face()->meter[FM_DATI], 1); }
+  void CountBytesIn(size_t n) { ccnd_meter_bump(CCNDH, this->native()->meter[FM_BYTI], static_cast<unsigned>(n)); }
+  void CountBytesOut(size_t n) { ccnd_meter_bump(CCNDH, this->native()->meter[FM_BYTO], static_cast<unsigned>(n)); }
+  void CountInterestIn(void) { ccnd_meter_bump(CCNDH, this->native()->meter[FM_INTI], 1); }
+  void CountContentObjectIn(void) { ccnd_meter_bump(CCNDH, this->native()->meter[FM_DATI], 1); }
 
  protected:
   Face(Ptr<FaceThread> face_thread = nullptr);
   void set_id(FaceId value);
   void set_status(FaceStatus value);
-  void set_ccnd_flags(int value, int mask) { this->ccnd_face()->flags = (this->ccnd_face()->flags & ~mask) | value; }
+  void set_ccnd_flags(int value, int mask) { this->native()->flags = (this->native()->flags & ~mask) | value; }
   void set_send_blocked(bool value) { this->set_ccnd_flags(value ? CCN_FACE_NOSEND : 0, CCN_FACE_NOSEND); }
   
   // DoFinalize cleans up the face.
@@ -119,7 +119,7 @@ class Face : public Element {
   FaceKind kind_;
   FaceStatus status_;
   Ptr<FaceThread> face_thread_;
-  face ccnd_face_;
+  face native_;
   
   DISALLOW_COPY_AND_ASSIGN(Face);
 };

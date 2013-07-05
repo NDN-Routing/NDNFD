@@ -11,7 +11,7 @@ void InternalClientFace::Init(void) {
   this->set_kind(FaceKind::kInternal);
   this->set_face_thread(this->global()->facemgr()->integrated_face_thread());
   this->global()->facemgr()->AddFace(this);
-  CCNDH->face0 = this->ccnd_face();
+  CCNDH->face0 = this->native();
 
   this->wp_ = this->New<CcnbWireProtocol>(true);
   assert(this->wp_->IsStateful());

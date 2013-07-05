@@ -25,7 +25,7 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEnt
   if (ce != nullptr) {
     this->SendContent(in_face->id(), ce);
     // TODO wrap match_interests
-    match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(ce->parsed()), in_face->ccnd_face(), nullptr);
+    match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(ce->parsed()), in_face->native(), nullptr);
     return;
   }
 
@@ -47,7 +47,7 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
     ie->native()->strategy.renewals += 1;
     if (!p->pending()) {
       p->set_pending(true);
-      in_face->ccnd_face()->pending_interests += 1;
+      in_face->native()->pending_interests += 1;
     }
   } else {
     // duplicate nonce

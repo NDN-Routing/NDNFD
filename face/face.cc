@@ -56,7 +56,7 @@ Face::Face(Ptr<FaceThread> face_thread) {
   this->kind_ = FaceKind::kNone;
   this->status_ = FaceStatus::kNone;
   this->face_thread_ = face_thread;
-  memset(&this->ccnd_face_, 0, sizeof(this->ccnd_face_));
+  memset(&this->native_, 0, sizeof(this->native_));
 }
 
 Ptr<FaceThread> Face::face_thread(void) const {
@@ -86,25 +86,25 @@ void Face::Enroll(FaceId id, Ptr<FaceMgr> mgr) {
 
   this->set_id(id);
   // update ccnd_face, like ccnd_enroll_face
-  this->ccnd_face()->meter[FM_BYTI] = ccnd_meter_create(CCNDH, "bytein");
-  this->ccnd_face()->meter[FM_BYTO] = ccnd_meter_create(CCNDH, "byteout");
-  this->ccnd_face()->meter[FM_INTI] = ccnd_meter_create(CCNDH, "intrin");
-  this->ccnd_face()->meter[FM_INTO] = ccnd_meter_create(CCNDH, "introut");
-  this->ccnd_face()->meter[FM_DATI] = ccnd_meter_create(CCNDH, "datain");
-  this->ccnd_face()->meter[FM_DATO] = ccnd_meter_create(CCNDH, "dataout");
+  this->native()->meter[FM_BYTI] = ccnd_meter_create(CCNDH, "bytein");
+  this->native()->meter[FM_BYTO] = ccnd_meter_create(CCNDH, "byteout");
+  this->native()->meter[FM_INTI] = ccnd_meter_create(CCNDH, "intrin");
+  this->native()->meter[FM_INTO] = ccnd_meter_create(CCNDH, "introut");
+  this->native()->meter[FM_DATI] = ccnd_meter_create(CCNDH, "datain");
+  this->native()->meter[FM_DATO] = ccnd_meter_create(CCNDH, "dataout");
 }
 
 void Face::Finalize(void) {
   if (this->status_ == FaceStatus::kFinalized) return;
   this->DoFinalize();
-  finalize_face(CCNDH, this->ccnd_face());
+  finalize_face(CCNDH, this->native());
   this->status_ = FaceStatus::kFinalized;
 }
 
 void Face::set_id(FaceId value) {
   this->id_ = value;
   //this->Log(kLLInfo, kLCFace, "Face(%"PRIxPTR")::set_id(%"PRI_FaceId")", this, this->id());
-  this->ccnd_face()->faceid = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value);
+  this->native()->faceid = value == FaceId_none ? CCN_NOFACEID : static_cast<unsigned>(value);
 }
 
 void Face::set_kind(FaceKind value) {

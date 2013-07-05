@@ -254,7 +254,7 @@ std::tuple<bool,int,std::string> FaceMgr::FaceMgmtNewFace(ccn_face_instance* fac
   if (face == nullptr) {
     return std::forward_as_tuple(false, errnum, errmsg);
   } else {
-    face->ccnd_face()->flags = face->ccnd_face()->flags | CCN_FACE_PERMANENT;
+    face->native()->flags = face->native()->flags | CCN_FACE_PERMANENT;
     face_inst->faceid = static_cast<unsigned>(face->id());
     return std::forward_as_tuple(true, 0, "");
   }
