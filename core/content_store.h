@@ -34,7 +34,7 @@ class ContentStore : public Element {
   Ptr<ContentEntry> Get(ContentAccession accession);
 
   // Lookup finds the best matching Content entry for Interest.
-  Ptr<ContentEntry> Lookup(Ptr<InterestMessage> interest);
+  Ptr<ContentEntry> Lookup(Ptr<const InterestMessage> interest);
   
   // Add adds a ContentObject to CS.
   // co must have an explicit digest component.

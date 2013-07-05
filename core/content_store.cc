@@ -31,7 +31,7 @@ Ptr<ContentEntry> ContentStore::Get(ContentAccession accession) {
   return static_cast<ContentEntry*>(native->ndnfd_ce);
 }
 
-Ptr<ContentEntry> ContentStore::Lookup(Ptr<InterestMessage> interest) {
+Ptr<ContentEntry> ContentStore::Lookup(Ptr<const InterestMessage> interest) {
   if ((interest->parsed()->answerfrom & CCN_AOK_CS) == 0) {
     // <AnswerOriginKind> doesn't permit ContentStore
     return nullptr;

@@ -5,6 +5,7 @@
 #include "message/contentobject.h"
 #include "message/nack.h"
 #include "core/nameprefix_table.h"
+#include "core/content_store.h"
 namespace ndnfd {
 
 // StrategyBase is the base class of all forwarding strategies, and the StrategyLayer.
@@ -23,7 +24,7 @@ class StrategyBase : public Element {
   // SendContentObject sends a ContentObject to downstream.
   // co is placed into the face send queue if there's no duplicate.
   // TODO substitute content_entry* with a C++ type
-  virtual void SendContent(FaceId downstream, content_entry* content) {}//TODO impl
+  virtual void SendContent(FaceId downstream, Ptr<ContentEntry> ce);
   
   // SendNack sends a Nack to downstream.
   virtual void SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code) {}//TODO impl

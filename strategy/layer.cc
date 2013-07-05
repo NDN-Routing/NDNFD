@@ -2,7 +2,6 @@
 #include <stack>
 #include "core/scheduler.h"
 #include "face/facemgr.h"
-#include "core/content_store.h"
 extern "C" {
 uint32_t WTHZ_value(void);
 int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
@@ -91,6 +90,7 @@ void StrategyLayer::OnContent(Ptr<const ContentObjectMessage> co) {
   std::tie(res, ce) = this->global()->cs()->Add(co);
   
   if (res == ContentStore::AddResult::New || res == ContentStore::AddResult::Refreshed) {
+    // TODO wrap match_interests
     int n_matches = match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(co->parsed()), nullptr, in_face->ccnd_face());
     if (res == ContentStore::AddResult::New) {
       if (n_matches < 0) {

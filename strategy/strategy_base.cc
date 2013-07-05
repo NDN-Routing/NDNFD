@@ -1,6 +1,7 @@
 #include "strategy_base.h"
 extern "C" {
 struct pit_face_item* send_interest(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* x, struct pit_face_item* p);
+int face_send_queue_insert(struct ccnd_handle* h, struct face* face, struct content_entry* content);
 }
 #include "core/scheduler.h"
 #include "face/facemgr.h"
@@ -11,6 +12,13 @@ void StrategyBase::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downs
   assert(downstream != nullptr);
   assert(upstream != nullptr);
   upstream->set_native(send_interest(CCNDH, ie->native(), downstream->native(), upstream->native()));
+}
+
+void StrategyBase::SendContent(FaceId downstream, Ptr<ContentEntry> ce) {
+  assert(ce != nullptr);
+  Ptr<Face> face = this->global()->facemgr()->GetFace(downstream);
+  if (face == nullptr) return;
+  face_send_queue_insert(CCNDH, face->ccnd_face(), ce->native());
 }
 
 std::unordered_set<FaceId> StrategyBase::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {

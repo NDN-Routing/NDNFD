@@ -1,6 +1,9 @@
 #include "strategy.h"
 #include "core/scheduler.h"
 #include "face/facemgr.h"
+extern "C" {
+int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
+}
 namespace ndnfd {
 
 void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe, Ptr<PitEntry> ie) {
@@ -18,7 +21,13 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEnt
     return;
   }
   
-  // TODO match ContentStore
+  Ptr<ContentEntry> ce = this->global()->cs()->Lookup(interest);
+  if (ce != nullptr) {
+    this->SendContent(in_face->id(), ce);
+    // TODO wrap match_interests
+    match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(ce->parsed()), in_face->ccnd_face(), nullptr);
+    return;
+  }
 
   this->PropagateInterest(interest, npe);
 }
