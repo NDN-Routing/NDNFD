@@ -5,26 +5,28 @@ extern "C" {
 #endif
 #include "ccnd/ccnd_private.h"
 
-void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face, int pending_downstreams);
-void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix);
-void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid, const uint8_t* name, size_t name_size);
+void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, int pending_downstreams);
+void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, int matching_suffix);
 
 #ifdef __cplusplus
 }
-#include "core/element.h"
-#include "face/faceid.h"
-#include "message/name.h"
+#include "core/content_store.h"
+#include "message/contentobject.h"
 
 namespace ndnfd {
 
 class CcndStrategyInterface : public Element {
  public:
+  // current processing ContentEntry and ContentObject
+  Ptr<const ContentEntry> ce_;
+  Ptr<const ContentObjectMessage> co_;
+  
   CcndStrategyInterface(void) {}
   virtual ~CcndStrategyInterface(void) {}
   
-  void WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream, int pending_downstreams);
-  void DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix);
-  void DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name);
+  void DidSatisfyPendingInterest(interest_entry* ie, int pending_downstreams);
+  void DidReceiveContent(nameprefix_entry* npe, int matching_suffix);
+  void DidAddFibEntry(nameprefix_entry* npe, FaceId faceid);
   
  private:
   DISALLOW_COPY_AND_ASSIGN(CcndStrategyInterface);

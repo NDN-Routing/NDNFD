@@ -1,55 +1,38 @@
 #include "ccnd_interface.h"
 #include "strategy/layer.h"
 #include "face/facemgr.h"
-using ndnfd::Global;
-
-void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, struct face* from_face, int pending_downstreams) {
+extern "C" {
+void strategy_callout2_SATISFIED(struct ccnd_handle* h, struct interest_entry* ie, int pending_downstreams) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->sl()->ccnd_strategy_interface()->WillSatisfyPendingInterest(ie, static_cast<ndnfd::FaceId>(from_face->faceid), pending_downstreams);
+  return global->sl()->ccnd_strategy_interface()->DidSatisfyPendingInterest(ie, pending_downstreams);
 }
 
-void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned from_faceid, const uint8_t* name, size_t name_size, int matching_suffix) {
+void note_content_from2(struct ccnd_handle* h, struct nameprefix_entry* npe, int matching_suffix) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->sl()->ccnd_strategy_interface()->DidSatisfyPendingInterests(npe, static_cast<ndnfd::FaceId>(from_faceid), ndnfd::Name::FromCcnb(name, name_size), matching_suffix);
+  return global->sl()->ccnd_strategy_interface()->DidReceiveContent(npe, matching_suffix);
 }
 
-void update_npe_children2(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid, const uint8_t* name, size_t name_size) {
+void update_npe_children(struct ccnd_handle* h, struct nameprefix_entry* npe, unsigned faceid) {
   ndnfd::Global* global = ccnd_ndnfdGlobal(h);
-  return global->sl()->ccnd_strategy_interface()->DidAddFibEntry(npe, static_cast<ndnfd::FaceId>(faceid), ndnfd::Name::FromCcnb(name, name_size));
+  return global->sl()->ccnd_strategy_interface()->DidAddFibEntry(npe, static_cast<ndnfd::FaceId>(faceid));
 }
-
+}
 namespace ndnfd {
 
-void CcndStrategyInterface::WillSatisfyPendingInterest(interest_entry* ie, FaceId upstream, int pending_downstreams) {
-  Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
-  // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
-  // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
-  // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
-  if (co == nullptr || co->incoming_face() != upstream) {
-    this->Log(kLLDebug, kLCStrategy, "CcndStrategyInterface::WillSatisfyPendingInterest(%" PRI_FaceId ")", upstream);
-    return;
-  }
-
+void CcndStrategyInterface::DidSatisfyPendingInterest(interest_entry* ie, int pending_downstreams) {
+  if (this->ce_ == nullptr) return;
   Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
-  this->global()->sl()->WillSatisfyPendingInterest(ie1, co, pending_downstreams);
+  this->global()->sl()->DidSatisfyPendingInterestInternal(ie1, this->ce_, this->co_, pending_downstreams);
 }
 
-void CcndStrategyInterface::DidSatisfyPendingInterests(nameprefix_entry* npe, FaceId upstream, Ptr<Name> name, int matching_suffix) {
-  Ptr<Message> co = this->global()->facemgr()->ccnd_face_interface()->last_received_message_;
-  // TODO co becomes Ptr<const ContentObjectMessage> once buf decoder is ready
-  // TODO test for co->type() == ContentObjectMessage::kType and cast to Ptr<const ContentObjectMessage>
-  // don't assert here: message from internal client is not placed on CcndFaceInterface::last_received_message_
-  if (co == nullptr || co->incoming_face() != upstream) {
-    this->Log(kLLDebug, kLCStrategy, "CcndStrategyInterface::DidSatisfyPendingInterests(%" PRI_FaceId ",%s)", upstream, name->ToUri().c_str());
-    return;
-  }
-
-  Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
-  this->global()->sl()->DidSatisfyPendingInterests(npe1, co, matching_suffix);
+void CcndStrategyInterface::DidReceiveContent(nameprefix_entry* npe, int matching_suffix) {
+  if (this->ce_ == nullptr) return;
+  Ptr<NamePrefixEntry> npe1 = static_cast<NamePrefixEntry*>(npe->ndnfd_npe);
+  this->global()->sl()->DidReceiveContentInternal(npe1, this->ce_, this->co_, matching_suffix);
 }
 
-void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid, Ptr<Name> name) {
-  Ptr<NamePrefixEntry> npe1 = this->New<NamePrefixEntry>(name, npe);
+void CcndStrategyInterface::DidAddFibEntry(nameprefix_entry* npe, FaceId faceid) {
+  Ptr<NamePrefixEntry> npe1 = static_cast<NamePrefixEntry*>(npe->ndnfd_npe);
   Ptr<ForwardingEntry> forw = npe1->GetForwarding(faceid);
   assert(forw != nullptr);
   this->global()->sl()->DidAddFibEntry(forw);

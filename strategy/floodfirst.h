@@ -17,7 +17,7 @@ class FloodFirstStrategy : public OriginalStrategy {
   std::chrono::seconds fib_entry_expires(void) const { return std::chrono::seconds(2); }
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  virtual void DidReceiveContent(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix);
 
  private:
   DISALLOW_COPY_AND_ASSIGN(FloodFirstStrategy);

@@ -100,14 +100,13 @@ void OriginalStrategy::DidnotArriveOnBestFace(Ptr<PitEntry> ie) {
   }
 }
 
-void OriginalStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
-  this->Strategy::WillSatisfyPendingInterest(ie, co, pending_downstreams);
+void OriginalStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   if (pending_downstreams > 0) this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
 }
 
-void OriginalStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
+void OriginalStrategy::DidReceiveContent(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix) {
   FaceId upstream = co->incoming_face();
-  this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
+  this->Log(kLLDebug, kLCStrategy, "OriginalStrategy::DidReceiveContent(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), upstream, matching_suffix);
   if (matching_suffix >= 0 && matching_suffix < 2) npe->GetStrategyExtra<NpeExtra>()->UpdateBestFace(upstream);
 }
 

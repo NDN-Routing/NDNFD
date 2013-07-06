@@ -147,10 +147,8 @@ NDNFD_EXPOSE_static int
 pfi_unique_nonce(struct ccnd_handle *h, struct interest_entry *ie,
                  struct pit_face_item *p);
 NDNFD_EXPOSE_static int wt_compare(ccn_wrappedtime, ccn_wrappedtime);
-#ifndef NDNFD
-static void
+NDNFD_EXPOSE_static void
 update_npe_children(struct ccnd_handle *h, struct nameprefix_entry *npe, unsigned faceid);
-#endif
 NDNFD_EXPOSE_static void
 pfi_set_expiry_from_lifetime(struct ccnd_handle *h, struct interest_entry *ie,
                              struct pit_face_item *p, intmax_t lifetime);
@@ -1794,11 +1792,7 @@ consume_matching_interests(struct ccnd_handle *h,
                            struct nameprefix_entry *npe,
                            struct content_entry *content,
                            struct ccn_parsed_ContentObject *pc,
-#ifdef NDNFD
-                           struct face *face, struct face* from_face)
-#else
                            struct face *face)
-#endif
 {
     int matches = 0;
     struct ielinks *head;
@@ -1835,7 +1829,7 @@ consume_matching_interests(struct ccnd_handle *h,
                 }
             }
             if (pending_downstreams > 0) ++matches;
-            strategy_callout2_SATISFIED(h, p, from_face, pending_downstreams);
+            strategy_callout2_SATISFIED(h, p, pending_downstreams);
         }
 #else
         if (ccn_content_matches_interest(content_msg, content_size, 0, pc,
@@ -1959,13 +1953,12 @@ match_interests(struct ccnd_handle *h, struct content_entry *content,
         if (from_face != NULL && (npe->flags & CCN_FORW_LOCAL) != 0 &&
             (from_face->flags & CCN_FACE_GG) == 0)
             return(-1);
+        new_matches = consume_matching_interests(h, npe, content, pc, face);
 #ifdef NDNFD
-        new_matches = consume_matching_interests(h, npe, content, pc, face, from_face);
         if (from_face != NULL) {
-            note_content_from2(h, npe, from_face->faceid, content->key + content->comps[0], content->comps[ci] - content->comps[0], new_matches==0?cm-ci:0);
+            note_content_from2(h, npe, new_matches==0?cm-ci:0);
         }
 #else
-        new_matches = consume_matching_interests(h, npe, content, pc, face);
         if (from_face != NULL && (new_matches != 0 || ci + 1 == cm))
             note_content_from(h, npe, from_face->faceid, ci);
 #endif
@@ -2700,14 +2693,8 @@ ccnd_reg_prefix(struct ccnd_handle *h,
             res = -1;
     }
     hashtb_end(e);
-#ifdef NDNFD
-    if (res >= 0) {
-        update_npe_children2(h, npe, faceid, msg + comps->buf[0], comps->buf[ncomps] - comps->buf[0]);
-    }
-#else
     if (res >= 0)
         update_npe_children(h, npe, faceid);
-#endif
     return(res);
 }
 

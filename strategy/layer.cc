@@ -90,20 +90,26 @@ void StrategyLayer::OnContent(Ptr<const ContentObjectMessage> co) {
   std::tie(res, ce) = this->global()->cs()->Add(co);
   
   if (res == ContentStore::AddResult::New || res == ContentStore::AddResult::Refreshed) {
-    // TODO wrap match_interests
+    this->ccnd_strategy_interface()->ce_ = ce;
+    this->ccnd_strategy_interface()->co_ = co;
     int n_matches = match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(co->parsed()), nullptr, in_face->native());
+    this->ccnd_strategy_interface()->ce_ = nullptr;
+    this->ccnd_strategy_interface()->co_ = nullptr;
     if (res == ContentStore::AddResult::New) {
       if (n_matches < 0) {
         this->global()->cs()->Remove(ce);
       }
-      if (n_matches == 0 && in_face->kind() != FaceKind::kApp && in_face->kind() != FaceKind::kInternal) {
-        ce->set_unsolicited(true);
+      if (n_matches == 0) {
+        if (in_face->kind() != FaceKind::kApp && in_face->kind() != FaceKind::kInternal) {
+          ce->set_unsolicited(true);
+        }
+        this->DidReceiveUnsolicitedContent(ce, co);
       }
     }
   }
 }
 
-void StrategyLayer::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
+void StrategyLayer::DidSatisfyPendingInterestInternal(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   if (pending_downstreams > 0) {
     // mark PitEntry as consumed, so that new Interest is considered new
     ie->native()->strategy.renewals = 0;
@@ -120,13 +126,26 @@ void StrategyLayer::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Messa
       this->global()->npt()->DeletePit(ie);
       return Scheduler::kNoMore_NoCleanup;
     }, &ie->native()->ev, true);
+    
   }
-  
+  // unset pending on PitUpstreamRecord
+  Ptr<PitUpstreamRecord> p = ie->GetUpstream(co->incoming_face());
+  if (p != nullptr) {
+    p->set_pending(false);
+  }
+
   Ptr<Strategy> strategy = this->FindStrategy(ie->npe());
-  strategy->WillSatisfyPendingInterest(ie, co, pending_downstreams);
+  strategy->DidSatisfyPendingInterest(ie, ce, co, pending_downstreams);
 }
 
-void StrategyLayer::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
+void StrategyLayer::DidReceiveContentInternal(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix) {
+  Ptr<Strategy> strategy = this->FindStrategy(npe);
+  strategy->DidReceiveContent(npe, ce, co, matching_suffix);
+}
+
+void StrategyLayer::DidReceiveUnsolicitedContent(Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co) {
+  Ptr<Strategy> strategy = this->FindStrategy(ce->name());
+  strategy->DidReceiveUnsolicitedContent(ce, co);
 }
 
 void StrategyLayer::OnNack(Ptr<const NackMessage> nack) {

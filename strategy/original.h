@@ -13,8 +13,8 @@ class OriginalStrategy : public Strategy {
   StrategyType_decl(OriginalStrategy);
 
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
-  virtual void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  virtual void DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams);
+  virtual void DidReceiveContent(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix);
   virtual void DidAddFibEntry(Ptr<ForwardingEntry> forw);
 
   virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe);

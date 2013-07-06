@@ -17,7 +17,7 @@ class SelfLearnStrategy : public Strategy {
 
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
   virtual void PropagateNewInterest(Ptr<PitEntry> ie);
-  virtual void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
+  virtual void DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams);
 
   virtual void NewNpeExtra(Ptr<NamePrefixEntry> npe);
   virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);

@@ -42,7 +42,7 @@ void FloodFirstStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   this->SchedulePropagate(ie, ie->NextEventDelay(true));
 }
 
-void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix) {
+void FloodFirstStrategy::DidReceiveContent(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix) {
   Ptr<Face> inface = this->global()->facemgr()->GetFace(co->incoming_face());
   if (inface == nullptr) return;
   Ptr<Face> peer = inface;
@@ -51,12 +51,12 @@ void FloodFirstStrategy::DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Pt
   }
 
   if (matching_suffix >= 0 && matching_suffix < 2) {
-    this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidSatisfyPendingInterests(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), peer->id(), matching_suffix);
+    this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidReceiveContent(%s) upstream=%" PRI_FaceId " matching_suffix=%d", npe->name()->ToUri().c_str(), peer->id(), matching_suffix);
     npe->GetStrategyExtra<OriginalStrategy::NpeExtra>()->UpdateBestFace(peer->id());
   }
   
   if (this->fib_prefix_comps() == npe->name()->n_comps()) {
-    this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidSatisfyPendingInterests(%s) forwarding=%" PRI_FaceId "", npe->name()->ToUri().c_str(), peer->id());
+    this->Log(kLLDebug, kLCStrategy, "FloodFirstStrategy::DidReceiveContent(%s) forwarding=%" PRI_FaceId "", npe->name()->ToUri().c_str(), peer->id());
     Ptr<ForwardingEntry> forw = npe->SeekForwarding(peer->id());
     forw->Refresh(this->fib_entry_expires());
   }

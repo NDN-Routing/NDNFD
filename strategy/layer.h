@@ -26,14 +26,9 @@ class StrategyLayer : public StrategyBase {
   // OnContent processes an incoming ContentObject.
   void OnContent(Ptr<const ContentObjectMessage> co);
   
-  // TODO impl Content processing and remove WillSatisfyPendingInterest & DidSatisfyPendingInterests
-  // WillSatisfyPendingInterest is invoked when a PIT entry is satisfied.
-  void WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams);
-  // DidSatisfyPendingInterests is invoked after some PIT entries are satisfied in npe.
-  // If matching_suffix is zero, some PIT entries are matched on this npe;
-  // if matching_suffix is positive, some PIT entries are matched on a child of this npe;
-  // if matching_suffix is negative, no PIT entry has been matched.
-  void DidSatisfyPendingInterests(Ptr<NamePrefixEntry> npe, Ptr<const Message> co, int matching_suffix);
+  void DidSatisfyPendingInterestInternal(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams);
+  void DidReceiveContentInternal(Ptr<NamePrefixEntry> npe, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int matching_suffix);
+
 
   // OnNack processes an incoming Nack.
   void OnNack(Ptr<const NackMessage> nack);
@@ -65,6 +60,8 @@ class StrategyLayer : public StrategyBase {
   Ptr<Strategy> FindStrategy(Ptr<Name> name) { return this->FindStrategy(const_cast<const Name*>(PeekPointer(name))); }
   Ptr<Strategy> FindStrategy(Ptr<const NamePrefixEntry> npe);
   Ptr<Strategy> FindStrategy(Ptr<NamePrefixEntry> npe) { return this->FindStrategy(const_cast<const NamePrefixEntry*>(PeekPointer(npe))); }
+  
+  void DidReceiveUnsolicitedContent(Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co);
   
   DISALLOW_COPY_AND_ASSIGN(StrategyLayer);
 };

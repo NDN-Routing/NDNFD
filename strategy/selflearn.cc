@@ -21,10 +21,6 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
   // lookup FIB
   std::unordered_set<FaceId> fib_candidates = npe->LookupFib(interest);
   std::unordered_set<FaceId> candidates = fib_candidates;
-  // also include (inherited) best face
-  //candidates.insert(npe->GetBestFace());
-  //candidates.insert(npe->prev_faceid());
-  //candidates.erase(FaceId_none);
   for (auto tuple : npe->GetStrategyExtra<NpeExtra>()->predicts_) {
     candidates.insert(std::get<0>(tuple));
   }
@@ -232,8 +228,7 @@ void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
   this->SchedulePropagate(ie, ie->NextEventDelay(true));
 }
 
-void SelfLearnStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Message> co, int pending_downstreams) {
-  this->Strategy::WillSatisfyPendingInterest(ie, co, pending_downstreams);
+void SelfLearnStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   if (pending_downstreams > 0) this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
 
   Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(co->incoming_face());
@@ -254,7 +249,7 @@ void SelfLearnStrategy::WillSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const M
     pr.rtt_.Measurement(rtt_sample);
   }
 
-  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::WillSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " peer=%" PRI_FaceId " rtt_sample=%" PRIuMAX "", ie->serial(), in_face->id(), peer->id(), static_cast<uintmax_t>(rtt_sample.count()));
+  this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " peer=%" PRI_FaceId " rtt_sample=%" PRIuMAX "", ie->serial(), in_face->id(), peer->id(), static_cast<uintmax_t>(rtt_sample.count()));
 }
 
 void SelfLearnStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
