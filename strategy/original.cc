@@ -72,7 +72,7 @@ void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
       DEBUG_APPEND_FaceTime(p->faceid(),"osrc",defer_min);
     } else {
       ++n_upst;
-      p->native()->pfi_flags |= CCND_PFI_SENDUPST;
+      p->SetFlag(CCND_PFI_SENDUPST, true);
     }
   });
 
@@ -80,7 +80,7 @@ void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
     uint32_t defer_max_inc = std::max(1U, (2 * defer_range + n_upst - 1) / n_upst);// max increment between defer times
     uint32_t defer = defer_min;
     std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-      if ((p->native()->pfi_flags & CCND_PFI_SENDUPST) == 0) return;
+      if (!p->GetFlag(CCND_PFI_SENDUPST)) return;
       p->SetExpiry(std::chrono::microseconds(defer));
       DEBUG_APPEND_FaceTime(p->faceid(),"",defer);
       defer += nrand48(CCNDH->seed) % defer_max_inc;

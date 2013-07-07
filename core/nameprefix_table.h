@@ -240,6 +240,9 @@ class PitFaceItem : public Element {
   
   pit_face_item* native(void) const { return this->native_; }
   void set_native(pit_face_item* value) { assert(value != nullptr); this->native_ = value; }
+
+  bool GetFlag(unsigned flag) const { return 0 != (this->native()->pfi_flags & flag); }
+  void SetFlag(unsigned flag, bool value) { if (value) this->native()->pfi_flags |= flag; else this->native()->pfi_flags &= ~flag; }
   
   std::chrono::microseconds time_until_expiry(void) const;
   bool IsExpired(void) const;
@@ -248,9 +251,6 @@ class PitFaceItem : public Element {
 
  protected:
   PitFaceItem(Ptr<PitEntry> ie, pit_face_item* native);
-
-  bool GetFlag(unsigned flag) const { return 0 != (this->native()->pfi_flags & flag); }
-  void SetFlag(unsigned flag, bool value) { if (value) this->native()->pfi_flags |= flag; else this->native()->pfi_flags &= ~flag; }
   
  private:
   Ptr<PitEntry> ie_;

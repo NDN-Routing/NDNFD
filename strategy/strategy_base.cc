@@ -30,7 +30,7 @@ void StrategyBase::PopulateOutbounds(Ptr<PitEntry> ie, const std::unordered_set<
     Ptr<PitUpstreamRecord> p = ie->SeekUpstream(face);
     if (p->IsExpired()) { // new PitUpstreamRecord is 'expired' when created
       p->SetExpiry(std::chrono::microseconds::zero());
-      p->native()->pfi_flags &= ~CCND_PFI_UPHUNGRY;
+      p->SetFlag(CCND_PFI_UPHUNGRY, false);
     }
   }
 }

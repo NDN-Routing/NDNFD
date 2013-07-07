@@ -151,7 +151,7 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       ++upstreams;
     } else {
       DEBUG_APPEND_FaceId('~',p);
-      p->native()->pfi_flags |= CCND_PFI_UPHUNGRY;
+      p->SetFlag(CCND_PFI_UPHUNGRY, true);
     }
   }
   
