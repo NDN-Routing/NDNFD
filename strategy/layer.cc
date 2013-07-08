@@ -7,16 +7,13 @@ uint32_t WTHZ_value(void);
 int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
 }
 
-// TODO remove these after impl dispatch
-#include "strategy/original.h"
-#include "strategy/selflearn.h"
-#define STRATEGY_TYPE OriginalStrategy
+#include "strategy/nacks.h"
+#define STRATEGY_TYPE NacksStrategy
 
 namespace ndnfd {
 
 void StrategyLayer::Init(void) {
   this->ccnd_strategy_interface_ = this->New<CcndStrategyInterface>();
-  // TODO set strategy on "ccnx:/"
 }
 
 Ptr<Strategy> StrategyLayer::GetStrategy(StrategyType t) {
@@ -172,7 +169,7 @@ void StrategyLayer::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
 }
 
 void StrategyLayer::UpdateNpeExtra(Ptr<NamePrefixEntry> npe) {
-  this->Log(kLLDebug, kLCStrategy, "StrategyLayer::UpdateNpeExtra(%s)", npe->name()->ToUri().c_str());
+  //this->Log(kLLDebug, kLCStrategy, "StrategyLayer::UpdateNpeExtra(%s)", npe->name()->ToUri().c_str());
   Ptr<NamePrefixEntry> root = npe->StrategyNode();
   assert(root != nullptr);
   std::stack<Ptr<NamePrefixEntry>> stack;

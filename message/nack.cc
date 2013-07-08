@@ -58,15 +58,19 @@ Ptr<NackMessage> NackMessage::Parse(const uint8_t* msg, size_t length) {
   return nack;
 }
 
-Ptr<Buffer> Create(NackCode code, Ptr<InterestMessage> interest) {
+Ptr<Buffer> NackMessage::Create(NackCode code, Ptr<const InterestMessage> interest, const InterestMessage::Nonce& nonce) {
   assert(NackCode_valid(code));
   assert(interest != nullptr);
   
   ccn_charbuf* b = ccn_charbuf_create();
   ccn_charbuf_append_tt(b, CCN_DTAG_StatusResponse, CCN_DTAG);
   ccnb_tagged_putf(b, CCN_DTAG_StatusCode, "%d", static_cast<int>(code));
-  ccn_charbuf_append(b, interest->msg(), interest->length());
-  ccn_charbuf_append_closer(b);
+  ccn_charbuf_append(b, interest->msg(), interest->length() -1);
+  if (nonce.size > 0) {
+    ccnb_append_tagged_blob(b, CCN_DTAG_Nonce, nonce.nonce, nonce.size);
+  }
+  ccn_charbuf_append_closer(b);//</Interest>
+  ccn_charbuf_append_closer(b);//</StatusResponse>
   return Buffer::Adopt(&b);
 }
 

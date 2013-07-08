@@ -248,6 +248,10 @@ class PitFaceItem : public Element {
   bool IsExpired(void) const;
   // CompareExpiry returns -1,0,1 if a expires earlier/same/later than b.
   static int CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> b);
+  
+  InterestMessage::Nonce nonce(void) const;
+  // NonceEquals returns true if pfi has same Nonce as n.
+  bool NonceEquals(const InterestMessage::Nonce& n);
 
  protected:
   PitFaceItem(Ptr<PitEntry> ie, pit_face_item* native);

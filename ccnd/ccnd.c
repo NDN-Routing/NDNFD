@@ -137,7 +137,7 @@ NDNFD_EXPOSE_static struct pit_face_item *
 pfi_set_nonce(struct ccnd_handle *h, struct interest_entry *ie,
              struct pit_face_item *p,
              const unsigned char *nonce, size_t noncesize);
-static int
+NDNFD_EXPOSE_static int
 pfi_nonce_matches(struct pit_face_item *p,
                   const unsigned char *nonce, size_t size);
 static struct pit_face_item *
@@ -3997,7 +3997,7 @@ pfi_set_nonce(struct ccnd_handle *h, struct interest_entry *ie,
 /**
  * Return true iff the nonce in p matches the given one.
  */
-static int
+NDNFD_EXPOSE_static int
 pfi_nonce_matches(struct pit_face_item *p,
                   const unsigned char *nonce, size_t size)
 {

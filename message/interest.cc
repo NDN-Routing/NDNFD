@@ -33,4 +33,15 @@ Ptr<Name> InterestMessage::name(void) const {
   return this->name_;
 }
 
+InterestMessage::Nonce InterestMessage::nonce(void) const {
+  Nonce n;
+  if (this->parsed()->offset[CCN_PI_B_Nonce] != this->parsed()->offset[CCN_PI_E_Nonce]) {
+    ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, this->msg(), this->parsed()->offset[CCN_PI_B_Nonce], this->parsed()->offset[CCN_PI_E_Nonce], &n.nonce, &n.size);
+  } else {
+    n.nonce = nullptr;
+    n.size = 0;
+  }
+  return n;
+}
+
 };//namespace ndnfd

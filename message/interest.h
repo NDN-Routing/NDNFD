@@ -7,6 +7,11 @@ namespace ndnfd {
 // An InterestMessage represents a decoded Interest.
 class InterestMessage : public CcnbMessage {
  public:
+  struct Nonce {
+    const uint8_t* nonce;
+    size_t size;
+  };
+  
   InterestMessage(const uint8_t* msg, size_t length, const ccn_parsed_interest* parsed);
   virtual ~InterestMessage(void);
   MessageType_decl;
@@ -24,6 +29,9 @@ class InterestMessage : public CcnbMessage {
   // name components indexbuf structure
   // This is available only from InterestMessage::Parse.
   const ccn_indexbuf* comps(void) const { return this->comps_; }
+  
+  // the nonce, or (nullptr,0) if no nonce exists
+  Nonce nonce(void) const;
 
  private:
   ccn_parsed_interest parsed_;

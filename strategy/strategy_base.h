@@ -20,6 +20,9 @@ class StrategyBase : public Element {
   
   // SendInterest sends an Interest to upstream on behalf of downstram.
   virtual void SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, Ptr<PitUpstreamRecord> upstream);
+  // SendInterest sends an Interest to upstream,
+  // using the nonce of longest unexpired downstream.
+  bool SendInterest(Ptr<PitEntry> ie, Ptr<PitUpstreamRecord> upstream);
   
   // SendContentObject sends a ContentObject to downstream.
   // co is placed into the face send queue if there's no duplicate.
@@ -27,8 +30,9 @@ class StrategyBase : public Element {
   virtual void SendContent(FaceId downstream, Ptr<ContentEntry> ce);
   
   // SendNack sends a Nack to downstream.
-  virtual void SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code) {}//TODO impl
-  virtual void SendNack(Ptr<InterestMessage> interest, NackCode code) {}//TODO impl
+  virtual void SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code);
+  // SendNacks sends a Nack to each unexpired downstream.
+  virtual void SendNacks(Ptr<PitEntry> ie, NackCode code);
   
   // -------- FIB/PIT --------
 

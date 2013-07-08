@@ -24,7 +24,7 @@ class NackMessage : public CcnbMessage {
   static Ptr<NackMessage> Parse(const uint8_t* msg, size_t length);
   
   // Create creates a NackMessage from code and InterestMessage.
-  static Ptr<Buffer> Create(NackCode code, Ptr<InterestMessage> interest);
+  static Ptr<Buffer> Create(NackCode code, Ptr<const InterestMessage> interest, const InterestMessage::Nonce& nonce);
   
   NackCode code(void) const { return this->code_; }
   

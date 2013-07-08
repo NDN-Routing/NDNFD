@@ -24,7 +24,6 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEnt
   Ptr<ContentEntry> ce = this->global()->cs()->Lookup(interest);
   if (ce != nullptr) {
     this->SendContent(in_face->id(), ce);
-    // TODO wrap match_interests
     match_interests(CCNDH, ce->native(), const_cast<ccn_parsed_ContentObject*>(ce->parsed()), in_face->native(), nullptr);
     return;
   }
@@ -59,7 +58,7 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
   // set expiry time according to InterestLifetime
   p->SetExpiryToLifetime(interest);
   
-  // lookup FIB and populate upstream pfi
+  // lookup FIB and populate PitUpstreamRecords
   std::unordered_set<FaceId> outbounds = this->LookupOutbounds(ie, interest);
   this->PopulateOutbounds(ie, outbounds);
   

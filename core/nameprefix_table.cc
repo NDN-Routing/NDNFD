@@ -12,6 +12,7 @@ struct pit_face_item* pfi_seek(struct ccnd_handle* h, struct interest_entry* ie,
 void pfi_destroy(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 int ie_next_usec(struct ccnd_handle* h, struct interest_entry* ie, ccn_wrappedtime* expiry);
 struct pit_face_item* pfi_set_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, const uint8_t* nonce, size_t noncesize);
+int pfi_nonce_matches(struct pit_face_item* p, const unsigned char* nonce, size_t size);
 int pfi_unique_nonce(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p);
 void pfi_set_expiry_from_lifetime(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, intmax_t lifetime);
 void pfi_set_expiry_from_micros(struct ccnd_handle* h, struct interest_entry* ie, struct pit_face_item* p, unsigned micros);
@@ -335,6 +336,17 @@ int PitFaceItem::CompareExpiry(Ptr<const PitFaceItem> a, Ptr<const PitFaceItem> 
   return wt_compare(a->native()->expiry, b->native()->expiry);
 }
 
+InterestMessage::Nonce PitFaceItem::nonce(void) const {
+  InterestMessage::Nonce n;
+  n.nonce = this->native()->nonce;
+  n.size = this->native()->pfi_flags & CCND_PFI_NONCESZ;
+  return n;
+}
+
+bool PitFaceItem::NonceEquals(const InterestMessage::Nonce& n) {
+  return pfi_nonce_matches(this->native(), n.nonce, n.size) != 0;
+}
+
 PitUpstreamRecord::PitUpstreamRecord(Ptr<PitEntry> ie, pit_face_item* native) : PitFaceItem(ie, native) {
   assert(this->GetFlag(CCND_PFI_UPSTREAM));
 }
@@ -348,17 +360,15 @@ PitDownstreamRecord::PitDownstreamRecord(Ptr<PitEntry> ie, pit_face_item* native
 }
 
 void PitDownstreamRecord::UpdateNonce(Ptr<const InterestMessage> interest) {
-  const uint8_t* nonce; size_t nonce_size; uint8_t generated_nonce_buf[TYPICAL_NONCE_SIZE];
-  if (interest->parsed()->offset[CCN_PI_B_Nonce] != interest->parsed()->offset[CCN_PI_E_Nonce]) {
-    ccn_ref_tagged_BLOB(CCN_DTAG_Nonce, interest->msg(), interest->parsed()->offset[CCN_PI_B_Nonce], interest->parsed()->offset[CCN_PI_E_Nonce], &nonce, &nonce_size);
-  } else {
+  InterestMessage::Nonce n = interest->nonce();
+  uint8_t generated_nonce_buf[TYPICAL_NONCE_SIZE];
+  if (n.size == 0) {
     Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
     assert(in_face != nullptr);
-    nonce_size = (CCNDH->noncegen)(CCNDH, in_face->native(), generated_nonce_buf);
-    nonce = generated_nonce_buf;
+    n.size = (CCNDH->noncegen)(CCNDH, in_face->native(), generated_nonce_buf);
+    n.nonce = generated_nonce_buf;
   }
-  
-  this->set_native(pfi_set_nonce(CCNDH, this->ie()->native(), this->native(), nonce, nonce_size));
+  this->set_native(pfi_set_nonce(CCNDH, this->ie()->native(), this->native(), n.nonce, n.size));
 }
 
 void PitDownstreamRecord::SetExpiryToLifetime(Ptr<const InterestMessage> interest) {
