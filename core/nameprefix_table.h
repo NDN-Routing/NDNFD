@@ -3,7 +3,7 @@
 extern "C" {
 #include "ccnd/ccnd_private.h"
 }
-#include "core/element.h"
+#include "core/scheduler.h"
 #include "util/foreach.h"
 #include "message/interest.h"
 #include "strategy/strategy_type.h"
@@ -220,13 +220,48 @@ class PitEntry : public Element {
   // If include_expired is true, all pfi are considered;
   // otherwise, only pending downstream and unexpired upstream are considered.
   std::chrono::microseconds NextEventDelay(bool include_expired) const;
+  
+  bool consumed(void) const { return this->native()->ndnfd_consumed != 0; }
+  // Consume resets all fields in this PitEntry, but RttSent/RttCalc records are retained.
+  // This PitEntry is also scheduled for deletion when the last PitDownstreamRecord expires.
+  void Consume(void);
+  // UndoConsumeInternal is called by SeekPit. This resets this PitEntry so that it can be reused.
+  // Scheduled deletion (on native->ev) is also cancelled.
+  void UndoConsumeInternal(void);
+  // IsNew returns true if this PitEntry appears to be newly created
+  // during the processing of current Interest.
+  bool IsNew(void) const { return this->native()->strategy.renewals == 0; }
+  // Renew sets native->strategy.renewed to current time.
+  // IsNew would return false after this call.
+  void Renew(void);
+  
+  // RttStart remembers time (h->now) when Interest is sent to upstream.
+  // This should be invoked in Strategy::SendInterest.
+  void RttStart(FaceId upstream);
+  // RttStartWithExpect remembers time (h->now) when Interest is sent to upstream.
+  // Timeout callback will be called if RttEnd does not happen within expect time,
+  // or when PitEntry is deleted (after all downstreams expire), whichever is earlier.
+  // This should be invoked in Strategy::SendInterest.
+  void RttStartWithExpect(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb);
+  // RttEnd returns last round trip time, and cancels all timeout callbacks.
+  // If RttStart(upstream) is never called, it returns a negative value.
+  // This should be invoked in Strategy::DidSatisfyPendingInterest.
+  std::chrono::microseconds RttEnd(FaceId upstream) const;
 
  private:
+  struct RttRecord {
+    ccn_wrappedtime start_time_;
+    std::unordered_set<SchedulerEvent> timeout_evts_;
+  };
+  typedef std::unordered_map<FaceId,PitEntry::RttRecord> RttTable;
+  
   Ptr<const Name> name_;
   interest_entry* native_;
   
   pit_face_item* SeekPfiInternal(FaceId face, bool create, unsigned flag);
   template <typename TPfi> Ptr<TPfi> MakePfi(pit_face_item* p) { if (p == nullptr) return nullptr; return this->New<TPfi>(this, p); }
+  
+  void RttStartInternal(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb);
   
   DISALLOW_COPY_AND_ASSIGN(PitEntry);
 };

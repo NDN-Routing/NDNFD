@@ -15,8 +15,7 @@ std::string NacksStrategy::FaceStatus_string(FaceStatus value) {
 
 void NacksStrategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
-  bool is_new_ie = ie->native()->strategy.renewals == 0;
-  this->global()->scheduler()->Cancel(ie->native()->ev);
+  bool is_new_ie = ie->IsNew();
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
 
   Ptr<PitDownstreamRecord> p = ie->SeekDownstream(in_face->id());
@@ -25,8 +24,7 @@ void NacksStrategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<N
   // verify whether nonce is unique
   if (ie->IsNonceUnique(p)) {
     // unique nonce
-    ie->native()->strategy.renewed = CCNDH->wtnow;
-    ie->native()->strategy.renewals += 1;
+    ie->Renew();
     if (!p->pending()) {
       p->set_pending(true);
       in_face->native()->pending_interests += 1;

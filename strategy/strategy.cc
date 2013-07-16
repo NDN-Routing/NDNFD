@@ -33,7 +33,7 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEnt
 
 void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEntry> npe) {
   Ptr<PitEntry> ie = this->global()->npt()->SeekPit(interest, npe);
-  bool is_new_ie = ie->native()->strategy.renewals == 0;
+  bool is_new_ie = ie->IsNew();
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
 
   Ptr<PitDownstreamRecord> p = ie->SeekDownstream(in_face->id());
@@ -42,8 +42,7 @@ void Strategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<NamePr
   // verify whether nonce is unique
   if (ie->IsNonceUnique(p)) {
     // unique nonce
-    ie->native()->strategy.renewed = CCNDH->wtnow;
-    ie->native()->strategy.renewals += 1;
+    ie->Renew();
     if (!p->pending()) {
       p->set_pending(true);
       in_face->native()->pending_interests += 1;

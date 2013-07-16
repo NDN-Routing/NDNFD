@@ -108,27 +108,7 @@ void StrategyLayer::OnContent(Ptr<const ContentObjectMessage> co) {
 
 void StrategyLayer::DidSatisfyPendingInterestInternal(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   if (pending_downstreams > 0) {
-    // mark PitEntry as consumed, so that new Interest is considered new
-    ie->native()->strategy.renewals = 0;
-    
-    // schedule delete PitEntry on last upstream expiry
-    ccn_wrappedtime now = CCNDH->wtnow;
-    ccn_wrappedtime last = 0;
-    std::for_each(ie->beginUpstream(), ie->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
-      if (!p->IsExpired()) {
-        last = std::max(last, p->native()->expiry - now);
-      }
-    });
-    this->global()->scheduler()->Schedule(std::chrono::microseconds(last * (1000000 / WTHZ_value())), [this,ie]{
-      this->global()->npt()->DeletePit(ie);
-      return Scheduler::kNoMore_NoCleanup;
-    }, &ie->native()->ev, true);
-    
-  }
-  // unset pending on PitUpstreamRecord
-  Ptr<PitUpstreamRecord> p = ie->GetUpstream(co->incoming_face());
-  if (p != nullptr) {
-    p->set_pending(false);
+    ie->Consume();
   }
 
   Ptr<Strategy> strategy = this->FindStrategy(ie->npe());

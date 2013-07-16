@@ -116,11 +116,11 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
 
   int res = hashtb_seek(e, interest->msg(), interest->parsed()->offset[CCN_PI_B_InterestLifetime], 1);
   interest_entry* ie = reinterpret_cast<interest_entry*>(e->data);
-  if (res == HT_NEW_ENTRY) {
-    ie->serial = ++CCNDH->iserial;
+  if (res == HT_NEW_ENTRY || ie->ndnfd_consumed == 1) {
+    if (res == HT_NEW_ENTRY) ie->serial = ++CCNDH->iserial;
     ie->strategy.birth = ie->strategy.renewed = CCNDH->wtnow;
     ie->strategy.renewals = 0;
-    this->Log(kLLDebug, kLCStrategy, "NamePrefixTable::SeekPit(%s) new PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), static_cast<uint32_t>(ie->serial));
+    this->Log(kLLDebug, kLCStrategy, "NamePrefixTable::SeekPit(%s) %s PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), (res == HT_NEW_ENTRY) ? "new" : "reuse", static_cast<uint32_t>(ie->serial));
   }
   if (ie->interest_msg == nullptr) {
     link_interest_entry_to_nameprefix(CCNDH, ie, npe->native());
@@ -136,7 +136,10 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
 
   hashtb_end(e);
   if (ie == nullptr) return nullptr;
-  return this->New<PitEntry>(ie);
+
+  Ptr<PitEntry> ie1 = this->New<PitEntry>(ie);
+  if (res == HT_NEW_ENTRY) ie1->UndoConsumeInternal();
+  return ie1;
 }
 
 void NamePrefixTable::DeletePit(Ptr<PitEntry> ie) {
@@ -317,6 +320,99 @@ std::chrono::microseconds PitEntry::NextEventDelay(bool include_expired) const {
   
   return std::chrono::microseconds(mn * (1000000 / WTHZ_value()));
 }
+
+void PitEntry::Consume(void) {
+  if (this->consumed()) return;
+  this->native()->ndnfd_consumed = 1;
+  
+  // cancel events
+  if (this->native()->ev != nullptr) ccn_schedule_cancel(CCNDH->sched, this->native()->ev);
+  if (this->native()->strategy.ev != nullptr) ccn_schedule_cancel(CCNDH->sched, this->native()->strategy.ev);
+  this->native()->ev = this->native()->strategy.ev = nullptr;
+  
+  // schedule deletion on last upstream expiry
+  ccn_wrappedtime now = CCNDH->wtnow;
+  ccn_wrappedtime last = 0;
+  std::for_each(this->beginUpstream(), this->endUpstream(), [&] (Ptr<PitUpstreamRecord> p) {
+    if (!p->IsExpired()) {
+      last = std::max(last, p->native()->expiry - now);
+    }
+  });
+  Ptr<PitEntry> that = this;
+  this->global()->scheduler()->Schedule(std::chrono::microseconds(last * (1000000 / WTHZ_value())), [that]{
+    that->global()->npt()->DeletePit(that);
+    return Scheduler::kNoMore_NoCleanup;
+  }, &this->native()->ev, true);
+
+  // clear pfi
+  pit_face_item* next;
+  for (pit_face_item* p = this->native()->pfl; p != nullptr; p = next) {
+    next = p->next;
+    if ((p->pfi_flags & CCND_PFI_PENDING) != 0) {
+      Ptr<Face> face = this->global()->facemgr()->GetFace(p->faceid);
+      if (face != nullptr) face->native()->pending_interests -= 1;
+    }
+    free(p);
+  }
+  this->native()->pfl = nullptr;
+}
+
+void PitEntry::UndoConsumeInternal(void) {
+  if (!this->consumed()) return;
+  this->native()->ndnfd_consumed = 0;
+  
+  // cancel deletion
+  this->global()->scheduler()->Cancel(this->native()->ev);
+}
+
+void PitEntry::Renew(void) {
+  this->native()->strategy.renewed = CCNDH->wtnow;
+  this->native()->strategy.renewals += 1;
+}
+
+void PitEntry::RttStart(FaceId upstream) {
+  this->RttStartInternal(upstream, std::chrono::microseconds::zero(), nullptr);
+}
+
+void PitEntry::RttStartWithExpect(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb) {
+  assert(expect > std::chrono::microseconds::zero());
+  assert(!!cb);
+}
+
+void PitEntry::RttStartInternal(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb) {
+  RttTable* rt = static_cast<RttTable*>(this->native()->ndnfd_rtt_records);
+  if (rt == nullptr) {
+    this->native()->ndnfd_rtt_records = rt = new RttTable();
+  }
+  RttRecord& rr = (*rt)[upstream];
+  rr.start_time_ = CCNDH->wtnow;
+  if (expect > std::chrono::microseconds::zero()) {
+    SchedulerEvent evt = this->global()->scheduler()->Schedule(expect, [&cb,&evt,rt,upstream](){
+      RttRecord& rr = (*rt)[upstream];
+      assert(1 == rr.timeout_evts_.erase(evt));
+      cb();
+      return Scheduler::kNoMore;
+    });
+    rr.timeout_evts_.insert(evt);
+  }
+}
+
+std::chrono::microseconds PitEntry::RttEnd(FaceId upstream) const {
+  RttTable* rt = static_cast<RttTable*>(this->native()->ndnfd_rtt_records);
+  if (rt == nullptr) return std::chrono::microseconds::min();
+  auto rr_it = rt->find(upstream);
+  if (rr_it == rt->end()) return std::chrono::microseconds::min();
+  RttRecord& rr = rr_it->second;
+  std::chrono::microseconds rtt((CCNDH->wtnow - rr.start_time_) * (1000000 / WTHZ_value()));
+  
+  for (SchedulerEvent evt : rr.timeout_evts_) {
+    this->global()->scheduler()->Cancel(evt);
+  }
+  rr.timeout_evts_.clear();
+  
+  return rtt;
+}
+
 
 PitFaceItem::PitFaceItem(Ptr<PitEntry> ie, pit_face_item* native) : ie_(ie), native_(native) {
   assert(ie != nullptr);

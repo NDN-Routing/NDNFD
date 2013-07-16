@@ -359,6 +359,8 @@ struct interest_entry {
     unsigned serial;                /**< used for logging */
 #ifdef NDNFD
     void* ndnfd_interest;//InterestMessage*; this includes ccn_parsed_interest, so that no reparse is needed when matching incoming ContentObject
+    int ndnfd_consumed;//1=PitEntry has been consumed (satisfied), it's kept until last downstream expiry solely for the purpose of RTT estimation; reset ie->ndnfd_consumed to 0 and cancel ie->ev so that ie can be used again
+    void* ndnfd_rtt_records;//std::unordered_map<FaceId,PitEntry::RttRecord>*; remembers when Interest was last sent to an upstream, used in RTT estimation
 #endif
 };
 #ifdef NDNFD
