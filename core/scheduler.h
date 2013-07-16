@@ -16,6 +16,7 @@ class Scheduler : public Element {
   // It should return the next time the event would be rescheduled,
   // or kNoMore to indicate the event shouldn't be rescheduled.
   typedef std::function<std::chrono::microseconds(void)> Callback;
+  typedef std::function<std::chrono::microseconds(SchedulerEvent)> Callback1;
   
   // event shouldn't be scheduled again; scheduler queue is empty
   static constexpr std::chrono::microseconds kNoMore = std::chrono::microseconds(-1);
@@ -32,6 +33,7 @@ class Scheduler : public Element {
   // and *evt_ptr will be cleared to nullptr when the event is no longer scheduled.
   // If cancel_old is true, the event at *evt_ptr is first cancelled.
   SchedulerEvent Schedule(std::chrono::microseconds delay, Callback cb, SchedulerEvent* evt_ptr = nullptr, bool cancel_old = false);
+  SchedulerEvent Schedule1(std::chrono::microseconds delay, Callback1 cb, SchedulerEvent* evt_ptr = nullptr, bool cancel_old = false);
   
   // Cancel cancels an event. evt becomes invalid after this call.
   void Cancel(SchedulerEvent evt);
@@ -43,7 +45,7 @@ class Scheduler : public Element {
  private:
   struct EvData {
     Scheduler* scheduler;
-    Callback cb;
+    Callback1 cb;
     SchedulerEvent* evt_ptr;
   };
   ccn_schedule* sched_;

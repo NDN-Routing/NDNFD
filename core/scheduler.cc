@@ -23,6 +23,10 @@ Scheduler::~Scheduler(void) {
 }
 
 SchedulerEvent Scheduler::Schedule(std::chrono::microseconds delay, Callback cb, SchedulerEvent* evt_ptr, bool cancel_old) {
+  return this->Schedule1(delay, [cb] (SchedulerEvent evt) { return cb(); }, evt_ptr, cancel_old);
+}
+
+SchedulerEvent Scheduler::Schedule1(std::chrono::microseconds delay, Callback1 cb, SchedulerEvent* evt_ptr, bool cancel_old) {
   assert(cb != nullptr);
   if (this->sched() == nullptr) {
     this->Log(kLLError, kLCScheduler, "Scheduler::Schedule sched is null");
@@ -59,7 +63,7 @@ int Scheduler::ScheduledAction(ccn_schedule* sched, void* clienth, ccn_scheduled
   EvData* evdata = static_cast<EvData*>(ev->evdata);
   std::chrono::microseconds delay(0);
   if ((flags & CCN_SCHEDULE_CANCEL) == 0) {
-    delay = evdata->cb();
+    delay = evdata->cb(ev);
     if (delay.count() > 0) {
       return static_cast<int>(delay.count());
     }

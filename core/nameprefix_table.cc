@@ -26,8 +26,7 @@ int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 extern "C" {
 
 void ndnfd_finalize_interest(struct interest_entry* ie) {
-  ndnfd::InterestMessage* interest = ie_ndnfdInterest(ie);
-  interest->Unref();
+  ndnfd::PitEntry::Finalize(ie);
 }
 
 const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie) {
@@ -120,7 +119,7 @@ Ptr<PitEntry> NamePrefixTable::SeekPit(Ptr<const InterestMessage> interest, Ptr<
     if (res == HT_NEW_ENTRY) ie->serial = ++CCNDH->iserial;
     ie->strategy.birth = ie->strategy.renewed = CCNDH->wtnow;
     ie->strategy.renewals = 0;
-    this->Log(kLLDebug, kLCStrategy, "NamePrefixTable::SeekPit(%s) %s PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), (res == HT_NEW_ENTRY) ? "new" : "reuse", static_cast<uint32_t>(ie->serial));
+    this->Log(kLLDebug, kLCTable, "NamePrefixTable::SeekPit(%s) %s PitEntry(%" PRIu32 ")", npe->name()->ToUri().c_str(), (res == HT_NEW_ENTRY) ? "new" : "reuse", static_cast<uint32_t>(ie->serial));
   }
   if (ie->interest_msg == nullptr) {
     link_interest_entry_to_nameprefix(CCNDH, ie, npe->native());
@@ -266,6 +265,16 @@ PitEntry::PitEntry(interest_entry* native) : native_(native) {
   assert(ie_ndnfdInterest(native) != nullptr);
 }
 
+void PitEntry::Finalize(interest_entry* native) {
+  ndnfd::InterestMessage* interest = ie_ndnfdInterest(native);
+  interest->Unref();
+  
+  RttTable* rt = static_cast<RttTable*>(native->ndnfd_rtt_records);
+  if (rt != nullptr) {
+    delete rt;
+  }  
+}
+
 Ptr<NamePrefixEntry> PitEntry::npe(void) const {
   return static_cast<NamePrefixEntry*>(this->native()->ll.npe->ndnfd_npe);
 }
@@ -377,6 +386,7 @@ void PitEntry::RttStart(FaceId upstream) {
 void PitEntry::RttStartWithExpect(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb) {
   assert(expect > std::chrono::microseconds::zero());
   assert(!!cb);
+  this->RttStartInternal(upstream, expect, cb);
 }
 
 void PitEntry::RttStartInternal(FaceId upstream, std::chrono::microseconds expect, std::function<void()> cb) {
@@ -387,14 +397,15 @@ void PitEntry::RttStartInternal(FaceId upstream, std::chrono::microseconds expec
   RttRecord& rr = (*rt)[upstream];
   rr.start_time_ = CCNDH->wtnow;
   if (expect > std::chrono::microseconds::zero()) {
-    SchedulerEvent evt = this->global()->scheduler()->Schedule(expect, [&cb,&evt,rt,upstream](){
+    SchedulerEvent evt = this->global()->scheduler()->Schedule1(expect, [cb,rt,upstream](SchedulerEvent evt){
       RttRecord& rr = (*rt)[upstream];
-      assert(1 == rr.timeout_evts_.erase(evt));
+      rr.timeout_evts_.erase(evt);
       cb();
       return Scheduler::kNoMore;
     });
     rr.timeout_evts_.insert(evt);
   }
+  //this->Log(kLLDebug, kLCTable, "PitEntry(%" PRI_PitEntrySerial ")::RttStart(%" PRI_FaceId ",%" PRIuMAX ")", this->serial(), upstream, static_cast<uintmax_t>(expect.count()));
 }
 
 std::chrono::microseconds PitEntry::RttEnd(FaceId upstream) const {
@@ -404,6 +415,7 @@ std::chrono::microseconds PitEntry::RttEnd(FaceId upstream) const {
   if (rr_it == rt->end()) return std::chrono::microseconds::min();
   RttRecord& rr = rr_it->second;
   std::chrono::microseconds rtt((CCNDH->wtnow - rr.start_time_) * (1000000 / WTHZ_value()));
+  //this->Log(kLLDebug, kLCTable, "PitEntry(%" PRI_PitEntrySerial ")::RttEnd(%" PRI_FaceId ") %" PRIuMAX , this->serial(), upstream, static_cast<uintmax_t>(rtt.count()));
   
   for (SchedulerEvent evt : rr.timeout_evts_) {
     this->global()->scheduler()->Cancel(evt);

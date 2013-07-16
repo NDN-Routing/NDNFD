@@ -7,8 +7,8 @@ uint32_t WTHZ_value(void);
 int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
 }
 
-#include "strategy/nacks.h"
-#define STRATEGY_TYPE NacksStrategy
+#include "strategy/selflearn.h"
+#define STRATEGY_TYPE SelfLearnStrategy
 
 namespace ndnfd {
 

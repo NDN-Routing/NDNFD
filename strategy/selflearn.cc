@@ -129,10 +129,9 @@ void SelfLearnStrategy::SendInterest(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> 
   NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
   auto it = extra->predicts_.find(upstream_face);
   if (it != extra->predicts_.end()) {
-    this->global()->scheduler()->Schedule(std::chrono::microseconds(it->second.time_), [this,ie,upstream_face](void){
-      this->DidnotArriveOnFace(ie, upstream_face);
-      return Scheduler::kNoMore;
-    }, &upstream->native()->strategy_ev, true);
+    ie->RttStartWithExpect(upstream_face, std::chrono::microseconds(it->second.time_), std::bind(&SelfLearnStrategy::DidnotArriveOnFace, this, ie, upstream_face));
+  } else {
+    ie->RttStart(upstream_face);
   }
   this->Strategy::SendInterest(ie, downstream, upstream);
 }
@@ -231,10 +230,6 @@ void SelfLearnStrategy::StartFlood(Ptr<PitEntry> ie) {
 void SelfLearnStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   if (pending_downstreams > 0) this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
 
-  Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(co->incoming_face());
-  assert(upstream != nullptr);
-  this->global()->scheduler()->Cancel(upstream->native()->strategy_ev);
-
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(co->incoming_face());
   if (in_face == nullptr) return;
   Ptr<Face> peer = in_face;
@@ -242,11 +237,13 @@ void SelfLearnStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Co
     peer = this->global()->facemgr()->MakeUnicastFace(in_face, co->incoming_sender());
   }
   
-  std::chrono::microseconds rtt_sample((CCNDH->wtnow - upstream->native()->renewed) * (1000000 / WTHZ_value()));
-  for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr && npe->strategy_extra_type() == SelfLearnStrategy::kType; npe = npe->Parent()) {
-    NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
-    PredictRecord& pr = extra->predicts_[co->incoming_face()];
-    pr.rtt_.Measurement(rtt_sample);
+  std::chrono::microseconds rtt_sample = ie->RttEnd(co->incoming_face());
+  if (rtt_sample >= std::chrono::microseconds::zero()) {
+    for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr && npe->strategy_extra_type() == SelfLearnStrategy::kType; npe = npe->Parent()) {
+      NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
+      PredictRecord& pr = extra->predicts_[peer->id()];
+      pr.rtt_.Measurement(rtt_sample);
+    }
   }
 
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " peer=%" PRI_FaceId " rtt_sample=%" PRIuMAX "", ie->serial(), in_face->id(), peer->id(), static_cast<uintmax_t>(rtt_sample.count()));

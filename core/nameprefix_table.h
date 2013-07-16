@@ -177,6 +177,7 @@ class PitEntry : public Element {
   
   explicit PitEntry(interest_entry* native);
   virtual ~PitEntry(void) {}
+  static void Finalize(interest_entry* native);
   
   Serial serial(void) const { return static_cast<Serial>(this->native()->serial); }
   Ptr<const Name> name(void) const { return this->interest()->name(); }
