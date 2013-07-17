@@ -16,7 +16,7 @@ void Strategy::OnInterest(Ptr<const InterestMessage> interest, Ptr<NamePrefixEnt
     return;
   }
   
-  if (ie != nullptr && ie->native()->strategy.renewals != 0) {
+  if (ie != nullptr && !ie->IsNew()) {
     this->PropagateInterest(interest, npe);
     return;
   }
