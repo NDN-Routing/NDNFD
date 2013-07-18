@@ -17,6 +17,11 @@ class StrategyLayer : public StrategyBase {
   
   // SetStrategy sets the strategy for a namespace.
   void SetStrategy(Ptr<const Name> prefix, StrategyType t);
+  
+  // ListStrategyReq answers a list-strategy request.
+  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> ListStrategyReq(void);
+  // SetStrategyReq answers a set-strategy request.
+  std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> SetStrategyReq(const uint8_t* msg, size_t size);
 
   // -------- message entrypoint --------
   

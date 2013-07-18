@@ -52,6 +52,20 @@ void StrategyLayer::SetStrategy(Ptr<const Name> prefix, StrategyType t) {
   npe->set_strategy_type(t);
 }
 
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> StrategyLayer::ListStrategyReq(void) {
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
+  // TODO gather a list of registered strategies from StrategyType_list()
+  // TODO build a ContentObject according to strategy mgmt protocol
+  // TODO return this ContentObject
+}
+
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> StrategyLayer::SetStrategyReq(const uint8_t* msg, size_t size) {
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
+  // TODO decode msg as ContentObject
+  // TODO decode Content as set-strategy request
+  // TODO execute the request
+  // TODO return status response
+}
 
 void StrategyLayer::OnInterest(Ptr<const InterestMessage> interest) {
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());

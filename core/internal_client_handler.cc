@@ -18,6 +18,8 @@ NDNFD_DEF_REQ(signature,ReqSignature);
 NDNFD_DEF_REQ(newface,ReqNewFace);
 NDNFD_DEF_REQ(destroyface,ReqDestroyFace);
 NDNFD_DEF_REQ(stats,ReqStats);
+NDNFD_DEF_REQ(liststrategy,ReqListStrategy);
+NDNFD_DEF_REQ(setstrategy,ReqSetStrategy);
 
 namespace ndnfd {
 
@@ -44,6 +46,16 @@ std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandle
   ccn_charbuf* html = collect_stats_xml(CCNDH);
   Ptr<Buffer> reply = Buffer::Adopt(&html);
   return std::forward_as_tuple(InternalClientHandler::ResponseKind::kRespond, reply);
+}
+
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqListStrategy(const uint8_t* msg, size_t size) {
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
+  // TODO call StrategyLayer::ListStrategyReq
+}
+
+std::tuple<InternalClientHandler::ResponseKind,Ptr<Buffer>> InternalClientHandler::ReqSetStrategy(const uint8_t* msg, size_t size) {
+  return std::forward_as_tuple(InternalClientHandler::ResponseKind::kSilent, nullptr);
+  // TODO call StrategyLayer::SetStrategyReq
 }
 
 };//namespace ndnfd
