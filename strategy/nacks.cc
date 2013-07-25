@@ -4,11 +4,11 @@ namespace ndnfd {
 
 StrategyType_def(NacksStrategy, nacks);
 
-std::string NacksStrategy::FaceStatus_string(FaceStatus value) {
+std::string NacksStrategy::UpstreamStatus_string(UpstreamStatus value) {
   switch (value) {
-    case FaceStatus::kGreen : return "GREEN";
-    case FaceStatus::kYellow: return "YELLOW";
-    case FaceStatus::kRed   : return "RED";
+    case UpstreamStatus::kGreen : return "GREEN";
+    case UpstreamStatus::kYellow: return "YELLOW";
+    case UpstreamStatus::kRed   : return "RED";
   }
   return "";
 }
@@ -63,16 +63,21 @@ void NacksStrategy::Forward(Ptr<PitEntry> ie) {
 }
 
 bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
-  NpeExtra* extra = ie->npe()->GetStrategyExtra<NpeExtra>();
+  NpeExtra* extra = this->GetUpstreamStatusNode(ie->npe())->GetStrategyExtra<NpeExtra>();
   
-  auto try_upstreams_with_status = [&] (FaceStatus expect_status) ->bool {
+  auto try_upstreams_with_status = [&] (UpstreamStatus expect_status) ->bool {
     for (auto it = ie->beginUpstream(); it != ie->endUpstream(); ++it) {
       Ptr<PitUpstreamRecord> p = *it;
       if (p->GetFlag(NacksStrategy::PFI_VAIN)) continue;
-      if (extra->status_[p->faceid()] == expect_status) {
+      UpstreamExtra& ue = extra->table_[p->faceid()];
+      if (ue.status_ == expect_status) {
+        std::chrono::microseconds rtt = ue.rtt_.RetransmitTimeout();
         if (this->SendInterest(ie, p)) {
-          this->Log(kLLDebug, kLCStrategy, "NacksStrategy::DoForward(%" PRI_PitEntrySerial ") %s %" PRI_FaceId "", ie->serial(), FaceStatus_string(expect_status).c_str(), p->faceid());
-          this->SetRetryTimer(ie, std::chrono::microseconds(1000000));
+          ie->RttStartWithExpect(p->faceid(), rtt, [&ue](){
+            if (ue.status_ == UpstreamStatus::kGreen) ue.status_ = UpstreamStatus::kYellow;
+          });
+          this->SetRetryTimer(ie, rtt);
+          this->Log(kLLDebug, kLCStrategy, "NacksStrategy::DoForward(%" PRI_PitEntrySerial ") %s %" PRI_FaceId " retry=%" PRIuMAX, ie->serial(), UpstreamStatus_string(expect_status).c_str(), p->faceid(), static_cast<uintmax_t>(rtt.count()));
           return true;
         }
       }
@@ -80,28 +85,32 @@ bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
     return false;
   };
   
-  if (try_upstreams_with_status(FaceStatus::kGreen)) return true;
-  if (try_upstreams_with_status(FaceStatus::kYellow)) return true;
+  if (try_upstreams_with_status(UpstreamStatus::kGreen)) return true;
+  if (try_upstreams_with_status(UpstreamStatus::kYellow)) return true;
+  // TODO mark YELLOW on Interest timeout
   return false;
 }
 
 void NacksStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
-  Ptr<NamePrefixEntry> npe = this->GetFaceStatusNode(ie->npe());
-  NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
-  extra->status_[co->incoming_face()] = FaceStatus::kGreen;
+  NpeExtra* extra = this->GetUpstreamStatusNode(ie->npe())->GetStrategyExtra<NpeExtra>();
+  UpstreamExtra& ue = extra->table_[co->incoming_face()];
+  ue.status_ = UpstreamStatus::kGreen;
+  std::chrono::microseconds rtt = ie->RttEnd(co->incoming_face());
+  if (rtt.count() >= 0) ue.rtt_.Measurement(rtt);
 }
 
 void NacksStrategy::OnNack(Ptr<const NackMessage> nack) {
   Ptr<PitEntry> ie = this->global()->npt()->GetPit(nack->interest());
   if (ie == nullptr) return;
+  ie->RttEnd(nack->incoming_face());// don't set to yellow
   if (this->IsRetryTimerExpired(ie)) return;
   InterestMessage::Nonce nonce = nack->interest()->nonce();
   if (std::none_of(ie->beginUpstream(), ie->endUpstream(), std::bind(&PitUpstreamRecord::NonceEquals, std::placeholders::_1, nonce))) return;
   this->Forward(ie);
 }
 
-Ptr<NamePrefixEntry> NacksStrategy::GetFaceStatusNode(Ptr<NamePrefixEntry> npe) {
+Ptr<NamePrefixEntry> NacksStrategy::GetUpstreamStatusNode(Ptr<NamePrefixEntry> npe) {
   Ptr<NamePrefixEntry> n = npe->FibNode();
   if (n == nullptr) {
     n = this->global()->npt()->Seek(Name::FromUri("/"));
@@ -111,7 +120,7 @@ Ptr<NamePrefixEntry> NacksStrategy::GetFaceStatusNode(Ptr<NamePrefixEntry> npe) 
 
 void NacksStrategy::SetRetryTimer(Ptr<PitEntry> ie, std::chrono::microseconds delay) {
   ie->native()->strategy.state &= ~NacksStrategy::IE_RETRY_TIMER_EXPIRED;
-  this->global()->scheduler()->Schedule(delay, [&ie](){
+  this->global()->scheduler()->Schedule(delay, [ie](){
     ie->native()->strategy.state |= NacksStrategy::IE_RETRY_TIMER_EXPIRED;
     return Scheduler::kNoMore;
   }, &ie->native()->strategy.ev, true);
