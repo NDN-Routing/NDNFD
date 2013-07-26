@@ -26,7 +26,7 @@ class NacksStrategy : public Strategy {
     kYellow = 0,// it is unknown whether the face may bring data back
     kRed    = -1// the face cannot bring data back
   };
-  static std::string UpstreamStatus_string(UpstreamStatus value);
+  static const char* UpstreamStatus_string(UpstreamStatus value);
   struct UpstreamExtra {
     UpstreamStatus status_;
     RttEstimator rtt_;

@@ -19,7 +19,7 @@ enum class FaceKind {
   kMulticast = 3,//talk to multiple remote peers; a face receiving unicast packets from unknown peers also belongs to this kind, but that face cannot send
   kUnicast   = 4 //talk to one remote peer
 };
-std::string FaceKind_ToString(FaceKind kind);
+const char* FaceKind_string(FaceKind kind);
 
 // FaceStatus describes the status of a Face.
 enum class FaceStatus {
@@ -34,7 +34,7 @@ enum class FaceStatus {
   kDisconnect    = 13,//connection is reset
   kFinalized     = 20,//finalized
 };
-std::string FaceStatus_ToString(FaceStatus status);
+const char* FaceStatus_string(FaceStatus status);
 // FaceStatus_IsError returns true if status represents an error condition.
 bool FaceStatus_IsError(FaceStatus status);
 // FaceStatus_IsUsable returns true if status is or may become Established.

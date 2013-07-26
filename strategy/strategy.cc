@@ -174,7 +174,7 @@ void Strategy::WillEraseTimedOutPendingInterest(Ptr<PitEntry> ie) {
 }
 
 void Strategy::OnNack(Ptr<const NackMessage> nack) {
-  this->Log(kLLWarn, kLCStrategy, "Strategy::OnNack(%s,%" PRI_FaceId ",%s) not-implemented", NackCode_string(nack->code()).c_str(), nack->incoming_face(), nack->interest()->name()->ToUri().c_str());
+  this->Log(kLLWarn, kLCStrategy, "Strategy::OnNack(%s,%" PRI_FaceId ",%s) not-implemented", NackCode_string(nack->code()), nack->incoming_face(), nack->interest()->name()->ToUri().c_str());
 }
 
 void Strategy::DidAddFibEntry(Ptr<ForwardingEntry> forw) {

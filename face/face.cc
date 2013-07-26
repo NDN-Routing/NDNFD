@@ -5,7 +5,7 @@ void finalize_face(struct ccnd_handle* h, struct face* face);
 }
 namespace ndnfd {
 
-std::string FaceKind_ToString(FaceKind kind) {
+const char* FaceKind_string(FaceKind kind) {
   switch (kind) {
     case FaceKind::kInternal:  return "Internal";
     case FaceKind::kApp:       return "App";
@@ -15,7 +15,7 @@ std::string FaceKind_ToString(FaceKind kind) {
   }
 }
 
-std::string FaceStatus_ToString(FaceStatus status) {
+const char* FaceStatus_string(FaceStatus status) {
   switch (status) {
     case FaceStatus::kConnecting:    return "Connecting";
     case FaceStatus::kUndecided:     return "Undecided";
@@ -140,7 +140,7 @@ void Face::set_status(FaceStatus value) {
   this->set_ccnd_flags(ccnd_flags, ccnd_flags_mask);
   
   if (old_status != FaceStatus::kNone) {
-    this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%" PRIxPTR ",%" PRI_FaceId ")::set_status %s=>%s", this, this->id(), FaceStatus_ToString(old_status).c_str(), FaceStatus_ToString(value).c_str());
+    this->Log(FaceStatus_IsError(value)?kLLWarn:kLLInfo, kLCFace, "Face(%" PRIxPTR ",%" PRI_FaceId ")::set_status %s=>%s", this, this->id(), FaceStatus_string(old_status), FaceStatus_string(value));
   }
   if (this->id() != FaceId_none) {
     this->global()->facemgr()->NotifyStatusChange(this);

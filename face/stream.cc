@@ -23,7 +23,7 @@ void StreamFace::Init(void) {
   this->inbuf_ = nullptr;
   this->global()->facemgr()->AddFace(this);
   this->face_thread()->pollmgr()->Add(this, this->fd(), POLLIN);
-  this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_ToString(this->status()).c_str());
+  this->Log(kLLInfo, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Init fd=%d status=%s", this, this->id(), this->fd(), FaceStatus_string(this->status()));
 }
 
 FaceDescription StreamFace::GetDescription(void) const {
@@ -36,7 +36,7 @@ FaceDescription StreamFace::GetDescription(void) const {
 
 void StreamFace::Send(Ptr<const Message> message) {
   if (!FaceStatus_IsUsable(this->status())) {
-    this->Log(kLLError, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Send but status is %s", this, this->id(), FaceStatus_ToString(this->status()).c_str());
+    this->Log(kLLError, kLCFace, "StreamFace(%" PRIxPTR ",%" PRI_FaceId ")::Send but status is %s", this, this->id(), FaceStatus_string(this->status()));
     return;
   }
   

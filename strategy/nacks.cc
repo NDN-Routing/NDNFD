@@ -4,7 +4,7 @@ namespace ndnfd {
 
 StrategyType_def(NacksStrategy, nacks);
 
-std::string NacksStrategy::UpstreamStatus_string(UpstreamStatus value) {
+const char* NacksStrategy::UpstreamStatus_string(UpstreamStatus value) {
   switch (value) {
     case UpstreamStatus::kGreen : return "GREEN";
     case UpstreamStatus::kYellow: return "YELLOW";
@@ -77,7 +77,7 @@ bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
             if (ue.status_ == UpstreamStatus::kGreen) ue.status_ = UpstreamStatus::kYellow;
           });
           this->SetRetryTimer(ie, rtt);
-          this->Log(kLLDebug, kLCStrategy, "NacksStrategy::DoForward(%" PRI_PitEntrySerial ") %s %" PRI_FaceId " retry=%" PRIuMAX, ie->serial(), UpstreamStatus_string(expect_status).c_str(), p->faceid(), static_cast<uintmax_t>(rtt.count()));
+          this->Log(kLLDebug, kLCStrategy, "NacksStrategy::DoForward(%" PRI_PitEntrySerial ") %s %" PRI_FaceId " retry=%" PRIuMAX, ie->serial(), UpstreamStatus_string(expect_status), p->faceid(), static_cast<uintmax_t>(rtt.count()));
           return true;
         }
       }

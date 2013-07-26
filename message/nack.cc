@@ -15,7 +15,7 @@ bool NackCode_valid(NackCode code) {
   return false;
 }
 
-std::string NackCode_string(NackCode code) {
+const char* NackCode_string(NackCode code) {
   switch (code) {
     case NackCode::kDuplicate:
       return "Duplicate";

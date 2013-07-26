@@ -47,7 +47,7 @@ void StrategyBase::SendContent(FaceId downstream, Ptr<ContentEntry> ce) {
 void StrategyBase::SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code) {
   assert(ie != nullptr);
   assert(downstream != nullptr);
-  this->Log(kLLDebug, kLCStrategy, "StrategyBase::SendNack(%" PRI_PitEntrySerial ",%" PRI_FaceId ",%s)", ie->serial(), downstream->faceid(), NackCode_string(code).c_str());
+  this->Log(kLLDebug, kLCStrategy, "StrategyBase::SendNack(%" PRI_PitEntrySerial ",%" PRI_FaceId ",%s)", ie->serial(), downstream->faceid(), NackCode_string(code));
   Ptr<Face> face = this->global()->facemgr()->GetFace(downstream->faceid());
   if (face == nullptr) return;
 
