@@ -26,7 +26,6 @@ class StrategyBase : public Element {
   
   // SendContentObject sends a ContentObject to downstream.
   // co is placed into the face send queue if there's no duplicate.
-  // TODO substitute content_entry* with a C++ type
   virtual void SendContent(FaceId downstream, Ptr<ContentEntry> ce);
   
   // SendNack sends a Nack to downstream.

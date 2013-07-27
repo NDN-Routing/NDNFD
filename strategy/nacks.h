@@ -35,7 +35,8 @@ class NacksStrategy : public Strategy {
     std::unordered_map<FaceId,UpstreamExtra> table_;
   };
 
-  // PFI_VAIN flag is set on pit_face_item when a Nack is received from that face.
+  // PFI_VAIN flag is set on upstream pit_face_item when a Nack is received
+  // from that face, or there's a timeout.
   static const unsigned PFI_VAIN = 0x20000;
   // IE_RETRY_TIMER_EXPIRED flag is set on ccn_strategy.state when RetryTimer expires.
   static const int IE_RETRY_TIMER_EXPIRED = 0x1;
@@ -52,6 +53,8 @@ class NacksStrategy : public Strategy {
   // It returns true if Interest is forwarded to at least one upstream,
   // or returns false if there's no usable upstream.
   virtual bool DoForward(Ptr<PitEntry> ie);
+  // DidnotArriveOnFace is invoked if no Content or Nack comes back in time.
+  virtual void DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face);
   
   // SetRetryTimer schedules or reschedules RetryTimer.
   void SetRetryTimer(Ptr<PitEntry> ie, std::chrono::microseconds delay);

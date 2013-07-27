@@ -19,9 +19,7 @@ void NacksStrategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<N
   Ptr<Face> in_face = this->global()->facemgr()->GetFace(interest->incoming_face());
 
   Ptr<PitDownstreamRecord> p = ie->SeekDownstream(in_face->id());
-  // read nonce from Interest, or generate one.
   p->UpdateNonce(interest);
-  // verify whether nonce is unique
   if (ie->IsNonceUnique(p)) {
     // unique nonce
     ie->Renew();
@@ -31,20 +29,15 @@ void NacksStrategy::PropagateInterest(Ptr<const InterestMessage> interest, Ptr<N
     }
   } else {
     // duplicate nonce
-    // record in_face as a downstream, but don't forward Interest (because lack of pending flag)
     p->set_suppress(true);
     this->SendNack(ie, p, NackCode::kDuplicate);
     return;
   }
-  
-  // set expiry time according to InterestLifetime
   p->SetExpiryToLifetime(interest);
   
-  // lookup FIB and populate PitUpstreamRecords
   std::unordered_set<FaceId> outbounds = this->LookupOutbounds(ie, interest);
   this->PopulateOutbounds(ie, outbounds);
   
-  // forward
   if (is_new_ie || this->IsRetryTimerExpired(ie)) {
     this->Forward(ie);
   }
@@ -73,9 +66,7 @@ bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
       if (ue.status_ == expect_status) {
         std::chrono::microseconds rtt = ue.rtt_.RetransmitTimeout();
         if (this->SendInterest(ie, p)) {
-          ie->RttStartWithExpect(p->faceid(), rtt, [&ue](){
-            if (ue.status_ == UpstreamStatus::kGreen) ue.status_ = UpstreamStatus::kYellow;
-          });
+          ie->RttStartWithExpect(p->faceid(), rtt, std::bind(&NacksStrategy::DidnotArriveOnFace, this, ie, p->faceid()));
           this->SetRetryTimer(ie, rtt);
           this->Log(kLLDebug, kLCStrategy, "NacksStrategy::DoForward(%" PRI_PitEntrySerial ") %s %" PRI_FaceId " retry=%" PRIuMAX, ie->serial(), UpstreamStatus_string(expect_status), p->faceid(), static_cast<uintmax_t>(rtt.count()));
           return true;
@@ -87,7 +78,6 @@ bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
   
   if (try_upstreams_with_status(UpstreamStatus::kGreen)) return true;
   if (try_upstreams_with_status(UpstreamStatus::kYellow)) return true;
-  // TODO mark YELLOW on Interest timeout
   return false;
 }
 
@@ -103,11 +93,24 @@ void NacksStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Conten
 void NacksStrategy::OnNack(Ptr<const NackMessage> nack) {
   Ptr<PitEntry> ie = this->global()->npt()->GetPit(nack->interest());
   if (ie == nullptr) return;
-  ie->RttEnd(nack->incoming_face());// don't set to yellow
+  ie->RttEnd(nack->incoming_face());// cancel DidnotArriveOnFace timer
   if (this->IsRetryTimerExpired(ie)) return;
+
   InterestMessage::Nonce nonce = nack->interest()->nonce();
   if (std::none_of(ie->beginUpstream(), ie->endUpstream(), std::bind(&PitUpstreamRecord::NonceEquals, std::placeholders::_1, nonce))) return;
+  Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(nack->incoming_face());
+  if (upstream != nullptr) upstream->SetFlag(NacksStrategy::PFI_VAIN, true);
   this->Forward(ie);
+}
+
+void NacksStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
+  NpeExtra* extra = this->GetUpstreamStatusNode(ie->npe())->GetStrategyExtra<NpeExtra>();
+  UpstreamExtra& ue = extra->table_[face];
+  if (ue.status_ == UpstreamStatus::kGreen) ue.status_ = UpstreamStatus::kYellow;
+  ue.rtt_.IncreaseMultiplier();
+
+  Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(face);
+  if (upstream != nullptr) upstream->SetFlag(NacksStrategy::PFI_VAIN, true);
 }
 
 Ptr<NamePrefixEntry> NacksStrategy::GetUpstreamStatusNode(Ptr<NamePrefixEntry> npe) {
@@ -135,8 +138,8 @@ void NacksStrategy::NewNpeExtra(Ptr<NamePrefixEntry> npe) {
 }
 
 void NacksStrategy::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {
-  NpeExtra* parent_extra = parent->GetStrategyExtra<NpeExtra>();
-  npe->set_strategy_extra(new NpeExtra(*parent_extra));
+  // no inherit needed: status is always written to "UpstreamStatusNode"
+  this->NewNpeExtra(npe);
 }
 
 void NacksStrategy::FinalizeNpeExtra(Ptr<NamePrefixEntry> npe) {
