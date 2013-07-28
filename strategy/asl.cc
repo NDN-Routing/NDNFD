@@ -17,7 +17,7 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     bool unexpired_unicast_downstream_;
     std::chrono::microseconds rto_;
   };
-  UpstreamScore best;
+  UpstreamScore best;// current best upstream
   best.face_ = FaceId_none;
   // ReplaceUpstreamIfBetter overwrites best if alt is better than best
   std::function<void(const UpstreamScore&)> ReplaceUpstreamIfBetter = [&best] (const UpstreamScore& alt) {
@@ -39,7 +39,7 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     if (alt.rto_ < best.rto_) best = alt;
   };
   
-  // prepare common basis
+  // prepare shared information
   int downstream_count = 0;
   FaceId sole_downstream = FaceId_none;
   std::vector<Ptr<Face>> mcast_downstreams;
@@ -109,14 +109,14 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     ReplaceUpstreamIfBetter(alt);
   }
   
-  if (best.face_ == FaceId_none) {
+  if (best.face_ == FaceId_none) {// no feasible upstream
     this->Flood(ie);
     return;
   }
   
   std::chrono::microseconds predict;
   if (best.new_producer_) {
-    predict = min_rto * 2 + std::chrono::microseconds(1);
+    predict = min_rto * 2;
   } else {
     predict = best.rto_;
   }
@@ -129,19 +129,55 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
 }
 
 void AslStrategy::Flood(Ptr<PitEntry> ie) {
-  this->Log(kLLError, kLCStrategy, "AslStrategy::Flood(%" PRI_PitEntrySerial ") not-implemented", ie->serial());
-  // TODO impl
+  std::unordered_set<FaceId> unexpired_downstreams;
+  std::for_each(ie->beginDownstream(), ie->endDownstream(), [&] (Ptr<PitDownstreamRecord> p) {
+    if (!p->IsExpired()) unexpired_downstreams.insert(p->faceid());
+  });
+  
+  std::vector<Ptr<Face>> mcast_faces; std::vector<Ptr<Face>> unicast_downstream_faces;
+  for (Ptr<Face> f : *this->global()->facemgr()) {
+    if (f->kind() == FaceKind::kMulticast && f->CanSend() && unexpired_downstreams.count(f->id()) == 0) {
+      mcast_faces.push_back(f);
+    }
+    if (f->kind() == FaceKind::kUnicast && unexpired_downstreams.count(f->id()) > 0) {
+      unicast_downstream_faces.push_back(f);
+    }
+  }
+  
+  std::string debug_list; char debug_buf[32];
+#define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", x); debug_list.append(debug_buf); }
+  for (Ptr<Face> f : mcast_faces) {
+    if (unicast_downstream_faces.size() == 1 && f->SendReachable(unicast_downstream_faces[0])) {
+      continue;
+    }
+    Ptr<PitUpstreamRecord> p = ie->SeekUpstream(f->id());
+    p->SetFlag(AslStrategy::PFI_FLOOD, true);
+    this->SendInterest(ie, p);// TODO avoid using a unicast downstream reachable on p
+    ie->RttStart(p->faceid());
+    DEBUG_APPEND_FaceId(p->faceid());
+  }
+
+  if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
+#undef DEBUG_APPEND_FaceId
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::Flood(%" PRI_PitEntrySerial ") upstreams=[%s]", ie->serial(), debug_list.c_str());
 }
 
 void AslStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
   this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
   std::chrono::microseconds rtt = ie->RttEnd(co->incoming_face());
+  
+  Ptr<Face> src = this->global()->facemgr()->GetFace(co->incoming_face());
+  if (src == nullptr) return;
+  Ptr<Face> peer = src;
+  if (src->kind() == FaceKind::kMulticast) {
+    peer = this->global()->facemgr()->MakeUnicastFace(src, co->incoming_sender());
+  }
 
-  this->Log(kLLDebug, kLCStrategy, "AslStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " rtt=%" PRIuMAX "", ie->serial(), co->incoming_face(), static_cast<uintmax_t>(rtt.count()));
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") src=%" PRI_FaceId " peer=%" PRI_FaceId " rtt=%" PRIuMAX "", ie->serial(), src->id(), peer->id(), static_cast<uintmax_t>(rtt.count()));
   
   this->ForeachNpeAncestor(ie->npe(), [&] (Ptr<NamePrefixEntry> npe) {
     NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
-    UpstreamExtra& ue = extra->table_[co->incoming_face()];
+    UpstreamExtra& ue = extra->table_[peer->id()];
     ue.status_ = UpstreamStatus::kGreen;
     if (rtt.count() >= 0) ue.rtt_.Measurement(rtt);
   });
