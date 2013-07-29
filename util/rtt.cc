@@ -36,6 +36,10 @@ void RttEstimator::Measurement(time measure) {
   this->multiplier_ = 1;
 }
 
+void RttEstimator::IncrementMultiplier(void) {
+  this->multiplier_ = std::min(static_cast<uint16_t>(this->multiplier_ + 1), this->max_multiplier_);
+}
+
 void RttEstimator::IncreaseMultiplier(void) {
   this->multiplier_ = std::min(static_cast<uint16_t>(this->multiplier_ * 2), this->max_multiplier_);
 }

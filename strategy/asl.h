@@ -11,8 +11,6 @@ class AslStrategy : public NacksStrategy {
   StrategyType_decl(AslStrategy);
 
   virtual void DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams);
-  virtual void OnNack(Ptr<const NackMessage> nack);
-
   virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);
 
  protected:
@@ -26,8 +24,11 @@ class AslStrategy : public NacksStrategy {
 
   virtual void Forward(Ptr<PitEntry> ie);
   virtual bool DoForward(Ptr<PitEntry> ie) { assert(false); }
-  virtual void DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face);
   void Flood(Ptr<PitEntry> ie);
+  virtual void SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code);
+  virtual void ProcessNack(Ptr<PitEntry> ie, Ptr<const NackMessage> nack);
+  virtual void DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face);
+  virtual void OnRetryTimerExpire(Ptr<PitEntry> ie);
   
  private:
   DISALLOW_COPY_AND_ASSIGN(AslStrategy);

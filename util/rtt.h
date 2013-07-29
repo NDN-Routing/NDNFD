@@ -16,6 +16,7 @@ class RttEstimator {
   RttEstimator& operator=(const RttEstimator& other);
   
   void Measurement(time measure);
+  void IncrementMultiplier(void);
   void IncreaseMultiplier(void);
 
   time RetransmitTimeout(void) const;

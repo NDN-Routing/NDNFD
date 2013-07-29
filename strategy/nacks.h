@@ -53,13 +53,21 @@ class NacksStrategy : public Strategy {
   // It returns true if Interest is forwarded to at least one upstream,
   // or returns false if there's no usable upstream.
   virtual bool DoForward(Ptr<PitEntry> ie);
+  // ProcessNack is invoked when PitEntry is found for NackMessage,
+  // and Nonce matches one of PitUpstreamRecord.
+  virtual void ProcessNack(Ptr<PitEntry> ie, Ptr<const NackMessage> nack);
   // DidnotArriveOnFace is invoked if no Content or Nack comes back in time.
   virtual void DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face);
   
   // SetRetryTimer schedules or reschedules RetryTimer.
   void SetRetryTimer(Ptr<PitEntry> ie, std::chrono::microseconds delay);
+  // CancelRetryTimer cancels RetryTimer.
+  // This should be invoked when PitEntry is satisfied.
+  void CancelRetryTimer(Ptr<PitEntry> ie);
   // IsRetryTimerExpired determines whether RetryTimer is expired.
   bool IsRetryTimerExpired(Ptr<PitEntry> ie);
+  // OnRetryTimerExpire is invoked when RetryTimer expires.
+  virtual void OnRetryTimerExpire(Ptr<PitEntry> ie) {}
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NacksStrategy);

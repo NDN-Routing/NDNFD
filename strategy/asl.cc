@@ -69,7 +69,7 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
   };
   
   // score each known upstream
-  std::chrono::microseconds min_rto(5000000);
+  std::chrono::microseconds min_rto(500000);
   NpeExtra* extra = ie->npe()->GetStrategyExtra<NpeExtra>();
   for (auto pair : extra->table_) {
     std::chrono::microseconds rto = pair.second.rtt_.RetransmitTimeout();
@@ -144,6 +144,7 @@ void AslStrategy::Flood(Ptr<PitEntry> ie) {
     }
   }
   
+  int flood_count = 0;
   std::string debug_list; char debug_buf[32];
 #define DEBUG_APPEND_FaceId(x) { snprintf(debug_buf, sizeof(debug_buf), "%" PRI_FaceId ",", x); debug_list.append(debug_buf); }
   for (Ptr<Face> f : mcast_faces) {
@@ -154,16 +155,35 @@ void AslStrategy::Flood(Ptr<PitEntry> ie) {
     p->SetFlag(AslStrategy::PFI_FLOOD, true);
     this->SendInterest(ie, p);// TODO avoid using a unicast downstream reachable on p
     ie->RttStart(p->faceid());
+    ++flood_count;
     DEBUG_APPEND_FaceId(p->faceid());
   }
-
+  
   if (debug_list.back()==',') debug_list.resize(debug_list.size()-1);
 #undef DEBUG_APPEND_FaceId
   this->Log(kLLDebug, kLCStrategy, "AslStrategy::Flood(%" PRI_PitEntrySerial ") upstreams=[%s]", ie->serial(), debug_list.c_str());
+
+  if (flood_count == 0) {
+    this->SendNacks(ie, NackCode::kNoData);
+  }
+
+  std::chrono::microseconds min_rto(500000);
+  NpeExtra* extra = ie->npe()->GetStrategyExtra<NpeExtra>();
+  for (auto pair : extra->table_) {
+    std::chrono::microseconds rto = pair.second.rtt_.RetransmitTimeout();
+    min_rto = std::min(min_rto, rto);
+  }
+  this->SetRetryTimer(ie, 2 * min_rto);
+}
+
+void AslStrategy::OnRetryTimerExpire(Ptr<PitEntry> ie) {
+  if (std::any_of(ie->beginUpstream(), ie->endUpstream(), [] (Ptr<PitUpstreamRecord> p) { return !p->IsExpired() && p->GetFlag(AslStrategy::PFI_FLOOD); })) {
+    this->SendNacks(ie, NackCode::kNoData);
+  }
 }
 
 void AslStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
-  this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
+  this->CancelRetryTimer(ie);
   std::chrono::microseconds rtt = ie->RttEnd(co->incoming_face());
   
   Ptr<Face> src = this->global()->facemgr()->GetFace(co->incoming_face());
@@ -183,9 +203,30 @@ void AslStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentE
   });
 }
 
-void AslStrategy::OnNack(Ptr<const NackMessage> nack) {
-  // TODO impl
-  this->NacksStrategy::OnNack(nack);
+void AslStrategy::SendNack(Ptr<PitEntry> ie, Ptr<PitDownstreamRecord> downstream, NackCode code) {
+  Ptr<Face> dst = this->global()->facemgr()->GetFace(downstream->faceid());
+  if (dst == nullptr || dst->kind() == FaceKind::kMulticast) return;
+  this->StrategyBase::SendNack(ie, downstream, code);
+}
+
+void AslStrategy::ProcessNack(Ptr<PitEntry> ie, Ptr<const NackMessage> nack) {
+  Ptr<Face> src = this->global()->facemgr()->GetFace(nack->incoming_face());
+  if (src == nullptr || src->kind() == FaceKind::kMulticast) return;
+  ie->RttEnd(nack->incoming_face());// cancel DidnotArriveOnFace timer
+
+  this->ForeachNpeAncestor(ie->npe(), [&] (Ptr<NamePrefixEntry> npe) {
+    NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
+    UpstreamExtra& ue = extra->table_[src->id()];
+    if (ue.status_ == UpstreamStatus::kGreen) ue.status_ = UpstreamStatus::kYellow;
+    ue.rtt_.IncrementMultiplier();
+  });
+
+  Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(nack->incoming_face());
+  if (upstream != nullptr) upstream->SetFlag(NacksStrategy::PFI_VAIN, true);
+
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::ProcessNack(%" PRI_PitEntrySerial ") src=%" PRI_FaceId "", ie->serial(), src->id());
+
+  this->Forward(ie);
 }
 
 void AslStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {

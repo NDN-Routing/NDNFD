@@ -82,7 +82,7 @@ bool NacksStrategy::DoForward(Ptr<PitEntry> ie) {
 }
 
 void NacksStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentEntry> ce, Ptr<const ContentObjectMessage> co, int pending_downstreams) {
-  this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
+  this->CancelRetryTimer(ie);
   NpeExtra* extra = this->GetUpstreamStatusNode(ie->npe())->GetStrategyExtra<NpeExtra>();
   UpstreamExtra& ue = extra->table_[co->incoming_face()];
   ue.status_ = UpstreamStatus::kGreen;
@@ -93,13 +93,20 @@ void NacksStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Conten
 void NacksStrategy::OnNack(Ptr<const NackMessage> nack) {
   Ptr<PitEntry> ie = this->global()->npt()->GetPit(nack->interest());
   if (ie == nullptr) return;
-  ie->RttEnd(nack->incoming_face());// cancel DidnotArriveOnFace timer
-  if (this->IsRetryTimerExpired(ie)) return;
 
   InterestMessage::Nonce nonce = nack->interest()->nonce();
   if (std::none_of(ie->beginUpstream(), ie->endUpstream(), std::bind(&PitUpstreamRecord::NonceEquals, std::placeholders::_1, nonce))) return;
+  
+  this->ProcessNack(ie, nack);
+}
+
+void NacksStrategy::ProcessNack(Ptr<PitEntry> ie, Ptr<const NackMessage> nack) {
+  ie->RttEnd(nack->incoming_face());// cancel DidnotArriveOnFace timer
+  if (this->IsRetryTimerExpired(ie)) return;
+
   Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(nack->incoming_face());
   if (upstream != nullptr) upstream->SetFlag(NacksStrategy::PFI_VAIN, true);
+
   this->Forward(ie);
 }
 
@@ -123,10 +130,15 @@ Ptr<NamePrefixEntry> NacksStrategy::GetUpstreamStatusNode(Ptr<NamePrefixEntry> n
 
 void NacksStrategy::SetRetryTimer(Ptr<PitEntry> ie, std::chrono::microseconds delay) {
   ie->native()->strategy.state &= ~NacksStrategy::IE_RETRY_TIMER_EXPIRED;
-  this->global()->scheduler()->Schedule(delay, [ie](){
+  this->global()->scheduler()->Schedule(delay, [this,ie](){
     ie->native()->strategy.state |= NacksStrategy::IE_RETRY_TIMER_EXPIRED;
+    this->OnRetryTimerExpire(ie);
     return Scheduler::kNoMore;
   }, &ie->native()->strategy.ev, true);
+}
+
+void NacksStrategy::CancelRetryTimer(Ptr<PitEntry> ie) {
+  this->global()->scheduler()->Cancel(ie->native()->strategy.ev);
 }
 
 bool NacksStrategy::IsRetryTimerExpired(Ptr<PitEntry> ie) {
