@@ -138,7 +138,7 @@ std::chrono::microseconds DgramChannel::ReapInactivePeers(void) {
   for (auto it = this->peers().begin(); it != this->peers().end();) {
     auto current = it++;
     Ptr<PeerEntry> pe = current->second;
-    if ((pe->face_->native()->flags & CCN_FACE_PERMANENT) != 0) continue;
+    if (pe->face_ != nullptr && (pe->face_->native()->flags & CCN_FACE_PERMANENT) != 0) continue;
     if (pe->recv_count_ == 0) {
       if (++closed == 1) {
         this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ")::ReapInactivePeers", this);
