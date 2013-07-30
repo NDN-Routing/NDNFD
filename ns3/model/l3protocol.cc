@@ -121,6 +121,7 @@ void L3Protocol::AppReceiveContentObject(ns3::Ptr<ns3::ndn::Face> face, ns3::Ptr
     this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppReceiveContentObject(%" PRIu32 ") cannot convert packet", this->nodeid(), face->GetId());
     return;
   }
+  msg = msg->AddExplicitDigest();
   this->AppReceiveMessage(face, PeekPointer(msg));
 }
 
@@ -163,6 +164,8 @@ void L3Protocol::AppSend(SimAppFace* aface, const Message* msg) {
       return;
     }
     face->SendInterest(nack);
+  } else {
+    this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") MessageType %d unknown", this->nodeid(), aface->id(), static_cast<int>(msg->type()));
   }
 }
 

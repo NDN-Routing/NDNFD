@@ -23,8 +23,7 @@ void StackHelper::Install(ns3::Ptr<ns3::Node> node) const {
   l3->Init(node);
   
   if (this->set_default_routes_) {
-    Ptr<Name> root_name = Name::FromUri("/");
-    Ptr<NamePrefixEntry> npe = l3->global()->npt()->Seek(root_name);
+    Ptr<NamePrefixEntry> npe = l3->global()->npt()->Seek(Name::FromUri("/"));
     for (auto tuple : l3->global()->facemgr()->ether_channels()) {
       Ptr<Face> face = std::get<2>(tuple);
       Ptr<ForwardingEntry> f = npe->SeekForwarding(face->id());
