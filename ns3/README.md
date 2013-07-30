@@ -10,8 +10,13 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 		./waf configure --sim
 		./waf
 
-2. [install ns-3 and ndnSIM](http://ndnsim.net/getting-started.html)  
-   (`$NS3_ROOT` represents the location of ns-3 directory)
+2. [install ns-3 and ndnSIM](http://ndnsim.net/getting-started.html) (`$NS3_ROOT` represents the location of ns-3 directory)
+
+		git clone git://github.com/cawka/ns-3-dev-ndnSIM.git $NS3_ROOT
+		git clone git://github.com/NDN-Routing/ndnSIM.git $NS3_ROOT/src/ndnSIM
+		cd $NS3_ROOT/src/ndnSIM
+		git checkout v0.5-rc1
+
 3. fix ns-3 to build in C++ 11 standard
 
 		cd $NS3_ROOT
