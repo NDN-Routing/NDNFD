@@ -31,20 +31,20 @@ void ProducerThrottled::SetProcessingDelay(Ptr<ProcessingDelay> value) {
   this->pd_->SetCompleteCallback(MakeCallback(&ProducerThrottled::ProcessComplete, this));
 }
 
-void ProducerThrottled::OnInterest(const Ptr<const Interest>& interest, Ptr<Packet> packet) {
-  this->App::OnInterest(interest, packet);
+void ProducerThrottled::OnInterest(Ptr<const Interest> interest) {
+  this->App::OnInterest(interest);
   NS_LOG_FUNCTION(this << interest);
   if (!this->m_active) return;
   
   TimeValue freshness;
   this->GetAttribute("Freshness", freshness);
   
-  Ptr<ContentObject> header = Create<ContentObject>();
-  header->SetName(Create<Name>(interest->GetName()));
-  header->SetFreshness(freshness.Get());
+  Ptr<ContentObject> co = Create<ContentObject>();
+  co->SetName(interest->GetName());
+  co->SetFreshness(freshness.Get());
   
   uint32_t pending_i = ++this->pending_i_;
-  this->pendings_[pending_i] = header;
+  this->pendings_[pending_i] = co;
   this->pd_->SubmitJob(UintegerValue(pending_i));
 }
 
@@ -53,23 +53,20 @@ void ProducerThrottled::ProcessComplete(ProcessingDelay::Job job) {
   uint32_t pending_i = static_cast<uint32_t>(pending_ptr->Get());
   auto pending_it = this->pendings_.find(pending_i);
   NS_ASSERT(pending_it != this->pendings_.end());
-  Ptr<ContentObject> header = pending_it->second;
+  Ptr<ContentObject> co = pending_it->second;
   this->pendings_.erase(pending_it);
   
   if (!this->m_active) return;//app stopped
 
-  NS_LOG_INFO("node("<< GetNode()->GetId() <<") responding with ContentObject:\n" << boost::cref(*header));
+  NS_LOG_INFO("node("<< GetNode()->GetId() <<") responding with ContentObject: " << co->GetName());
   
   UintegerValue virtual_payload_size;
   this->GetAttribute("PayloadSize", virtual_payload_size);
-
   Ptr<Packet> packet = Create<Packet>(virtual_payload_size.Get());
-  packet->AddHeader(*header);
-  static ContentObjectTail tail;
-  packet->AddTrailer(tail);
+  co->SetPayload(packet);
 
-  this->m_protocolHandler(packet);
-  this->m_transmittedContentObjects(header, packet, this, this->m_face);
+  this->m_face->ReceiveData(co);
+  this->m_transmittedContentObjects(co, this, this->m_face);
 }
 
 };//namespace ndn

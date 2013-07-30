@@ -13,7 +13,7 @@ class ProducerThrottled : public Producer {
   ProducerThrottled(void);
   virtual ~ProducerThrottled(void) {}
 
-  virtual void OnInterest(const Ptr<const Interest>& interest, Ptr<Packet> packet);
+  virtual void OnInterest(Ptr<const Interest> interest);
 
  private:
   Ptr<ProcessingDelay> pd_;

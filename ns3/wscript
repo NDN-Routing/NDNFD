@@ -28,8 +28,7 @@ def build(bld):
     module = bld.create_ns3_module('NDNFD', ['ndnSIM','csma','point-to-point','internet'])
     module.module = 'NDNFD'
     module.uselib = 'NDNFD'
-    #module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc','extra/*.cc'], excl=['**/*_test*.cc'])
-    module.source = bld.path.ant_glob(['utils/pktconv.cc'], excl=['**/*_test*.cc'])
+    module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc','extra/*.cc'], excl=['**/*_test*.cc'])
     #module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
 
     headers = bld(features=['ns3header'])
@@ -46,6 +45,6 @@ def build(bld):
     #unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
     unittest.source = bld.path.ant_glob(['utils/pktconv_test.cc','_gtest/*.cc'])
 
-#    if bld.env.ENABLE_EXAMPLES:
-#        bld.recurse('examples')
+    if bld.env.ENABLE_EXAMPLES:
+        bld.recurse('examples')
 

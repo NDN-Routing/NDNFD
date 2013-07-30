@@ -10,7 +10,8 @@ class MockForwardingStrategy : public ns3::ndn::ForwardingStrategy {
   virtual ~MockForwardingStrategy(void) {}
 
  protected:
-  virtual bool DoPropagateInterest(ns3::Ptr<ns3::ndn::Face> inFace, ns3::Ptr<const ns3::ndn::Interest> header, ns3::Ptr<const ns3::Packet> origPacket, ns3::Ptr<ns3::ndn::pit::Entry> pitEntry) { NS_ASSERT(false); return false; }
+  virtual bool DoPropagateInterest (ns3::Ptr<ns3::ndn::Face> inFace, ns3::Ptr<const ns3::ndn::Interest> interest, ns3::Ptr<ns3::ndn::pit::Entry> pitEntry) { NS_ASSERT(false); return false; }
+
 };
 
 };//namespace ndnfd

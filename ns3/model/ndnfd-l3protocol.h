@@ -54,8 +54,12 @@ class L3Protocol : public ns3::ndn::L3Protocol {
   
   uint32_t nodeid(void) const;
   
-  // AppReceive receives a message from AppFace, and pass it to NDNFD.
-  void AppReceive(const ns3::Ptr<ns3::ndn::Face>& face, const ns3::Ptr<const ns3::Packet>& p);
+  // AppReceiveInterestOrNack receives an Interest or Nack from AppFace, and pass it to NDNFD.
+  void AppReceiveInterestOrNack(ns3::Ptr<ns3::ndn::Face> face, ns3::Ptr<ns3::ndn::Interest> interest);
+  // AppReceiveContentObject receives a ContentObject from AppFace, and pass it to NDNFD.
+  void AppReceiveContentObject(ns3::Ptr<ns3::ndn::Face> face, ns3::Ptr<ns3::ndn::ContentObject> co);
+  // AppReceiveMessage passes a Message from AppFace to NDNFD.
+  void AppReceiveMessage(ns3::Ptr<ns3::ndn::Face> face, Message* msg);
 };
 
 };//namespace ndnfd

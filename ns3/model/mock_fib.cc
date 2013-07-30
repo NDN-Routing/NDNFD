@@ -16,7 +16,7 @@ ns3::Ptr<ns3::ndn::fib::Entry> MockFib::Add(const ns3::ndn::Name& prefix, ns3::P
 }
 
 ns3::Ptr<ns3::ndn::fib::Entry> MockFib::Add(const ns3::Ptr<const ns3::ndn::Name>& prefix, ns3::Ptr<ns3::ndn::Face> face, int32_t metric) {
-  Ptr<Name> name = this->global()->npc()->NameFrom(*prefix);
+  Ptr<Name> name = this->global()->npc()->NameFrom(prefix);
   Ptr<NamePrefixEntry> npe = this->global()->npt()->Seek(name);
   Ptr<ForwardingEntry> f = npe->SeekForwarding(static_cast<FaceId>(face->GetId()));
   f->MakePermanent();
