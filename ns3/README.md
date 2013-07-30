@@ -19,24 +19,18 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 		cd src/ndnSIM
 		git checkout 0aa47bf4bf9f786dff24663cb31f988fab4882b4
 
-3. fix ns-3 to build in C++ 11 standard
-
-		cd $NS3_ROOT
-		grep -lr 'make_pair<' *
-   open each file, find each `make_pair<...> (` and replace with `make_pair (`
-
-4. install NDNFD module into ns-3
+3. install NDNFD module into ns-3
 
 		cd $NS3_ROOT/src
 		ln -s $NDNFD_ROOT/ns3 NDNFD
 
-5. build ns-3 with NDNFD  
+4. build ns-3 with NDNFD  
 
 		cd $NS3_ROOT
 		./waf configure --disable-python --enable-examples --with-ndnfd=$NDNFD_ROOT
 		./waf
 
-6. run NDNFD simulation examples  
+5. run NDNFD simulation examples  
 
 		cd $NS3_ROOT
 		NS_LOG=NDNFD:ndn.Consumer:ndn.Producer ./waf --run ndnfd-simple
