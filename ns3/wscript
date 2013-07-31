@@ -29,21 +29,20 @@ def build(bld):
     module.module = 'NDNFD'
     module.uselib = 'NDNFD'
     module.source = bld.path.ant_glob(['model/*.cc','utils/*.cc','helper/*.cc','extra/*.cc'], excl=['**/*_test*.cc'])
-    #module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
+    module.full_headers = [p.path_from(bld.path) for p in bld.path.ant_glob(['model/*.h','utils/*.h','helper/*.h'])]
 
     headers = bld(features=['ns3header'])
     headers.module = module.module
-#    headers.source = [
-#        'model/ndnfd-l3protocol.h',
-#        'helper/ndnfd-stack-helper.h',
-#        'utils/ndnfd-build-topo.h',
-#        'utils/ndnfd-tracing.h',
-#        'extra/processing_delay.h',
-#        ]
+    headers.source = [
+        'model/ndnfd-l3protocol.h',
+        'helper/ndnfd-stack-helper.h',
+        'utils/ndnfd-build-topo.h',
+        'utils/ndnfd-tracing.h',
+        'extra/processing_delay.h',
+        ]
 
     unittest = bld.create_ns3_program('ndnfd-unittest', ['NDNFD'])
-    #unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
-    unittest.source = bld.path.ant_glob(['utils/pktconv_test.cc','_gtest/*.cc'])
+    unittest.source = bld.path.ant_glob(['**/*_test*.cc','_gtest/*.cc'])
 
     if bld.env.ENABLE_EXAMPLES:
         bld.recurse('examples')

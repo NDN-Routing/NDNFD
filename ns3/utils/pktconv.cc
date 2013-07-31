@@ -25,9 +25,61 @@ Ptr<InterestMessage> NdnsimPacketConverter::InterestFrom(ns3::Ptr<const ns3::ndn
 }
 
 Ptr<ContentObjectMessage> NdnsimPacketConverter::ContentObjectFrom(ns3::Ptr<const ns3::ndn::ContentObject> co) const {
+  /*
   ns3::Ptr<ns3::Packet> pkt = Wire::FromData(co, Wire::WIRE_FORMAT_CCNB);
   Ptr<Buffer> buf = new Buffer(pkt->GetSize());
   pkt->CopyData(buf->mutable_data(), buf->length());
+  */
+  // ndnSIM ContentObject CCNB wire isn't working due to lack of <PublisherPublicKeyDigest>
+  
+  assert(co->GetKeyLocator() == nullptr);// not-implemented
+
+  ccn_charbuf* c = ccn_charbuf_create();
+  ccnb_element_begin(c, CCN_DTAG_ContentObject);
+
+  ccnb_element_begin(c, CCN_DTAG_Signature);
+  ccnb_tagged_putf(c, CCN_DTAG_DigestAlgorithm, "NOP");
+  uint64_t signature_bits[2]; signature_bits[0] = signature_bits[1] = ++const_cast<NdnsimPacketConverter*>(this)->s_;
+  ccnb_append_tagged_blob(c, CCN_DTAG_SignatureBits, signature_bits, 16);
+  ccnb_element_end(c);//</Signature>
+
+  std::basic_string<uint8_t> name_ccnb = this->NameFrom(co->GetNamePtr())->ToCcnb();
+  ccn_charbuf_append(c, name_ccnb.data(), name_ccnb.size());
+
+  ccnb_element_begin(c, CCN_DTAG_SignedInfo);
+  
+  ccnb_append_tagged_blob(c, CCN_DTAG_PublisherPublicKeyDigest, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+
+  ns3::Time timestamp = co->GetTimestamp();
+  // Timestamp is not used in ndnSIM examples and is zero; use current time instead
+  if (timestamp.IsZero()) timestamp = ns3::Now();
+  // ccn_parse_timestamp restricts timestamp BLOB to be 3~7 bytes,
+  // so timestamp must >= ns3::Seconds(16).
+  ccnb_element_begin(c, CCN_DTAG_Timestamp);
+  ccnb_append_timestamp_blob(c, CCN_MARKER_NONE, static_cast<intmax_t>(timestamp.GetSeconds()), static_cast<int>(timestamp.GetMicroSeconds() % 1000000));
+  ccnb_element_end(c);//</Timestamp>
+  
+  ns3::Time freshness = co->GetFreshness();
+  if (freshness.IsStrictlyPositive()) {
+    ccnb_element_begin(c, CCN_DTAG_FreshnessSeconds);
+    ccnb_append_number(c, static_cast<int>(freshness.GetSeconds()));
+    ccnb_element_end(c);//</FreshnessSeconds>
+  }
+
+  ccnb_element_end(c);//</SignedInfo>
+  
+  ns3::Ptr<const ns3::Packet> payload = co->GetPayload();
+  ccnb_element_begin(c, CCN_DTAG_Content);
+  uint32_t payload_size = payload->GetSize();
+  ccn_charbuf_append_tt(c, payload_size, CCN_BLOB);
+  uint8_t* payload_p = ccn_charbuf_reserve(c, payload_size);
+  payload->CopyData(payload_p, payload_size);
+  c->length += payload_size;
+  ccnb_element_end(c);//</Content>
+
+  ccnb_element_end(c);//</ContentObject>
+
+  Ptr<Buffer> buf = Buffer::Adopt(&c);
   Ptr<ContentObjectMessage> m = ContentObjectMessage::Parse(buf->data(), buf->length());
   if (m != nullptr) { m->set_source_buffer(buf); }
   return m;

@@ -7,8 +7,8 @@ uint32_t WTHZ_value(void);
 int match_interests(struct ccnd_handle* h, struct content_entry* content, struct ccn_parsed_ContentObject* pc, struct face* face, struct face* from_face);
 }
 
-#include "strategy/original.h"
-#define STRATEGY_TYPE OriginalStrategy
+#include "strategy/asl.h"
+#define STRATEGY_TYPE AslStrategy
 
 namespace ndnfd {
 

@@ -1,7 +1,6 @@
 def build(bld):
     simple = bld.create_ns3_program('ndnfd-simple', ['NDNFD'])
     simple.source = 'ndnfd-simple.cc'
-    return
 
     sl_migration = bld.create_ns3_program('ndnfd-selflearn-migration', ['NDNFD'])
     sl_migration.source = 'ndnfd-selflearn-migration.cc'
