@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   uint32_t n_consumers = 1;
   uint32_t maxseq = 4096;
   uint32_t sim_time = 10;
-  std::string frequency_str;
+  std::string frequency_str("15.0");
   ns3::CommandLine cmd;
   cmd.AddValue("n_producers", "number of producers", n_producers);
   cmd.AddValue("n_consumers", "number of consumers", n_consumers);

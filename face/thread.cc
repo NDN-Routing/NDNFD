@@ -25,7 +25,10 @@ void FaceThread::Init(void) {
 }
 
 FaceThread::~FaceThread(void) {
-  this->Stop();
+  //this->Stop();
+  // http://www.artima.com/cppsource/nevercall.html don't call virtual in dtor
+  // Stop has to be called manually
+
   if (this->notify_fds_[0] != -1) {
     close(this->notify_fds_[0]);
     close(this->notify_fds_[1]);
