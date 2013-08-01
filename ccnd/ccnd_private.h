@@ -370,7 +370,7 @@ class InterestMessage;
 };//namespace ndnfd
 inline ndnfd::InterestMessage* ie_ndnfdInterest(const interest_entry* ie) { return reinterpret_cast<ndnfd::InterestMessage*>(ie->ndnfd_interest); }
 #endif
-void ndnfd_finalize_interest(struct interest_entry* ie);
+void ndnfd_finalize_interest(struct ccnd_handle* h, struct interest_entry* ie);
 struct ccn_parsed_interest;
 const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie);
 #endif

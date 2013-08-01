@@ -1152,7 +1152,7 @@ finalize_interest(struct hashtb_enumerator *e)
     ie->pfl = NULL;
     ie->interest_msg = NULL; /* part of hashtb, don't free this */
 #ifdef NDNFD
-    ndnfd_finalize_interest(ie);
+    ndnfd_finalize_interest(h, ie);
 #endif
 }
 

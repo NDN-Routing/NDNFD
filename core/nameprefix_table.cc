@@ -25,8 +25,9 @@ int wt_compare(ccn_wrappedtime a, ccn_wrappedtime b);
 #include "strategy/layer.h"
 extern "C" {
 
-void ndnfd_finalize_interest(struct interest_entry* ie) {
-  ndnfd::PitEntry::Finalize(ie);
+void ndnfd_finalize_interest(struct ccnd_handle* h, struct interest_entry* ie) {
+  ndnfd::Global* global = ccnd_ndnfdGlobal(h);
+  ndnfd::PitEntry::Finalize(global, ie);
 }
 
 const struct ccn_parsed_interest* ndnfd_ie_pi(const struct interest_entry* ie) {
@@ -265,12 +266,18 @@ PitEntry::PitEntry(interest_entry* native) : native_(native) {
   assert(ie_ndnfdInterest(native) != nullptr);
 }
 
-void PitEntry::Finalize(interest_entry* native) {
-  ndnfd::InterestMessage* interest = ie_ndnfdInterest(native);
+void PitEntry::Finalize(Global* the_global, interest_entry* native) {
+  InterestMessage* interest = ie_ndnfdInterest(native);
   interest->Unref();
   
   RttTable* rt = static_cast<RttTable*>(native->ndnfd_rtt_records);
   if (rt != nullptr) {
+    for (auto pair : *rt) {
+      RttRecord& rr = pair.second;
+      for (SchedulerEvent evt : rr.timeout_evts_) {
+        the_global->scheduler()->Cancel(evt);
+      }
+    }
     delete rt;
   }  
 }

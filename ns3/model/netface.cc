@@ -3,7 +3,7 @@
 #include <ns3/node.h>
 #include <ns3/packet.h>
 #include <ns3/mac48-address.h>
-#include "face/ndnlp.h"
+#include "message/ccnb.h"
 #include "l3protocol.h"
 #include "ndnfdsim.h"
 namespace ndnfd {
@@ -83,12 +83,14 @@ std::vector<ns3::Ptr<ns3::NetDevice>> SimFaceFactory::ListNICs(void) {
 }
 
 Ptr<DgramChannel> SimFaceFactory::Channel(ns3::Ptr<ns3::NetDevice> dev, uint16_t ether_type) {
-  int mtu = static_cast<int>(dev->GetMtu());
-  if (mtu < 256) return nullptr;
+  //int mtu = static_cast<int>(dev->GetMtu());
+  //if (mtu < 256) return nullptr;
+  dev->SetMtu(32767);
 
-  Ptr<NdnlpWireProtocol> ndnlp = this->New<NdnlpWireProtocol>(mtu);
-
-  Ptr<SimNetChannel> channel = this->New<SimNetChannel>(dev, ether_type, this->av_, ndnlp);
+  //Ptr<WireProtocol> wp = this->New<NdnlpWireProtocol>(mtu);
+  Ptr<WireProtocol> wp = this->New<CcnbWireProtocol>(CcnbWireProtocol::Mode::kDgramIgnoreTail);
+  
+  Ptr<SimNetChannel> channel = this->New<SimNetChannel>(dev, ether_type, this->av_, wp);
   return channel;
 }
 

@@ -35,13 +35,19 @@ bool CcnbMessage::Verify(void) const {
   return CCN_FINAL_DSTATE(d.state) && dres == static_cast<ssize_t>(this->length());
 }
 
+CcnbWireProtocol::CcnbWireProtocol(Mode mode) {
+  this->mode_ = mode;
+}
+
 CcnbWireProtocol::CcnbWireProtocol(bool stream_mode) {
-  this->stream_mode_ = stream_mode;
+  this->mode_ = stream_mode ? Mode::kStream : Mode::kDgram;
 }
 
 std::string CcnbWireProtocol::GetDescription(void) const {
-  if (this->stream_mode_) return "CCNB(stream)";
-  else return "CCNB(dgram)";
+  if (this->mode_ == Mode::kStream) return "CCNB(stream)";
+  else if (this->mode_ == Mode::kDgram) return "CCNB(dgram)";
+  else if (this->mode_ == Mode::kDgramIgnoreTail) return "CCNB(dgram_ignore_tail)";
+  else return "CCNB(unknown)";
 }
 
 CcnbWireProtocol::State::State(void) {
@@ -86,7 +92,7 @@ std::tuple<bool,std::list<Ptr<Buffer>>> CcnbWireProtocol::Encode(const NetworkAd
 std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const {
   bool ok = true;
   State* s;
-  if (this->stream_mode_) {
+  if (this->IsStateful()) {
     assert(state != nullptr);
     s = static_cast<State*>(PeekPointer(state));
   } else {
@@ -118,7 +124,7 @@ std::tuple<bool,std::list<Ptr<Message>>> CcnbWireProtocol::Decode(const NetworkA
     }
     ccn_skeleton_decode(d, packet->data() + s->msgstart_, packet->length() - s->msgstart_);
   }
-  if (d->state < 0) {
+  if (d->state < 0 && this->mode_ != Mode::kDgramIgnoreTail) {
     ok = false;
   }
   return std::forward_as_tuple(ok, results);

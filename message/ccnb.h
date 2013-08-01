@@ -43,6 +43,12 @@ class CcnbMessage : public Message {
 // CcnbWireProtocol provides CCNB encoding/decoding on a datagram or stream connection.
 class CcnbWireProtocol : public WireProtocol {
  public:
+  enum class Mode {
+    kStream,         // stateful stream mode, unconsumed octets are prepended to next packet
+    kDgram,          // stateless datagram mode, every packet must be fully consumed as one or more messages
+    kDgramIgnoreTail // stateless datagram mode, every packet must be consumed as one or more messages, unrecognized octets at the tail are ignored
+  };
+  
   // A State remembers the skeleton decoder state of partial message.
   // This is only used in stream mode.
   struct State : public WireProtocolState {
@@ -53,17 +59,18 @@ class CcnbWireProtocol : public WireProtocol {
     ccn_skeleton_decoder d_;//skeleton decoder state
   };
   
+  explicit CcnbWireProtocol(Mode mode);
   explicit CcnbWireProtocol(bool stream_mode);
   virtual std::string GetDescription(void) const;
   
-  virtual bool IsStateful(void) const { return this->stream_mode_; }
+  virtual bool IsStateful(void) const { return this->mode_ == Mode::kStream; }
   virtual Ptr<WireProtocolState> CreateState(const NetworkAddress& peer) const { return new State(); }
   
   virtual std::tuple<bool,std::list<Ptr<Buffer>>> Encode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<const Message> message) const;
   virtual std::tuple<bool,std::list<Ptr<Message>>> Decode(const NetworkAddress& peer, Ptr<WireProtocolState> state, Ptr<BufferView> packet) const;
 
  private:
-  bool stream_mode_;
+  Mode mode_;
   State state_;//a State for use in dgram mode
   DISALLOW_COPY_AND_ASSIGN(CcnbWireProtocol);
 };
