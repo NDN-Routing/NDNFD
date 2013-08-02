@@ -3,7 +3,7 @@
 frequency=2
 sim_time=20
 
-grep 'FullDelay' ndnfd-selflearn-fattree_delay.tsv > ndnfd-selflearn-fattree_delay_FullDelay.tsv
+grep 'FullDelay' ndnfd-fattree_delay.tsv > ndnfd-fattree_delay_FullDelay.tsv
 awk '
   {
     frequency = '$frequency'
@@ -17,7 +17,7 @@ awk '
       print t, int(lost[t])
     }
   }
-' ndnfd-selflearn-fattree_delay_FullDelay.tsv > ndnfd-selflearn-fattree_lost.tsv
+' ndnfd-fattree_delay_FullDelay.tsv > ndnfd-fattree_lost.tsv
 
 awk '
   $0 ~ "SelfLearnStrategy::StartFlood" {
@@ -28,7 +28,7 @@ awk '
       print t, int(flood[t])
     }
   }
-' ndnfd-selflearn-fattree.out > ndnfd-selflearn-fattree_flood.tsv
+' ndnfd-fattree.out > ndnfd-fattree_flood.tsv
 
 awk '
   function distance(x,y) {
@@ -57,7 +57,7 @@ awk '
       print consumer, producer, seq, dist, satisfy[seqnum]
     }
   }
-' ndnfd-selflearn-fattree.out > ndnfd-selflearn-fattree_pathlen.tsv
+' ndnfd-fattree.out > ndnfd-fattree_pathlen.tsv
 awk '
   {
     infla = $5-1-$4
@@ -70,24 +70,24 @@ awk '
   }
   END {
     for (seq_infla in c) {
-      print seq_infla, c[seq_infla] > "ndnfd-selflearn-fattree_path-infla.tsv"
+      print seq_infla, c[seq_infla] > "ndnfd-fattree_path-infla.tsv"
     }
     for (seq in n) {
-      print seq, a[seq] / n[seq] > "ndnfd-selflearn-fattree_path-infla-avg.tsv"
+      print seq, a[seq] / n[seq] > "ndnfd-fattree_path-infla-avg.tsv"
     }
     for (seq in n) {
-      print seq, int(b[seq]) / n[seq] > "ndnfd-selflearn-fattree_path-infla-zero.tsv"
+      print seq, int(b[seq]) / n[seq] > "ndnfd-fattree_path-infla-zero.tsv"
     }
   }
-' ndnfd-selflearn-fattree_pathlen.tsv
+' ndnfd-fattree_pathlen.tsv
 
-sort -n -k1,2 ndnfd-selflearn-fattree_path-infla.tsv -o ndnfd-selflearn-fattree_path-infla.tsv
-sort -n -k1 ndnfd-selflearn-fattree_path-infla-avg.tsv -o ndnfd-selflearn-fattree_path-infla-avg.tsv
-sort -n -k1 ndnfd-selflearn-fattree_path-infla-zero.tsv -o ndnfd-selflearn-fattree_path-infla-zero.tsv
+sort -n -k1,2 ndnfd-fattree_path-infla.tsv -o ndnfd-fattree_path-infla.tsv
+sort -n -k1 ndnfd-fattree_path-infla-avg.tsv -o ndnfd-fattree_path-infla-avg.tsv
+sort -n -k1 ndnfd-fattree_path-infla-zero.tsv -o ndnfd-fattree_path-infla-zero.tsv
 
 gnuplot -e '
 set term pdf;
-set out "ndnfd-selflearn-fattree_plot.pdf";
+set out "ndnfd-fattree_plot.pdf";
 
 set xlabel "time(s)";
 set xrange [0:'$sim_time'];
@@ -103,15 +103,15 @@ set border 11;
 set ylabel "delay(ms)";
 set y2tics border nomirror in;
 set y2label "loss/s";
-plot "ndnfd-selflearn-fattree_delay_FullDelay.tsv" using ($1-$6-16):($7/1000) with dots lc 3 title "delay",
-     "ndnfd-selflearn-fattree_lost.tsv" using 1:2 axes x1y2 with lines lc 1 title "loss";
+plot "ndnfd-fattree_delay_FullDelay.tsv" using ($1-$6-16):($7/1000) with dots lc 3 title "delay",
+     "ndnfd-fattree_lost.tsv" using 1:2 axes x1y2 with lines lc 1 title "loss";
 
 set title "Interest send and flood";
 set ylabel "Interest/s";
 set y2tics border nomirror in;
 set y2label "flood/s";
-plot "ndnfd-selflearn-fattree_l3.tsv" using ($1-16):($2+$4) with lines lc 1 title "send",
-     "ndnfd-selflearn-fattree_flood.tsv" using 1:2 axes x1y2 with lines lc 3 title "flood";
+plot "ndnfd-fattree_l3.tsv" using ($1-16):($2+$4) with lines lc 1 title "send",
+     "ndnfd-fattree_flood.tsv" using 1:2 axes x1y2 with lines lc 3 title "flood";
 
 set title "path inflation";
 set ylabel "extra path length (hop)";
@@ -120,7 +120,7 @@ set y2label "shortest path usage (%)";
 set y2range [0:100];
 set key right center Left reverse samplen 0;
 set style fill transparent solid 1 noborder;
-plot "ndnfd-selflearn-fattree_path-infla.tsv" using ($1/'$frequency'):2:(log10($3)/12) with circles lc 1 title "path inflation",
-     "ndnfd-selflearn-fattree_path-infla-zero.tsv" using ($1/'$frequency'):($2*100) axes x1y2 with lines lc 3 title "using shortest path";
+plot "ndnfd-fattree_path-infla.tsv" using ($1/'$frequency'):2:(log10($3)/12) with circles lc 1 title "path inflation",
+     "ndnfd-fattree_path-infla-zero.tsv" using ($1/'$frequency'):($2*100) axes x1y2 with lines lc 3 title "using shortest path";
 
 '

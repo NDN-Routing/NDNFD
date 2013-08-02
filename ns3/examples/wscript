@@ -2,18 +2,18 @@ def build(bld):
     simple = bld.create_ns3_program('ndnfd-simple', ['NDNFD'])
     simple.source = 'ndnfd-simple.cc'
 
-    sl_migration = bld.create_ns3_program('ndnfd-selflearn-migration', ['NDNFD'])
-    sl_migration.source = 'ndnfd-selflearn-migration.cc'
+    migration = bld.create_ns3_program('ndnfd-migration', ['NDNFD'])
+    migration.source = 'ndnfd-migration.cc'
 
-    sl_multipath = bld.create_ns3_program('ndnfd-selflearn-multipath', ['NDNFD'])
-    sl_multipath.source = 'ndnfd-selflearn-multipath.cc'
+    multipath = bld.create_ns3_program('ndnfd-multipath', ['NDNFD'])
+    multipath.source = 'ndnfd-multipath.cc'
 
-    sl_fattree = bld.create_ns3_program('ndnfd-selflearn-fattree', ['NDNFD'])
-    sl_fattree.source = 'ndnfd-selflearn-fattree.cc'
+    fattree = bld.create_ns3_program('ndnfd-fattree', ['NDNFD'])
+    fattree.source = 'ndnfd-fattree.cc'
 
-    sl_producer_throttled = bld.create_ns3_program('ndnfd-producer-throttled', ['NDNFD'])
-    sl_producer_throttled.source = 'ndnfd-producer-throttled.cc'
+    producer_throttled = bld.create_ns3_program('ndnfd-producer-throttled', ['NDNFD'])
+    producer_throttled.source = 'ndnfd-producer-throttled.cc'
 
-    sl_loadbal_csma = bld.create_ns3_program('ndnfd-loadbal-csma', ['NDNFD'])
-    sl_loadbal_csma.source = 'ndnfd-loadbal-csma.cc'
+    loadbal_csma = bld.create_ns3_program('ndnfd-loadbal-csma', ['NDNFD'])
+    loadbal_csma.source = 'ndnfd-loadbal-csma.cc'
 

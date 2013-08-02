@@ -68,8 +68,8 @@ int main(int argc, char *argv[]) {
   ns3::ApplicationContainer producerH2 = producerHelper.Install(ns3::Names::Find<ns3::Node>("H"));
   producerH2.Start(ns3::Seconds(90.0)); producerH2.Stop(ns3::Seconds(110.0));
   
-  auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-selflearn-migration_delay.tsv");
-  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-migration_l3.tsv");
+  auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-migration_delay.tsv");
+  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-migration_l3.tsv");
   l3_tracer->ConnectAll();
 
   ns3::Simulator::Stop(ns3::Seconds(122.0));

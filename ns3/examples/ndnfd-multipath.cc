@@ -64,12 +64,12 @@ int main(int argc, char *argv[]) {
   ns3::ApplicationContainer producerF = producerHelper.Install(ns3::Names::Find<ns3::Node>("F"));
   producerF.Start(ns3::Seconds(0.0)); producerF.Stop(ns3::Seconds(90.0)); 
   
-  auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-selflearn-multipath_delay.tsv");
-  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-multipath_l3.tsv");
+  auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-multipath_delay.tsv");
+  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-multipath_l3.tsv");
   l3_tracer->ConnectAll();
-  ns3::Ptr<ndnfd::Tracer> l3_tracerE = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-multipath_l3_E.tsv");
+  ns3::Ptr<ndnfd::Tracer> l3_tracerE = ns3::Create<ndnfd::Tracer>("ndnfd-multipath_l3_E.tsv");
   l3_tracerE->ConnectNode(ns3::Names::Find<ns3::Node>("E"));
-  ns3::Ptr<ndnfd::Tracer> l3_tracerH = ns3::Create<ndnfd::Tracer>("ndnfd-selflearn-multipath_l3_H.tsv");
+  ns3::Ptr<ndnfd::Tracer> l3_tracerH = ns3::Create<ndnfd::Tracer>("ndnfd-multipath_l3_H.tsv");
   l3_tracerH->ConnectNode(ns3::Names::Find<ns3::Node>("H"));
 
   ns3::Simulator::Stop(ns3::Seconds(92.0));
