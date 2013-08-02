@@ -9,10 +9,10 @@ The client expresses an Interest to `/ccnx/CCNDID/list-strategy`.
 NDNFD must respond with:
 
 	<Collection>
-		<PolicyName>strategy-description</PolicyName>
+		<PolicyName>strategy-title</PolicyName>
 	</Collection>
 
-`<PolicyName>` is repeated once for each registered strategy. Its textual value is the short description for a strategy.
+`<PolicyName>` is repeated once for each registered strategy. Its textual value is the title of a strategy.
 
 An example response is:
 
@@ -30,10 +30,10 @@ The client expresses an Interest to `/ccnx/CCNDID/set-strategy/NFBLOB`. NFBLOB i
 		<Action>set-strategy</Action>
 		<Name>...</Name>
 		<PublisherPublicKeyDigest>CCNDID</PublisherPublicKeyDigest>
-		<PolicyName>strategy-description</PolicyName>
+		<PolicyName>strategy-title</PolicyName>
 	</ForwardingEntry>
 
-`<Name>` is the namespace; it contains zero or more `<Component>` elements. `<PolicyName>` is the short description for a strategy; this strategy must be registed on NDNFD. If `<PolicyName>` is empty (contains zero char), the namespace is set to inherit the strategy of its parent.
+`<Name>` is the namespace; it contains zero or more `<Component>` elements. `<PolicyName>` is the title of a strategy; this strategy must be registed on NDNFD. If `<PolicyName>` is empty (contains zero char), the namespace is set to inherit the strategy of its parent.
 
 An example request is:
 

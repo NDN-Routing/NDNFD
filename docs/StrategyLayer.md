@@ -23,7 +23,7 @@ Each strategy is implemented as a subclass of `ndnfd::Strategy`. It must have a 
 
 A strategy is allowed to maintain private state information on every name prefix entry, accessed via `npe->strategy_extra<T>()` and `npe->set_strategy_extra<T>(value)`. This feature is available if a strategy implements `NewNpeExtra`, `InheritNpeExtra`, and `FinalizeNpeExtra`. In case a new strategy is chosen for a namespace (and therefore name prefix entries), old strategy is invoked to finalize its private states, and new strategy is invoked to create private states. A strategy should not maintain states elsewhere (eg. on the strategy object).
 
-A strategy must be registered so that it can be used. `StrategyType_decl` and `StrategyType_def` macros are used for this purpose. A registered strategy has a strategy type (for internal use), and a short human-readable description. `StrategyType_list` function returns all registered strategies.
+A strategy must be registered so that it can be used. `StrategyType_decl` and `StrategyType_def` macros are used for this purpose. A registered strategy has a strategy type (for internal use), and a (short, human-readable) title. `StrategyType_list` function returns all registered strategies.
 
 
 
