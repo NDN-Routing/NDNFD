@@ -20,6 +20,7 @@ class SimNetChannel : public DgramChannel {
   virtual void ReceiveFrom(void) { assert(false); }//never called because PollMgr is not used
   
   virtual Ptr<DgramFace> CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group);
+  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg);
 
  private:
   ns3::Ptr<ns3::NetDevice> nic_;

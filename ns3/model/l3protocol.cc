@@ -1,10 +1,12 @@
 #include "l3protocol.h"
 #include <ns3/simulator.h>
+#include <ns3/ndnSIM/utils/ndn-fw-hop-count-tag.h>
 #include "face/facemgr.h"
 #include "strategy/strategy.h"
 #include "ndnfdsim.h"
 #include "mock_fw.h"
 #include "mock_fib.h"
+#include "../helper/hop_count.h"
 namespace ndnfd {
 
 ns3::TypeId L3Protocol::GetTypeId(void) {
@@ -121,6 +123,7 @@ void L3Protocol::AppReceiveContentObject(ns3::Ptr<ns3::ndn::Face> face, ns3::Ptr
     this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppReceiveContentObject(%" PRIu32 ") cannot convert packet", this->nodeid(), face->GetId());
     return;
   }
+  SimHopCount::Write(msg, 0);
   msg = msg->AddExplicitDigest();
   this->AppReceiveMessage(face, PeekPointer(msg));
 }
@@ -166,6 +169,15 @@ void L3Protocol::AppSend(SimAppFace* aface, const Message* msg) {
     if (co == nullptr) {
       this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") cannot convert ContentObject", this->nodeid(), aface->id());
       return;
+    }
+    bool hop_exist; uint32_t hop_count;
+    std::tie(hop_exist, hop_count) = SimHopCount::Read(static_cast<const ContentObjectMessage*>(PeekPointer(m)));
+    if (hop_exist) {
+      ns3::ndn::FwHopCountTag hop_tag;
+      while (hop_tag.Get() < hop_count) {
+        hop_tag.Increment();
+      }
+      co->GetPayload()->AddPacketTag(hop_tag);
     }
     face->SendData(co);
   } else if (m->type() == NackMessage::kType) {

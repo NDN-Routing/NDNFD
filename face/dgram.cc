@@ -225,8 +225,12 @@ void DgramChannel::DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocol
   //this->Log(kLLDebug, kLCFace, "DgramChannel(%" PRIxPTR ",fd=%d)::DecodeAndDeliver(%s) deliver %" PRIuMAX " messages to face %" PRI_FaceId, this, this->fd(), this->av()->ToString(peer).c_str(), static_cast<uintmax_t>(msgs.size()), face->id());
   for (Ptr<Message> msg : msgs) {
     msg->set_incoming_sender(peer);
-    face->Deliver(msg);
+    this->DeliverMessage(face, msg);
   }
+}
+
+void DgramChannel::DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg) {
+  face->Deliver(msg);
 }
 
 Ptr<DgramFace> DgramChannel::GetMcastFace(const NetworkAddress& group) {

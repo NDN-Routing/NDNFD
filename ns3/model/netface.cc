@@ -6,6 +6,7 @@
 #include "message/ccnb.h"
 #include "l3protocol.h"
 #include "ndnfdsim.h"
+#include "../helper/hop_count.h"
 namespace ndnfd {
 
 NetworkAddress SimNetChannel::ConvertAddress(const ns3::Address& addr) {
@@ -50,6 +51,15 @@ Ptr<DgramFace> SimNetChannel::CreateMcastFace(const AddressHashKey& hashkey, con
   Ptr<DgramFace> face = this->New<DgramFace>(this, group);
   face->set_kind(FaceKind::kMulticast);
   return face;
+}
+
+void SimNetChannel::DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg) {
+  if (msg->type() == ContentObjectMessage::kType) {
+    // note: this would invalidate explicit digest, but ContentStore won't notice
+    SimHopCount::Increment(const_cast<ContentObjectMessage*>(static_cast<const ContentObjectMessage*>(PeekPointer(msg))));
+    this->Log(kLLDebug, kLCFace, "HOP COUNT %u", std::get<1>(SimHopCount::Read(const_cast<ContentObjectMessage*>(static_cast<const ContentObjectMessage*>(PeekPointer(msg))))));
+  }
+  this->DgramChannel::DeliverMessage(face, msg);
 }
 
 void SimNetChannel::NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const ns3::Packet> packet, uint16_t protocol, const ns3::Address& sender, const ns3::Address& receiver, ns3::NetDevice::PacketType packetType) {

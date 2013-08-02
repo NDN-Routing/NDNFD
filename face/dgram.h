@@ -182,6 +182,8 @@ class DgramChannel : public Element, public IPollClient {
   
   // DecodeAndDeliver decodes pkt, and delivers any result messages to face.
   virtual void DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face);
+  // DeliverMessage delivers a message to face.
+  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg);
   
  private:
   static constexpr std::chrono::microseconds kReapInterval = std::chrono::microseconds(20000000);
