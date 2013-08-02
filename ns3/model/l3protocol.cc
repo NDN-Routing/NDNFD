@@ -143,29 +143,40 @@ void L3Protocol::AppSend(SimAppFace* aface, const Message* msg) {
     return;
   }
   
-  if (msg->type() == InterestMessage::kType) {
-    ns3::Ptr<ns3::ndn::Interest> interest = this->global()->npc()->InterestTo(static_cast<const InterestMessage*>(msg));
+  Ptr<const Message> m = msg;
+  if (m->type() == CcnbMessage::kType) {
+    // CcndFaceInterface::Send will produce the untyped CcnbMessage, but we need a specific type here
+    const CcnbMessage* ccnb_msg = static_cast<const CcnbMessage*>(msg);
+    m = CcnbMessage::Parse(ccnb_msg->msg(), ccnb_msg->length());
+    if (m == nullptr) {
+      this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") cannot re-parse CcnbMessage", this->nodeid(), aface->id());
+      return;
+    }
+  }
+  
+  if (m->type() == InterestMessage::kType) {
+    ns3::Ptr<ns3::ndn::Interest> interest = this->global()->npc()->InterestTo(static_cast<const InterestMessage*>(PeekPointer(m)));
     if (interest == nullptr) {
       this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") cannot convert Interest", this->nodeid(), aface->id());
       return;
     }
     face->SendInterest(interest);
-  } else if (msg->type() == ContentObjectMessage::kType) {
-    ns3::Ptr<ns3::ndn::ContentObject> co = this->global()->npc()->ContentObjectTo(static_cast<const ContentObjectMessage*>(msg));
+  } else if (m->type() == ContentObjectMessage::kType) {
+    ns3::Ptr<ns3::ndn::ContentObject> co = this->global()->npc()->ContentObjectTo(static_cast<const ContentObjectMessage*>(PeekPointer(m)));
     if (co == nullptr) {
       this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") cannot convert ContentObject", this->nodeid(), aface->id());
       return;
     }
     face->SendData(co);
-  } else if (msg->type() == NackMessage::kType) {
-    ns3::Ptr<ns3::ndn::Interest> nack = this->global()->npc()->NackTo(static_cast<const NackMessage*>(msg));
+  } else if (m->type() == NackMessage::kType) {
+    ns3::Ptr<ns3::ndn::Interest> nack = this->global()->npc()->NackTo(static_cast<const NackMessage*>(PeekPointer(m)));
     if (nack == nullptr) {
       this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") cannot convert Nack", this->nodeid(), aface->id());
       return;
     }
     face->SendInterest(nack);
   } else {
-    this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") MessageType %d unknown", this->nodeid(), aface->id(), static_cast<int>(msg->type()));
+    this->global()->logging()->Log(kLLWarn, kLCSim, "L3Protocol(%" PRIu32 ")::AppSend(%" PRI_FaceId ") MessageType %d unknown", this->nodeid(), aface->id(), static_cast<int>(m->type()));
   }
 }
 

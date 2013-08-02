@@ -80,7 +80,9 @@ void CcndFaceInterface::Send(FaceId faceid, const uint8_t* data1, size_t size1, 
   Ptr<Buffer> buf = new Buffer(size1, 0, size2);
   memcpy(buf->mutable_data(), data1, size1);
   if (size2 > 0) memcpy(buf->Put(size2), data2, size2);
-  Ptr<CcnbMessage> msg = CcnbMessage::Parse(buf->data(), buf->length());
+  // do not use CcnbMessage::Parse here because it's slow
+  // ccnd is trusted for producing correct format
+  Ptr<CcnbMessage> msg = new CcnbMessage(buf->data(), buf->length());
   assert(msg != nullptr);
   msg->set_source_buffer(buf);
   out_face->face_thread()->Send(out_face->id(), msg);
