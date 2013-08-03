@@ -21,6 +21,9 @@ TEST(MessageTest, CcnbMessage) {
 }
 
 TEST(MessageTest, CcnbMessageParse) {
+  MessageType mt1 = CcnbMessage::DetectType(reinterpret_cast<const uint8_t*>("\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00"), 9);
+  EXPECT_EQ(InterestMessage::kType, mt1);
+
   Ptr<CcnbMessage> m1 = CcnbMessage::Parse(reinterpret_cast<const uint8_t*>("\x01\xD2\xF2\xFA\x8Dz\x00\x00\x00"), 9);
   EXPECT_NE(nullptr, m1);
   EXPECT_EQ(InterestMessage::kType, m1->type());

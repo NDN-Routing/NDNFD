@@ -5,25 +5,20 @@
 namespace ndnfd {
 
 Ptr<CcnbMessage> CcnbMessage::Parse(const uint8_t* msg, size_t length) {
-  ccn_skeleton_decoder decoder = {0};
-  ccn_skeleton_decoder* d = &decoder;
-  d->state |= CCN_DSTATE_PAUSE;
-  ccn_skeleton_decode(d, msg, length);
-  if (d->state < 0) return nullptr;
-  if (CCN_GET_TT_FROM_DSTATE(d->state) != CCN_DTAG) return nullptr;
-  ccn_dtag dtag = static_cast<ccn_dtag>(d->numval);
-  switch (dtag) {
-    case CCN_DTAG_Interest:
-      return InterestMessage::Parse(msg, length);
-    case CCN_DTAG_ContentObject:
-      return ContentObjectMessage::Parse(msg, length);
-    case CCN_DTAG_StatusResponse:
-      return NackMessage::Parse(msg, length);
-    default:
-      return nullptr;
-    // CCN_DTAG_CCNProtocolDataUnit is not supported, so that NDNFD cannot work with link adaptors.
-    // CCN_DTAG_SequenceNumber is not supported, but the other end will detect this and stop sending seqnum.
-  }
+  MessageType t = CcnbMessage::DetectType(msg, length);
+  if (t == InterestMessage::kType) return InterestMessage::Parse(msg, length);
+  if (t == ContentObjectMessage::kType) return ContentObjectMessage::Parse(msg, length);
+  if (t == NackMessage::kType) return NackMessage::Parse(msg, length);
+  // CCN_DTAG_CCNProtocolDataUnit is not recognized, so that NDNFD cannot work with link adaptors.
+  // CCN_DTAG_SequenceNumber is not recognized, but the other end will detect this and stop sending seqnum.
+  return nullptr;
+}
+
+MessageType CcnbMessage::DetectType(const uint8_t* msg, size_t length) {
+  if (length > 2 && msg[0] == 0x01 && msg[1] == 0xD2) return InterestMessage::kType;
+  if (length > 2 && msg[0] == 0x04 && msg[1] == 0x82) return ContentObjectMessage::kType;
+  if (length > 2 && msg[0] == 0x07 && msg[1] == 0x82) return NackMessage::kType;
+  return MessageType_none;
 }
 
 MessageType_def(CcnbMessage);

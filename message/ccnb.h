@@ -19,6 +19,9 @@ class CcnbMessage : public Message {
   // Parse parses a CCNB message into a specific subtype,
   // or returns null.
   static Ptr<CcnbMessage> Parse(const uint8_t* msg, size_t length);
+  // DetectType reads the first few octets of a CCNB message,
+  // and returns the most probable MessageType: Interest, ContentObject, or Nack.
+  static MessageType DetectType(const uint8_t* msg, size_t length);
   
   // CCNB message
   const uint8_t* msg(void) const { return this->msg_; }
