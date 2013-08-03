@@ -7,9 +7,9 @@ class Strategy;
 
 // StrategyType indicates the type of a forwarding strategy.
 typedef uint8_t StrategyType;
-static const StrategyType StrategyType_none = 0;
+const StrategyType StrategyType_none = 0;
 // StrategyType_inherit indicates this NPE should inherit its parent's strategy type.
-static const StrategyType StrategyType_inherit = 0;
+const StrategyType StrategyType_inherit = 0;
 // PRI_Strategy is a printf format string for Strategy.
 #define PRI_StrategyType PRIu8
 

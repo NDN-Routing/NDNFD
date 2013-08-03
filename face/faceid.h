@@ -12,7 +12,7 @@ typedef int32_t FaceId;
 #define PRI_FaceId PRId32
 
 // FaceId_none indicates no FaceId is assigned.
-static const FaceId FaceId_none = -1;
+const FaceId FaceId_none = -1;
 
 
 // A NetworkAddress represents the address in any lower protocol.
