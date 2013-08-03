@@ -252,10 +252,11 @@ void SelfLearnStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const Co
 void SelfLearnStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
   this->Log(kLLDebug, kLCStrategy, "SelfLearnStrategy::DidnotArriveOnFace(%" PRI_PitEntrySerial ",%" PRI_FaceId ")", ie->serial(), face);
 
-  for (Ptr<NamePrefixEntry> npe = ie->npe(); npe != nullptr; npe = npe->Parent()) {
+  for (Ptr<NamePrefixEntry> npe = ie->npe(), npe_last = npe->StrategyNode(); npe != nullptr; npe = npe->Parent()) {
     NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
     PredictRecord& pr = extra->predicts_[face];
     pr.rtt_.IncreaseMultiplier();
+    if (npe == npe_last) break;
   }
 }
 

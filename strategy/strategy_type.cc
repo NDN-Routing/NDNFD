@@ -25,3 +25,5 @@ StrategyType StrategyType_Find(const std::string& title) {
 }
 
 };//namespace ndnfd
+#define WANT_STRATEGY_TYPE_LIST
+#include "strategy_type_list.h"

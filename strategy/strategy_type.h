@@ -19,11 +19,12 @@ typedef std::function<Ptr<Strategy>(Ptr<Element>)> StrategyCtor;
 
 StrategyType StrategyType_Register(std::string title, StrategyCtor ctor);
 #define StrategyType_decl(cls) \
-  static const StrategyType kType; \
+  static StrategyType kType; \
   static Ptr<Strategy> CreateStrategyObj(Ptr<Element> ele) { return ele->New<cls>(); } \
   virtual StrategyType strategy_type(void) const { return cls::kType; }
 #define StrategyType_def(cls,title) \
-  const StrategyType cls::kType = StrategyType_Register( #title , &cls::CreateStrategyObj);
+  StrategyType cls::kType = StrategyType_Register( #title , &cls::CreateStrategyObj);
+  //static struct cls##_reg { cls##_reg(void) { StrategyType t = cls::kType; t = t; } } cls##_regv;
 
 // StrategyType_list returns a global, static list of forwarding strategies.
 const std::map<StrategyType,std::tuple<std::string,StrategyCtor>>& StrategyType_list(void);

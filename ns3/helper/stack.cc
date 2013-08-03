@@ -22,14 +22,23 @@ void StackHelper::Install(ns3::Ptr<ns3::Node> node) const {
   ns3::Ptr<L3Protocol> l3 = ns3::CreateObject<L3Protocol>();
   l3->Init(node);
   
+  Ptr<NamePrefixTable> npt = l3->global()->npt();
+  
   if (this->set_default_routes_) {
-    Ptr<NamePrefixEntry> npe = l3->global()->npt()->Seek(Name::FromUri("/"));
+    Ptr<NamePrefixEntry> npe = npt->Seek(Name::FromUri("/"));
     for (auto tuple : l3->global()->facemgr()->ether_channels()) {
       Ptr<Face> face = std::get<2>(tuple);
       Ptr<ForwardingEntry> f = npe->SeekForwarding(face->id());
       f->native()->flags |= CCN_FORW_LAST;
       f->MakePermanent();
     }
+  }
+  
+  for (auto pair : this->strategy_by_namespace_) {
+    Ptr<NamePrefixEntry> npe = npt->Seek(Name::FromUri(pair.first));
+    StrategyType strategy_type = StrategyType_Find(pair.second);
+    NS_ASSERT_MSG(strategy_type != StrategyType_none, "strategy not known");
+    npe->set_strategy_type(strategy_type);
   }
 }
 
