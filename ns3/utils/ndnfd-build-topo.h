@@ -29,7 +29,7 @@ p2p 1Mbps 10ms r3 r4
 ip-stack global-route
 
 # ndnfd-stack option1 ..
-ndnfd-stack default-route
+ndnfd-stack default-route strategy[/ndn/broadcast]=bcast strategy=original
 
 */
 

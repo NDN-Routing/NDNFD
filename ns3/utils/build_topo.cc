@@ -70,12 +70,20 @@ std::tuple<ns3::NodeContainer,std::vector<ns3::NetDeviceContainer>> SimBuildTopo
         ns3::Ipv4GlobalRoutingHelper::PopulateRoutingTables();
       }
     } else if (tokens[0] == "ndnfd-stack") {
-      bool default_route = false;
-      for (auto it = tokens.cbegin()+1; it != tokens.end(); ++it) {
-        if (*it == "default-route") default_route = true;
-      }
       ndnfd::StackHelper ndnfdstack;
-      ndnfdstack.SetDefaultRoutes(default_route);
+      for (auto it = tokens.cbegin()+1; it != tokens.end(); ++it) {
+        const std::string& token = *it;
+        if (token == "default-route") {
+          ndnfdstack.SetDefaultRoutes(true);
+        } else if (token.substr(0, 9) == "strategy[") {
+          size_t pos = token.rfind("]=");
+          if (pos != std::string::npos) {
+            ndnfdstack.SetStrategy(token.substr(9, pos-9), token.substr(pos+2));
+          }
+        } else if (token.substr(0, 9) == "strategy=") {
+          ndnfdstack.SetStrategy("/", token.substr(9));
+        }
+      }
       ndnfdstack.Install(nodes);
     } else {
       assert(false);

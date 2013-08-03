@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     csma 10Mbps 1ms D E
     csma 10Mbps 1ms F G
     csma 10Mbps 1ms E G
-    ndnfd-stack #default-route
+    ndnfd-stack strategy=adaptive_selflearn #default-route
   )EOT");
 
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
