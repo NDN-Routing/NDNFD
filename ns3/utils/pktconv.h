@@ -22,10 +22,10 @@ class NdnsimPacketConverter : public Object {
   Ptr<NackMessage> NackFrom(ns3::Ptr<const ns3::ndn::Interest> nack) const;
 
   ns3::Ptr<ns3::ndn::Name> NameTo(Ptr<const Name> name) const;
-  ns3::Ptr<ns3::ndn::Interest> InterestTo(Ptr<const InterestMessage> msg) const;
-  ns3::Ptr<ns3::ndn::ContentObject> ContentObjectTo(Ptr<const ContentObjectMessage> msg) const;
+  ns3::Ptr<ns3::ndn::Interest> InterestTo(Ptr<const InterestMessage> message) const;
+  ns3::Ptr<ns3::ndn::ContentObject> ContentObjectTo(Ptr<const ContentObjectMessage> message) const;
   uint8_t NackCodeTo(NackCode code) const;
-  ns3::Ptr<ns3::ndn::Interest> NackTo(Ptr<const NackMessage> msg) const;
+  ns3::Ptr<ns3::ndn::Interest> NackTo(Ptr<const NackMessage> message) const;
   
  private:
   uint64_t s_;

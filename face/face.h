@@ -111,8 +111,8 @@ class Face : public Element {
   // It's called by Finalize, and is guaranteed to be called only once.
   virtual void DoFinalize(void) {}
   
-  // ReceiveMessage sets msg->incoming_face, then push to Receive port.
-  void ReceiveMessage(Ptr<Message> msg);
+  // ReceiveMessage sets message->incoming_face, then push to Receive port.
+  void ReceiveMessage(Ptr<Message> message);
   
  private:
   FaceId id_;

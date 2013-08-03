@@ -119,13 +119,13 @@ ns3::Ptr<ns3::ndn::Name> NdnsimPacketConverter::NameTo(Ptr<const Name> name) con
   return n;
 }
 
-ns3::Ptr<ns3::ndn::Interest> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessage> msg) const {
-  ns3::Ptr<ns3::Packet> pkt = ns3::Create<ns3::Packet>(msg->msg(), msg->length());
+ns3::Ptr<ns3::ndn::Interest> NdnsimPacketConverter::InterestTo(Ptr<const InterestMessage> message) const {
+  ns3::Ptr<ns3::Packet> pkt = ns3::Create<ns3::Packet>(message->msg(), message->length());
   return Wire::ToInterest(pkt, Wire::WIRE_FORMAT_CCNB);
 }
 
-ns3::Ptr<ns3::ndn::ContentObject> NdnsimPacketConverter::ContentObjectTo(Ptr<const ContentObjectMessage> msg) const {
-  ns3::Ptr<ns3::Packet> pkt = ns3::Create<ns3::Packet>(msg->msg(), msg->length());
+ns3::Ptr<ns3::ndn::ContentObject> NdnsimPacketConverter::ContentObjectTo(Ptr<const ContentObjectMessage> message) const {
+  ns3::Ptr<ns3::Packet> pkt = ns3::Create<ns3::Packet>(message->msg(), message->length());
   return Wire::ToData(pkt, Wire::WIRE_FORMAT_CCNB);
 }
 
@@ -138,10 +138,10 @@ uint8_t NdnsimPacketConverter::NackCodeTo(NackCode code) const {
   return ns3::ndn::Interest::NORMAL_INTEREST;
 }
 
-ns3::Ptr<ns3::ndn::Interest> NdnsimPacketConverter::NackTo(Ptr<const NackMessage> msg) const {
-  ns3::Ptr<ns3::ndn::Interest> interest = this->InterestTo(msg->interest());
+ns3::Ptr<ns3::ndn::Interest> NdnsimPacketConverter::NackTo(Ptr<const NackMessage> message) const {
+  ns3::Ptr<ns3::ndn::Interest> interest = this->InterestTo(message->interest());
   if (interest == nullptr) return nullptr;
-  interest->SetNack(this->NackCodeTo(msg->code()));
+  interest->SetNack(this->NackCodeTo(message->code()));
   return interest;
 }
 

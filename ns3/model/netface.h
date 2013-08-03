@@ -14,13 +14,15 @@ class SimNetChannel : public DgramChannel {
   static NetworkAddress ConvertAddress(const ns3::Address& addr);
   static ns3::Address ConvertAddress(const NetworkAddress& addr);
 
+  virtual void FaceSend(Ptr<DgramFace> face, Ptr<const Message> message);
+
  protected:
   virtual void CloseFd(void);
   virtual void SendTo(const NetworkAddress& peer, Ptr<Buffer> pkt);
   virtual void ReceiveFrom(void) { assert(false); }//never called because PollMgr is not used
   
   virtual Ptr<DgramFace> CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group);
-  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg);
+  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> message);
 
  private:
   ns3::Ptr<ns3::NetDevice> nic_;

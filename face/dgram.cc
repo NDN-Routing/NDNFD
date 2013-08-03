@@ -46,9 +46,9 @@ bool DgramFace::SendReachable(Ptr<const Face> other) const {
   return false;
 }
 
-void DgramFace::Deliver(Ptr<Message> msg) {
+void DgramFace::Deliver(Ptr<Message> message) {
   if (this->status() == FaceStatus::kUndecided) this->set_status(FaceStatus::kEstablished);
-  this->ReceiveMessage(msg);
+  this->ReceiveMessage(message);
 }
 
 void DgramFace::DoFinalize(void) {
@@ -229,8 +229,8 @@ void DgramChannel::DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocol
   }
 }
 
-void DgramChannel::DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg) {
-  face->Deliver(msg);
+void DgramChannel::DeliverMessage(Ptr<DgramFace> face, Ptr<Message> message) {
+  face->Deliver(message);
 }
 
 Ptr<DgramFace> DgramChannel::GetMcastFace(const NetworkAddress& group) {

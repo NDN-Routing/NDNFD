@@ -150,11 +150,11 @@ void Face::set_status(FaceStatus value) {
   }
 }
 
-void Face::ReceiveMessage(Ptr<Message> msg) {
-  assert(msg != nullptr);
-  //this->Log(kLLDebug, kLCFace, "Face(%" PRI_FaceId ")::ReceiveMessage(type=%" PRIu16 ")", this->id(), msg->type());
-  msg->set_incoming_face(this->id());
-  this->Receive(msg);
+void Face::ReceiveMessage(Ptr<Message> message) {
+  assert(message != nullptr);
+  //this->Log(kLLDebug, kLCFace, "Face(%" PRI_FaceId ")::ReceiveMessage(type=%" PRIu16 ")", this->id(), message->type());
+  message->set_incoming_face(this->id());
+  this->Receive(message);
 }
 
 };//namespace ndnfd

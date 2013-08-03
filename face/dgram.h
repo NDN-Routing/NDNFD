@@ -29,7 +29,7 @@ class DgramFace : public Face {
   virtual bool SendReachable(Ptr<const Face> other) const;
   
   virtual bool CanReceive(void) const { return FaceStatus_IsUsable(this->status()); }
-  void Deliver(Ptr<Message> msg);
+  void Deliver(Ptr<Message> message);
 
  protected:
   virtual void DoFinalize(void);
@@ -183,7 +183,7 @@ class DgramChannel : public Element, public IPollClient {
   // DecodeAndDeliver decodes pkt, and delivers any result messages to face.
   virtual void DecodeAndDeliver(const NetworkAddress& peer, Ptr<WireProtocolState> wps, Ptr<BufferView> pkt, Ptr<DgramFace> face);
   // DeliverMessage delivers a message to face.
-  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> msg);
+  virtual void DeliverMessage(Ptr<DgramFace> face, Ptr<Message> message);
   
  private:
   static constexpr std::chrono::microseconds kReapInterval = std::chrono::microseconds(20000000);
