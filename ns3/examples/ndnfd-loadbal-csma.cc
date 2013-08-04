@@ -6,7 +6,9 @@
 #include <ns3/ndnSIM/utils/tracers/ndn-app-delay-tracer.h>
 
 /*
-One consumer and several producers are connected on one CsmaChannel.
+Consumers and Producers are connected on one CsmaChannel.
+Every Producer imposes a processing delay for each Interest.
+A good forwarding strategy should distribute the load among Producers.
 */
 
 int main(int argc, char *argv[]) {
@@ -15,11 +17,12 @@ int main(int argc, char *argv[]) {
   ns3::Config::SetDefault("ns3::CsmaChannel::DataRate", ns3::StringValue("1Gbps"));
   ns3::Config::SetDefault("ns3::CsmaChannel::Delay", ns3::StringValue("6560ns"));
   ns3::Config::SetDefault("ns3::ProcessingDelay::NSlots", ns3::StringValue("1"));
+  ns3::Config::SetDefault("ns3::ProcessingDelay::ProcessTime", ns3::StringValue("10ms"));
 
   uint32_t n_producers = 4;
   uint32_t n_consumers = 1;
   uint32_t maxseq = 4096;
-  uint32_t sim_time = 10;
+  uint32_t sim_time = 300;
   std::string frequency_str("15.0");
   ns3::CommandLine cmd;
   cmd.AddValue("n_producers", "number of producers", n_producers);
@@ -65,6 +68,8 @@ int main(int argc, char *argv[]) {
   producerHelper.Install(producer_nodes);
 
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-loadbal-csma_delay.tsv");
+  ns3::Ptr<ndnfd::MessageCounter> message_counter = ns3::Create<ndnfd::MessageCounter>("ndnfd-loadbal-csma_msgcount.tsv");
+  message_counter->ConnectAll();
 
   ns3::Simulator::Stop(ns3::Seconds(sim_time));
   ns3::Simulator::Run();

@@ -155,8 +155,8 @@ int main(int argc, char *argv[]) {
   producers.Start(ns3::Seconds(0.0)); producers.Stop(ns3::Seconds(20.0)); 
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-fattree_delay.tsv");
-  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-fattree_l3.tsv");
-  l3_tracer->ConnectAll();
+  ns3::Ptr<ndnfd::MessageCounter> message_counter = ns3::Create<ndnfd::MessageCounter>("ndnfd-fattree_msgcount.tsv");
+  message_counter->ConnectAll();
 
   ns3::Simulator::Stop(ns3::Seconds(22.0));
   ns3::Simulator::Run();
