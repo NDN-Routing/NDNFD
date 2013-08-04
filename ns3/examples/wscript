@@ -4,6 +4,7 @@ def build(bld):
 
     migration = bld.create_ns3_program('ndnfd-migration', ['NDNFD'])
     migration.source = 'ndnfd-migration.cc'
+    return
 
     multipath = bld.create_ns3_program('ndnfd-multipath', ['NDNFD'])
     multipath.source = 'ndnfd-multipath.cc'

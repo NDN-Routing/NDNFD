@@ -10,6 +10,7 @@ class SimGlobal;
 class SimAppFace;
 class Message;
 class NdnfdSim;
+typedef uint16_t MessageType;
 class Name;
 
 class L3Protocol : public ns3::ndn::L3Protocol {
@@ -44,13 +45,16 @@ class L3Protocol : public ns3::ndn::L3Protocol {
 
   // AppSend delivers a message to AppFace.
   void AppSend(SimAppFace* aface, const Message* msg);
+  
+  // TraceMessage invokes MessageSend or MessageRecv traced callback.
+  // This is invoked by NetFace class.
+  void TraceMessage(MessageType t, bool is_recv, bool is_mcast);
 
  private:
   SimGlobal* global_;
   std::map<uint32_t,ns3::Ptr<ns3::ndn::Face>> facelist_;
-  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_mcast_send_;
-  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_mcast_recv_;
-  ns3::TracedCallback<ns3::Ptr<L3Protocol>, const Name*> trace_unicast_send_;
+  ns3::TracedCallback<ns3::Ptr<L3Protocol>,MessageType,bool> trace_send_;
+  ns3::TracedCallback<ns3::Ptr<L3Protocol>,MessageType,bool> trace_recv_;
   
   uint32_t nodeid(void) const;
   

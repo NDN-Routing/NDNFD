@@ -69,8 +69,8 @@ int main(int argc, char *argv[]) {
   producerH2.Start(ns3::Seconds(90.0)); producerH2.Stop(ns3::Seconds(110.0));
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-migration_delay.tsv");
-  ns3::Ptr<ndnfd::Tracer> l3_tracer = ns3::Create<ndnfd::Tracer>("ndnfd-migration_l3.tsv");
-  l3_tracer->ConnectAll();
+  ns3::Ptr<ndnfd::MessageCounter> message_counter = ns3::Create<ndnfd::MessageCounter>("ndnfd-migration_msgcount.tsv");
+  message_counter->ConnectAll();
 
   ns3::Simulator::Stop(ns3::Seconds(122.0));
   ns3::Simulator::Run();

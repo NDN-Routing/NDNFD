@@ -37,7 +37,7 @@ def build(bld):
         'model/ndnfd-l3protocol.h',
         'helper/ndnfd-stack-helper.h',
         'utils/ndnfd-build-topo.h',
-        'utils/ndnfd-tracing.h',
+        'utils/ndnfd-message-counter.h',
         'extra/processing_delay.h',
         ]
 

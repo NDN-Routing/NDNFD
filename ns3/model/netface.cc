@@ -55,11 +55,12 @@ Ptr<DgramFace> SimNetChannel::CreateMcastFace(const AddressHashKey& hashkey, con
 
 void SimNetChannel::FaceSend(Ptr<DgramFace> face, Ptr<const Message> message) {
   this->DgramChannel::FaceSend(face, message);
-  // TODO trace network usage
+  Ptr<const CcnbMessage> ccnb_message = static_cast<const CcnbMessage*>(PeekPointer(message));
+  THIS_SIMGLOBAL->l3()->TraceMessage(CcnbMessage::DetectType(ccnb_message->msg(), ccnb_message->length()), false, face->kind() == FaceKind::kMulticast);
 }
 
 void SimNetChannel::DeliverMessage(Ptr<DgramFace> face, Ptr<Message> message) {
-  // TODO trace network usage
+  THIS_SIMGLOBAL->l3()->TraceMessage(message->type(), true, face->kind() == FaceKind::kMulticast && face->CanSend());
   if (message->type() == ContentObjectMessage::kType) {
     // note: this would invalidate explicit digest, but ContentStore won't notice
     SimHopCount::Increment(const_cast<ContentObjectMessage*>(static_cast<const ContentObjectMessage*>(PeekPointer(message))));
