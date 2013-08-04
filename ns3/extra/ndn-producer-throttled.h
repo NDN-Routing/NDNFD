@@ -17,6 +17,7 @@ class ProducerThrottled : public Producer {
 
  private:
   Ptr<ProcessingDelay> pd_;
+  bool nack_if_cannot_start_immediately_;
   uint32_t pending_i_;
   std::unordered_map<uint32_t,Ptr<ContentObject>> pendings_;
   

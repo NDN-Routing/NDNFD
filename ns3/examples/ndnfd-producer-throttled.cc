@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
 
   ns3::Config::SetDefault("ns3::ProcessingDelay::NSlots", ns3::StringValue("2"));
   ns3::Config::SetDefault("ns3::ProcessingDelay::ProcessTime", ns3::StringValue("210ms"));
+  ns3::Config::SetDefault("ns3::ndn::ProducerThrottled::NackIfCannotStartImmediately", ns3::BooleanValue(false));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
   ns3::Config::SetDefault("ns3::ndn::ConsumerCbr::MaxSeq", ns3::StringValue("10"));
 
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
   nodes.Create(1);
 
   ndnfd::StackHelper ndnfdHelper;
+  ndnfdHelper.SetStrategy("/", "nacks");
   ndnfdHelper.Install(nodes);
 
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");

@@ -2,6 +2,7 @@
 #include <ns3/log.h>
 #include <ns3/pointer.h>
 #include <ns3/uinteger.h>
+#include <ns3/boolean.h>
 #include <ns3/packet.h>
 #include <ns3/ndn-interest.h>
 #include <ns3/ndn-app-face.h>
@@ -18,6 +19,10 @@ TypeId ProducerThrottled::GetTypeId(void) {
       PointerValue(),
       MakePointerAccessor(&ProducerThrottled::SetProcessingDelay, &ProducerThrottled::GetProcessingDelay),
       MakePointerChecker<ProcessingDelay>())
+    .AddAttribute("NackIfCannotStartImmediately", "reply Nack if job cannot start immediately",
+      BooleanValue(false),
+      MakeBooleanAccessor(&ProducerThrottled::nack_if_cannot_start_immediately_),
+      MakeBooleanChecker())
     ;
   return tid;
 }
@@ -35,6 +40,13 @@ void ProducerThrottled::OnInterest(Ptr<const Interest> interest) {
   this->App::OnInterest(interest);
   NS_LOG_FUNCTION(this << interest);
   if (!this->m_active) return;
+  
+  if (this->nack_if_cannot_start_immediately_ && !this->pd_->CanStartImmediately()) {
+    Ptr<Interest> nack = Create<Interest>(*interest);
+    nack->SetNack(Interest::NACK_CONGESTION);
+    this->m_face->ReceiveInterest(nack);
+    return;
+  }
   
   TimeValue freshness;
   this->GetAttribute("Freshness", freshness);
