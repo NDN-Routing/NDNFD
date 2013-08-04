@@ -1,7 +1,6 @@
 #ifndef NDNFD_NS3_EXTRA_PROCESSING_DELAY_H_
 #define NDNFD_NS3_EXTRA_PROCESSING_DELAY_H_
 #include <queue>
-#include <tuple>
 #include <ns3/simulator.h>
 #include <ns3/traced-callback.h>
 namespace ns3 {
@@ -16,6 +15,10 @@ class ProcessingDelay : public Object {
   static TypeId GetTypeId(void);
   ProcessingDelay(void) {}
   virtual ~ProcessingDelay(void) {}
+  
+  // CanStartImmediately returns true if a new job could be started immediately
+  // (queue is empty and there is an idle slot).
+  bool CanStartImmediately(void);
 
   // SubmitJob submits a job.
   void SubmitJob(Job job);
@@ -44,7 +47,9 @@ class ProcessingDelay : public Object {
   Callback<Time,Job> process_;
   Callback<void,Job> complete_;
   TracedCallback<Job> drop_;
-
+  
+  std::pair<std::vector<SlotUsage>::iterator,std::vector<SlotUsage>::iterator> slot_range(void);
+  
   Time GetProcessTime(void) const { return this->process_time_; }
   void SetProcessTime(Time time);
   Time FixedTimeProcess(Job job) const;
