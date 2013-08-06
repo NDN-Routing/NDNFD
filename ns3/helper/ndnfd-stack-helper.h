@@ -5,11 +5,13 @@
 #include <ns3/ndnfd-l3protocol.h>
 namespace ndnfd {
 
-class StackHelper {
+class StackHelper : public ns3::ObjectBase {
  public:
   static ns3::Time kMinStartTime(void) { return L3Protocol::kMinStartTime(); }
   static void WaitUntilMinStartTime(void);
   
+  static ns3::TypeId GetTypeId(void);
+  ns3::TypeId GetInstanceTypeId(void) const { return StackHelper::GetTypeId(); }
   StackHelper(void);
   virtual ~StackHelper(void) {}
 
@@ -30,6 +32,9 @@ class StackHelper {
  private:
   bool set_default_routes_;
   std::unordered_map<std::string,std::string> strategy_by_namespace_;
+  
+  std::string GetRootStrategy(void) const { return const_cast<StackHelper*>(this)->strategy_by_namespace_.at("/"); }
+  void SetRootStrategy(const std::string& value) { this->strategy_by_namespace_["/"] = value; }
 };
 
 };//namespace ndnfd

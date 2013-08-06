@@ -1,10 +1,13 @@
 #include "stack.h"
 #include <ns3/simulator.h>
+#include <ns3/boolean.h>
+#include <ns3/string.h>
 #include "../model/global.h"
 #include "core/nameprefix_table.h"
 #include "face/facemgr.h"
 #include "face/dgram.h"
 namespace ndnfd {
+NS_OBJECT_ENSURE_REGISTERED(StackHelper);
 
 void StackHelper::WaitUntilMinStartTime(void) {
   ns3::Time diff = StackHelper::kMinStartTime() - ns3::Now();
@@ -13,7 +16,26 @@ void StackHelper::WaitUntilMinStartTime(void) {
   ns3::Simulator::Run();
 }
 
-StackHelper::StackHelper(void) : set_default_routes_(false) {}
+ns3::TypeId StackHelper::GetTypeId(void) {
+  static ns3::TypeId tid = ns3::TypeId("ndnfd::StackHelper")
+    .SetGroupName("NDNFD")
+    .SetParent<ns3::ObjectBase>()
+    .AddAttribute("SetDefaultRoutes", "if true, a default route is added on each Ethernet multicast face",
+      ns3::BooleanValue(false),
+      ns3::MakeBooleanAccessor(&StackHelper::set_default_routes_),
+      ns3::MakeBooleanChecker())
+    .AddAttribute("RootStrategy", "forwarding strategy of / namespace",
+      ns3::StringValue("original"),
+      ns3::MakeStringAccessor(&StackHelper::GetRootStrategy, &StackHelper::SetRootStrategy),
+      ns3::MakeStringChecker())
+    .AddConstructor<StackHelper>();
+  return tid;
+}
+
+StackHelper::StackHelper(void)
+    : set_default_routes_(false) {
+  this->ConstructSelf(ns3::AttributeConstructionList());
+}
 
 void StackHelper::Install(ns3::Ptr<ns3::Node> node) const {
   NS_ASSERT_MSG(node->GetObject<ns3::ndn::L3Protocol>() == nullptr, "ndnSIM or NDNFD stack is already installed");

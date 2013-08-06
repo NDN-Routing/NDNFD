@@ -6,9 +6,6 @@
 #include <ns3/ndnSIM/utils/tracers/ndn-app-delay-tracer.h>
 
 /*
-This example demostrates self-learning strategy can adapt to server migration.
-It only works when NDNFD is compiled with SelfLearnStrategy.
-
                ---D----E
               /        |
 A----B----C--+         |
@@ -16,7 +13,7 @@ A----B----C--+         |
      H         ---F----G
 
 Consumer A expresses 50 Interests per second during 0 ~ 120 seconds.
-Producer H runs for  0 ~ 10 and 90 ~ 110 seconds.
+Producer H runs for  0 ~ 10 and 90 ~ 120 seconds.
 Producer D runs for 10 ~ 30 seconds.
 Producer E runs for 30 ~ 60 seconds.
 Producer F runs for 60 ~ 90 seconds.
@@ -28,6 +25,9 @@ int main(int argc, char *argv[]) {
 
   //ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("20"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
+
+  ns3::CommandLine cmd;
+  cmd.Parse(argc, argv);
   
   ndnfd::SimBuildTopo(R"EOT(
     node A
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     csma 10Mbps 1ms D E
     csma 10Mbps 1ms F G
     csma 10Mbps 1ms E G
-    ndnfd-stack strategy=adaptive_selflearn #default-route
+    ndnfd-stack
   )EOT");
 
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   ns3::ApplicationContainer producerF = producerHelper.Install(ns3::Names::Find<ns3::Node>("F"));
   producerF.Start(ns3::Seconds(60.0)); producerF.Stop(ns3::Seconds(90.0)); 
   ns3::ApplicationContainer producerH2 = producerHelper.Install(ns3::Names::Find<ns3::Node>("H"));
-  producerH2.Start(ns3::Seconds(90.0)); producerH2.Stop(ns3::Seconds(110.0));
+  producerH2.Start(ns3::Seconds(90.0)); producerH2.Stop(ns3::Seconds(120.0));
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-migration_delay.tsv");
   ns3::Ptr<ndnfd::MessageCounter> message_counter = ns3::Create<ndnfd::MessageCounter>("ndnfd-migration_msgcount.tsv");
