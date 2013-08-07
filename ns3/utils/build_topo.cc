@@ -75,6 +75,8 @@ std::tuple<ns3::NodeContainer,std::vector<ns3::NetDeviceContainer>> SimBuildTopo
         const std::string& token = *it;
         if (token == "default-route") {
           ndnfdstack.SetDefaultRoutes(true);
+        } else if (token == "no-default-route") {
+          ndnfdstack.SetDefaultRoutes(false);
         } else if (token.substr(0, 9) == "strategy[") {
           size_t pos = token.rfind("]=");
           if (pos != std::string::npos) {

@@ -23,9 +23,7 @@ Producer F runs for 60 ~ 90 seconds.
 int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
 
-  //ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("20"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
-
   ns3::CommandLine cmd;
   cmd.Parse(argc, argv);
   

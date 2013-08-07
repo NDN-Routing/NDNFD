@@ -1,30 +1,50 @@
 #!/bin/bash
 
-grep 'FullDelay' ndnfd-multipath_delay.tsv > ndnfd-multipath_delay_FullDelay.tsv
-awk '
-  {
-    got[$4] = 1;
+grep 'FullDelay' ndnfd-multipath_delay.tsv > ndnfd-multipath_fulldelay.tsv
+gawk '
+  BEGIN {
+    pps = 5
+    frequency1 = 5
+    frequency2 = 95
+    sim_time = 90
+  }
+  $4 < 1000 {
+    ++got[int($4/(frequency1/pps))]
+  }
+  $4 >= 1000 {
+    ++got[30*pps+int(($4-1000)/(frequency2/pps))]
   }
   END {
-    for (i=0; i<=90*5; ++i) {
-      t = i/5;
-      if (! got[i]) {
-        ++lost[int(t)]
+    expected1 = frequency1/pps
+    expected2 = frequency2/pps
+    for (t=0; t<sim_time*pps; ++t) {
+      expected = expected1
+      if (t>=30*pps && t<60*pps) {
+        expected = expected1 + expected2
       }
-    }
-    for (i=1000000000; i<1000000000+45*30; ++i) {
-      t = 30 + (i-1000000000)/45;
-      if (! got[i]) {
-        ++lost[int(t)]
-      }
-    }
-    for (t=0;t<90;++t) {
-      if (lost[t]) {
-        print t "\t" lost[t];
-      }
+      print t/pps, (expected-got[t]) / expected
     }
   }
-  ' ndnfd-multipath_delay_FullDelay.tsv > ndnfd-multipath_lost.tsv
+' ndnfd-multipath_fulldelay.tsv > ndnfd-multipath_loss.tsv
+
+for f in '' E H
+do
+gawk '
+  NR == 1 {
+    for (c=2; c<=NF; ++c) {
+      last[c] = 0
+    }
+  }
+  NR > 1 {
+    for (c=2; c<=NF; ++c) {
+      diff[c] = $c - last[c]
+      last[c] = $c
+      $c = diff[c]
+    }
+    print
+  }
+' ndnfd-multipath_msgcount$f.tsv > ndnfd-multipath_msgrate$f.tsv
+done
 
 gnuplot -e '
 set term pdf;
@@ -37,20 +57,17 @@ set key left top Left reverse samplen 0;
 set xtics nomirror;
 set ytics nomirror;
 
-set border 11;
+set ylabel "delay(hop)";
+plot "ndnfd-multipath_fulldelay.tsv" using ($1-16):9 with lines lc 1 title "";
+
 set ylabel "delay(ms)";
-set y2tics border nomirror in;
-set y2label "loss/s";
-plot "ndnfd-multipath_delay_FullDelay.tsv" using ($1-$6-16):($7/1000) with points lc 3 pt 0 title "delay",
-     "ndnfd-multipath_lost.tsv" using 1:2 axes x1y2 with points lc 1 pt 2 ps 0.4 title "loss";
-set border 3;
-unset y2tics;
-unset y2label;
+plot "ndnfd-multipath_fulldelay.tsv" using ($1-16):($7/1000) with lines lc 1 title "";
 
-set ylabel "Interest/s";
-plot "ndnfd-multipath_l3_E.tsv" using ($1-16):($2+$4) with lines lc 1 title "upper path",
-     "ndnfd-multipath_l3_H.tsv" using ($1-16):($2+$4) with lines lc 3 title "lower path";
+set ylabel "sent Interests/s";
+plot "ndnfd-multipath_msgrateE.tsv" using ($1-16):($2+$5) with lines lc 1 title "upper path",
+     "ndnfd-multipath_msgrateH.tsv" using ($1-16):($2+$5) with lines lc 3 title "lower path";
 
-plot "ndnfd-multipath_l3.tsv" using ($1-16):2 with lines lc 1 title "mcast",
-     "ndnfd-multipath_l3.tsv" using ($1-16):4 with lines lc 7 title "unicast";
+set ylabel "loss (%)";
+plot "ndnfd-multipath_loss.tsv" using 1:($2*100) with lines lc 1 title "";
 '
+
