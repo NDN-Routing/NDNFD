@@ -18,7 +18,7 @@ void OriginalStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
 
   // find downstream
   Ptr<PitDownstreamRecord> downstream = ie->FindPendingDownstream();
-  assert(downstream != nullptr);
+  if (downstream == nullptr) return;// don't assert; downstream is not pending if suppress due to duplicate nonce
   
   // get tap list: Interest is immediately sent to these faces; they are used for monitoring purpose and shouldn't respond
   ccn_indexbuf* tap = nullptr;

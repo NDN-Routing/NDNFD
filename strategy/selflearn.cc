@@ -59,7 +59,7 @@ std::unordered_set<FaceId> SelfLearnStrategy::LookupOutbounds(Ptr<PitEntry> ie, 
 void SelfLearnStrategy::PropagateNewInterest(Ptr<PitEntry> ie) {
   // find downstream
   Ptr<PitDownstreamRecord> downstream = ie->FindPendingDownstream();
-  assert(downstream != nullptr);
+  if (downstream == nullptr) return;// don't assert; downstream is not pending if suppress due to duplicate nonce
   
   // flood if no outbound
   if (ie->beginUpstream() == ie->endUpstream()) {
