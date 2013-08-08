@@ -43,8 +43,8 @@ int main(int argc, char *argv[]) {
     csma 600Kbps 6560ns C D
     csma 600Kbps 6560ns D E
     csma 600Kbps 6560ns E F
-    csma 300Kbps 6560ns G H
-    csma 300Kbps 6560ns H F
+    csma 600Kbps 6560ns G H
+    csma 600Kbps 6560ns H F
     ndnfd-stack
   )EOT");
 
