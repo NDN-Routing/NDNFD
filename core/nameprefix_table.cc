@@ -421,7 +421,7 @@ std::chrono::microseconds PitEntry::RttEnd(FaceId upstream) const {
   auto rr_it = rt->find(upstream);
   if (rr_it == rt->end()) return std::chrono::microseconds::min();
   RttRecord& rr = rr_it->second;
-  std::chrono::microseconds rtt((CCNDH->wtnow - rr.start_time_) * (1000000 / WTHZ_value()));
+  std::chrono::microseconds rtt((CCNDH->wtnow - rr.start_time_ + 1) * (1000000 / WTHZ_value()));
   //this->Log(kLLDebug, kLCTable, "PitEntry(%" PRI_PitEntrySerial ")::RttEnd(%" PRI_FaceId ") %" PRIuMAX , this->serial(), upstream, static_cast<uintmax_t>(rtt.count()));
   
   for (SchedulerEvent evt : rr.timeout_evts_) {
