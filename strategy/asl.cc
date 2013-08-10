@@ -239,6 +239,10 @@ void AslStrategy::DidnotArriveOnFace(Ptr<PitEntry> ie, FaceId face) {
 
   Ptr<PitUpstreamRecord> upstream = ie->GetUpstream(face);
   if (upstream != nullptr) upstream->SetFlag(NacksStrategy::PFI_VAIN, true);
+
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::DidnotArriveOnFace(%" PRI_PitEntrySerial ",%" PRI_FaceId ")", ie->serial(), face);
+
+  this->Forward(ie);
 }
 
 void AslStrategy::InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent) {
