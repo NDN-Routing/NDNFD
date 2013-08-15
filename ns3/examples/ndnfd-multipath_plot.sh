@@ -58,10 +58,10 @@ set xtics nomirror;
 set ytics nomirror;
 
 set ylabel "delay(hop)";
-plot "ndnfd-multipath_fulldelay.tsv" using ($1-16):9 with dots lc 1 title "";
+plot "ndnfd-multipath_fulldelay.tsv" using ($1-16-$6):9 with dots lc 1 title "";
 
 set ylabel "delay(ms)";
-plot "ndnfd-multipath_fulldelay.tsv" using ($1-16):($7/1000) with dots lc 1 title "";
+plot "ndnfd-multipath_fulldelay.tsv" using ($1-16-$6):($7/1000) with dots lc 1 title "";
 
 set ylabel "sent Interests/s";
 plot "ndnfd-multipath_msgrateE.tsv" using ($1-16):($2+$5) with lines lc 1 title "upper path",

@@ -177,6 +177,7 @@ void AslStrategy::Flood(Ptr<PitEntry> ie) {
 }
 
 void AslStrategy::OnRetryTimerExpire(Ptr<PitEntry> ie) {
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::OnRetryTimerExpire(%" PRI_PitEntrySerial ")", ie->serial());
   if (std::any_of(ie->beginUpstream(), ie->endUpstream(), [] (Ptr<PitUpstreamRecord> p) { return !p->IsExpired() && p->GetFlag(AslStrategy::PFI_FLOOD); })) {
     this->SendNacks(ie, NackCode::kNoData);
   }

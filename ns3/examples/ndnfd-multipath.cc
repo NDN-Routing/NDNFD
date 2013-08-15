@@ -24,6 +24,7 @@ Consumer A expresses 5 Interests/s, and 100 Interests/s during 30.0-60.0s.
 int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
 
+  ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("15"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
   ns3::CommandLine cmd;
   cmd.Parse(argc, argv);
