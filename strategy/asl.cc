@@ -2,7 +2,7 @@
 #include "face/facemgr.h"
 namespace ndnfd {
 
-StrategyType_def(AslStrategy, adaptive_selflearn);
+StrategyType_def(AslStrategy, adaptive-selflearn);
 
 std::unordered_set<FaceId> AslStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
   // upstream lookup is integrated in AslStrategy::Forward for better performance

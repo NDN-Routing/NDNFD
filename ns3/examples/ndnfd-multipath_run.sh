@@ -34,7 +34,7 @@ set_default_routes=0
 queue_length=15
 RUN_ONCE
 
-strategy=adaptive_selflearn
+strategy=adaptive-selflearn
 set_default_routes=0
 queue_length=15
 RUN_ONCE

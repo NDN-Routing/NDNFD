@@ -31,7 +31,7 @@ strategy=selflearn
 set_default_routes=0
 RUN_ONCE
 
-strategy=adaptive_selflearn
+strategy=adaptive-selflearn
 set_default_routes=0
 RUN_ONCE
 
