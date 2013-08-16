@@ -268,6 +268,7 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
   hints.ai_socktype = (hints.ai_protocol == IPPROTO_UDP) ? SOCK_DGRAM : SOCK_STREAM;
   int res = getaddrinfo(face_inst->descr.address, face_inst->descr.port, &hints, &addrinfo);
   if (res != 0) {
+    freeaddrinfo(addrinfo);
     return std::forward_as_tuple(nullptr, res, "error: getaddrinfo");
   }
   NetworkAddress addr;
@@ -289,6 +290,7 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
     }
     break;
     default: {
+      freeaddrinfo(addrinfo);
       return std::forward_as_tuple(nullptr, 0, "unknown address type");
     }
     break;
@@ -297,24 +299,29 @@ std::tuple<Ptr<Face>,int,std::string> FaceMgr::FaceMgmtNewIpFace(const ccn_face_
     case IPPROTO_TCP: {
       //   TCP: this->tcp_factory()->Connect(addr)
       Ptr<Face> face = this->tcp_factory()->Connect(addr);
+      freeaddrinfo(addrinfo);
       return std::forward_as_tuple(face, 0, "");
     }
     break;
     case IPPROTO_UDP: {
       if (IpAddressVerifier::IsMcast(addr)) {
         //  UDP multicast: fail, not supported
+        freeaddrinfo(addrinfo);
         return std::forward_as_tuple(nullptr, 0, "UDP Multicast is not Supported");
       } else {
         //   UDP unicast: this->udp_channel()->GetFace(addr)
         Ptr<Face> face = this->udp_channel()->GetFace(addr);
+        freeaddrinfo(addrinfo);
         return std::forward_as_tuple(face, 0, "");
       }
     }
     break;
     default: {
+      freeaddrinfo(addrinfo);
       return std::forward_as_tuple(nullptr, 0, "unknown protocol type");
     }
   }
+  freeaddrinfo(addrinfo);
   return std::forward_as_tuple(nullptr, 0, "");
 }
 
