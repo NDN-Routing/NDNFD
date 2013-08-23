@@ -129,11 +129,11 @@ std::chrono::microseconds Strategy::DoPropagate(Ptr<PitEntry> ie) {
       continue;
     }
     
-    if (p->pending()) {// Interest sent but no response
-      DEBUG_APPEND_FaceId('-',p);
-      //TODO if (npe->best_faceid() == p->faceid() || npe->prev_faceid() == p->faceid()) npe->UpdateBestFace(FaceId_none);
-      continue;// don't send another Interest
-    }
+    // This is wrong.
+    //if (p->pending()) {// Interest sent but no response
+    //  DEBUG_APPEND_FaceId('-',p);
+    //  continue;// don't send another Interest
+    //}
     
     // find a downstream that is different from this upstream; Interest will be sent with that nonce
     Ptr<PitDownstreamRecord> interest_from = nullptr;

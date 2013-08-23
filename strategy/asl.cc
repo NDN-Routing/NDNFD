@@ -110,6 +110,9 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
   }
   
   if (best.face_ == FaceId_none) {// no feasible upstream
+    std::for_each(ie->beginUpstream(), ie->endUpstream(), [] (Ptr<PitUpstreamRecord> p) {
+      p->SetFlag(PFI_VAIN, false);
+    });
     this->Flood(ie);
     return;
   }
@@ -194,7 +197,7 @@ void AslStrategy::DidSatisfyPendingInterest(Ptr<PitEntry> ie, Ptr<const ContentE
     peer = this->global()->facemgr()->MakeUnicastFace(src, co->incoming_sender());
   }
 
-  this->Log(kLLDebug, kLCStrategy, "AslStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") src=%" PRI_FaceId " peer=%" PRI_FaceId " rtt=%" PRIuMAX "", ie->serial(), src->id(), peer->id(), static_cast<uintmax_t>(rtt.count()));
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::DidSatisfyPendingInterest(%" PRI_PitEntrySerial ") src=%" PRI_FaceId " peer=%" PRI_FaceId " rtt=%" PRIdMAX "", ie->serial(), src->id(), peer->id(), static_cast<intmax_t>(rtt.count()));
   
   this->ForeachNpeAncestor(ie->npe(), [&] (Ptr<NamePrefixEntry> npe) {
     NpeExtra* extra = npe->GetStrategyExtra<NpeExtra>();
