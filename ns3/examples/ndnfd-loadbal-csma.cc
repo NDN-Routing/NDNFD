@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   cmd.AddValue("n_consumers", "number of consumers", n_consumers);
   cmd.AddValue("maxseq", "count of Interests per consumer", maxseq);
   cmd.AddValue("sim_time", "total simulation time (s)", sim_time);
-  cmd.AddValue("frequency", "frequency | 'window'", frequency_str);
+  cmd.AddValue("frequency", "frequency (Interests/s) | 'window'", frequency_str);
   cmd.Parse(argc, argv);
 
   ns3::NodeContainer producer_nodes; producer_nodes.Create(n_producers);
@@ -41,25 +41,17 @@ int main(int argc, char *argv[]) {
 
   ndnfd::StackHelper ndnfdHelper;
   ndnfdHelper.Install(nodes);
-  
+
+  ns3::ndn::AppHelper consumerHelper(frequency_str=="window" ? "ns3::ndn::ConsumerWindow" : "ns3::ndn::ConsumerCbr");
   if (frequency_str == "window") {
-    ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerWindow");
     consumerHelper.SetAttribute("PayloadSize", ns3::StringValue("1024"));
-    consumerHelper.SetPrefix("/prefix");
-    for (uint32_t i = 0; i < n_consumers; ++i) {
-      consumerHelper.SetAttribute("StartSeq", ns3::IntegerValue(1000000*i));
-      consumerHelper.SetAttribute("Size", ns3::DoubleValue((1000000*i + maxseq) / 1024.0));
-      consumerHelper.Install(consumer_nodes.Get(i));
-    }
-  } else {
-    ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
+  }
+  consumerHelper.SetPrefix("/prefix");
+  for (uint32_t i = 0; i < n_consumers; ++i) {
     consumerHelper.SetAttribute("Frequency", ns3::StringValue(frequency_str));
-    consumerHelper.SetPrefix("/prefix");
-    for (uint32_t i = 0; i < n_consumers; ++i) {
-      consumerHelper.SetAttribute("StartSeq", ns3::IntegerValue(1000000*i));
-      consumerHelper.SetAttribute("MaxSeq", ns3::IntegerValue(1000000*i + maxseq));
-      consumerHelper.Install(consumer_nodes.Get(i));
-    }
+    consumerHelper.SetAttribute("StartSeq", ns3::IntegerValue(1000000*i));
+    consumerHelper.SetAttribute("MaxSeq", ns3::IntegerValue(1000000*i + maxseq));
+    consumerHelper.Install(consumer_nodes.Get(i));
   }
 
   ns3::ndn::AppHelper producerHelper("ns3::ndn::ProducerThrottled");

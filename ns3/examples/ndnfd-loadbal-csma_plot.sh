@@ -63,12 +63,25 @@ gawk '
     maxseq = '$maxseq'
     n_producers = '$n_producers'
     n_consumers = '$n_consumers'
+    for (i = 0; i <= 255; ++i) { _ord_[sprintf("%c",i)] = i }
+  }
+  function parse_sequence(s    ,i,n) {
+    n = 0
+    for (i=1; i<=length(s); ++i) {
+      n *= 256
+      if (substr(s,i,1)=="%") {
+        n += strtonum("0x" substr(s,i+1,2))
+        i += 2
+      } else {
+        n += _ord_[substr(s,i,1)]
+      }
+    }
+    return n
   }
   $3 ~ "ndn.ProducerThrottled:ProcessComplete" {
     producer = $2
-    getline
-    if (substr($2,1,8)=="/prefix/") {
-      i = substr($2,9)
+    if (substr($10,1,8)=="/prefix/") {
+      i = parse_sequence(substr($10,9))
       ++responds[i]
     }
   }
