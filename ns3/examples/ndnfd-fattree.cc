@@ -7,7 +7,7 @@
 #include <ns3/ndnSIM/utils/tracers/l2-rate-tracer.h>
 
 /*
-Topology: fat tree of 16 end hosts organized into three pods.
+Topology: fat tree of 16 end hosts organized into four pods.
 
    C0      C1      C2      C3   core
   / ______/       /       /
@@ -31,8 +31,9 @@ Every end host expresses 2 Interests per second to each end host.
 int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
 
-  //ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("20"));
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
+  ns3::CommandLine cmd;
+  cmd.Parse(argc, argv);
   
   ndnfd::SimBuildTopo(R"EOT(
     # core routers
