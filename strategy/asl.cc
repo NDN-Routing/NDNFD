@@ -4,6 +4,10 @@ namespace ndnfd {
 
 StrategyType_def(AslStrategy, adaptive-selflearn);
 
+AslStrategy::AslStrategy(void)
+    : probe_rand_(), probe_dist_(0.0, 1.0) {
+}
+
 std::unordered_set<FaceId> AslStrategy::LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest) {
   // upstream lookup is integrated in AslStrategy::Forward for better performance
   return std::unordered_set<FaceId>();
@@ -17,26 +21,27 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     bool unexpired_unicast_downstream_;
     std::chrono::microseconds rto_;
   };
-  UpstreamScore best;// current best upstream
-  best.face_ = FaceId_none;
+  const UpstreamScore* best = nullptr;// current best upstream
+  std::vector<const UpstreamScore*> probe_candidates;
   // ReplaceUpstreamIfBetter overwrites best if alt is better than best
-  std::function<void(const UpstreamScore&)> ReplaceUpstreamIfBetter = [&best] (const UpstreamScore& alt) {
-    if (best.face_ == FaceId_none) {
+  std::function<void(const UpstreamScore*)> ReplaceUpstreamIfBetter = [&best,&probe_candidates] (const UpstreamScore* alt) {
+    probe_candidates.push_back(alt);
+    if (best == nullptr) {
       best = alt; return;
     }
-    if (alt.new_producer_) {
-      if (alt.new_producer_ && !best.new_producer_) best = alt;
+    if (alt->new_producer_) {
+      if (alt->new_producer_ && !best->new_producer_) best = alt;
       return;
     }
-    if (alt.status_ != best.status_) {
-      if (alt.status_ > best.status_) best = alt;
+    if (alt->status_ != best->status_) {
+      if (alt->status_ > best->status_) best = alt;
       return;
     }
-    if (alt.unexpired_unicast_downstream_ != best.unexpired_unicast_downstream_) {
-      if (!alt.unexpired_unicast_downstream_ && best.unexpired_unicast_downstream_) best = alt;
+    if (alt->unexpired_unicast_downstream_ != best->unexpired_unicast_downstream_) {
+      if (!alt->unexpired_unicast_downstream_ && best->unexpired_unicast_downstream_) best = alt;
       return;
     }
-    if (alt.rto_ < best.rto_) best = alt;
+    if (alt->rto_ < best->rto_) best = alt;
   };
   
   // prepare shared information
@@ -80,18 +85,18 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     if (reject) continue;
     if (pair.second.status_ == UpstreamStatus::kRed) continue;
 
-    UpstreamScore alt;
-    alt.face_ = pair.first;
-    alt.new_producer_ = false;
-    alt.status_ = pair.second.status_;
-    alt.unexpired_unicast_downstream_ = false;
+    UpstreamScore* alt = new UpstreamScore();
+    alt->face_ = pair.first;
+    alt->new_producer_ = false;
+    alt->status_ = pair.second.status_;
+    alt->unexpired_unicast_downstream_ = false;
     if (f->kind() == FaceKind::kUnicast) {
       Ptr<PitDownstreamRecord> downstream = ie->GetDownstream(pair.first);
       if (downstream != nullptr && !downstream->IsExpired()) {
-        alt.unexpired_unicast_downstream_ = true;
+        alt->unexpired_unicast_downstream_ = true;
       }
     }
-    alt.rto_ = rto;
+    alt->rto_ = rto;
     ReplaceUpstreamIfBetter(alt);
   }
   
@@ -103,13 +108,13 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     std::tie(reject, f) = Reject1(face);
     if (reject) continue;
     
-    UpstreamScore alt;
-    alt.face_ = face;
-    alt.new_producer_ = true;
+    UpstreamScore* alt = new UpstreamScore();
+    alt->face_ = face;
+    alt->new_producer_ = true;
     ReplaceUpstreamIfBetter(alt);
   }
   
-  if (best.face_ == FaceId_none) {// no feasible upstream
+  if (best == nullptr) {// no feasible upstream
     std::for_each(ie->beginUpstream(), ie->endUpstream(), [] (Ptr<PitUpstreamRecord> p) {
       p->SetFlag(PFI_VAIN, false);
     });
@@ -117,18 +122,23 @@ void AslStrategy::Forward(Ptr<PitEntry> ie) {
     return;
   }
   
-  std::chrono::microseconds predict;
-  if (best.new_producer_) {
-    predict = min_rto * 2;
-  } else {
-    predict = best.rto_;
-  }
-  
-  Ptr<PitUpstreamRecord> p = ie->SeekUpstream(best.face_);
+  std::chrono::microseconds predict = best->new_producer_ ? min_rto*2 : best->rto_;
+  Ptr<PitUpstreamRecord> p = ie->SeekUpstream(best->face_);
   this->SendInterest(ie, p);
   ie->RttStartWithExpect(p->faceid(), predict, std::bind(&AslStrategy::DidnotArriveOnFace, this, ie, p->faceid()));
+  this->Log(kLLDebug, kLCStrategy, "AslStrategy::Forward(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " predict=%" PRIuMAX "", ie->serial(), p->faceid(), static_cast<intmax_t>(predict.count()));
   
-  this->Log(kLLDebug, kLCStrategy, "AslStrategy::Forward(%" PRI_PitEntrySerial ") upstream=%" PRI_FaceId " predict=%" PRIuMAX "", ie->serial(), p->faceid(), static_cast<uintmax_t>(predict.count()));
+  if (probe_candidates.size() > 1 && this->probe_dist_(this->probe_rand_) < AslStrategy::PROBE_PROB) {
+    std::uniform_int_distribution<> upstream_dist(0, probe_candidates.size()-1);
+    const UpstreamScore* probe;
+    do { probe = probe_candidates[upstream_dist(this->probe_rand_)]; } while (probe->face_ == best->face_);
+    std::chrono::microseconds probe_predict = probe->new_producer_ ? min_rto*2 : probe->rto_;
+    Ptr<PitUpstreamRecord> probe_p = ie->SeekUpstream(probe->face_);
+    this->SendInterest(ie, probe_p);
+    ie->RttStartWithExpect(probe_p->faceid(), probe_predict, std::bind(&AslStrategy::DidnotArriveOnFace, this, ie, probe_p->faceid()));
+    this->Log(kLLDebug, kLCStrategy, "AslStrategy::Forward(%" PRI_PitEntrySerial ") probe upstream=%" PRI_FaceId " predict=%" PRIuMAX "", ie->serial(), probe_p->faceid(), static_cast<intmax_t>(probe_predict.count()));
+  }
+  
 }
 
 void AslStrategy::Flood(Ptr<PitEntry> ie) {

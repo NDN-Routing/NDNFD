@@ -21,21 +21,21 @@ for f in `ls ${project}.out.gz ${project}_*.*`; do mv $f ${f/$project/$resultpat
 
 strategy=bcast
 set_default_routes=1
-queue_length=15
+queue_length=10
 RUN_ONCE
 
 strategy=original
 set_default_routes=1
-queue_length=15
+queue_length=10
 RUN_ONCE
 
 strategy=selflearn
 set_default_routes=0
-queue_length=15
+queue_length=10
 RUN_ONCE
 
 strategy=adaptive-selflearn
 set_default_routes=0
-queue_length=15
+queue_length=10
 RUN_ONCE
 

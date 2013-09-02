@@ -6,7 +6,7 @@ namespace ndnfd {
 // AslStrategy is the adaptive self-learning forwarding strategy.
 class AslStrategy : public NacksStrategy {
  public:
-  AslStrategy(void) {}
+  AslStrategy(void);
   virtual ~AslStrategy(void) {}
   StrategyType_decl(AslStrategy);
 
@@ -14,7 +14,7 @@ class AslStrategy : public NacksStrategy {
   virtual void InheritNpeExtra(Ptr<NamePrefixEntry> npe, Ptr<const NamePrefixEntry> parent);
 
  protected:
-  // PFI_VAIN flag is set on upstream pit_face_item to indicate this upstream is created by Flood method.
+  // PFI_FLOOD flag is set on upstream pit_face_item to indicate this upstream is created by Flood method.
   static const unsigned PFI_FLOOD = 0x40000;
 
   virtual std::unordered_set<FaceId> LookupOutbounds(Ptr<PitEntry> ie, Ptr<const InterestMessage> interest);
@@ -31,6 +31,10 @@ class AslStrategy : public NacksStrategy {
   virtual void OnRetryTimerExpire(Ptr<PitEntry> ie);
   
  private:
+  static constexpr double PROBE_PROB = 0.1;
+  std::default_random_engine probe_rand_;
+  std::uniform_real_distribution<> probe_dist_;
+  
   DISALLOW_COPY_AND_ASSIGN(AslStrategy);
 };
 

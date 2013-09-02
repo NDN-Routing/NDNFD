@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
   ndnfd::StackHelper::WaitUntilMinStartTime();
 
   ns3::Config::SetDefault("ns3::ndn::Consumer::RetxTimer", ns3::StringValue("300s"));
+  ns3::Config::SetDefault("ns3::DropTailQueue::MaxPackets", ns3::StringValue("5"));
   ns3::CommandLine cmd;
   cmd.Parse(argc, argv);
   
@@ -136,15 +137,20 @@ int main(int argc, char *argv[]) {
   ns3::ndn::AppHelper consumerHelper("ns3::ndn::ConsumerCbr");
   consumerHelper.SetAttribute("Frequency", ns3::StringValue("2"));
   //consumerHelper.SetAttribute("Randomize", ns3::StringValue("uniform"));
-  ns3::ApplicationContainer consumers;
+  //ns3::ApplicationContainer consumers;
+  std::default_random_engine consumer_start_rand;
+  std::uniform_real_distribution<> consumer_start_dist(0, 0.100);
   for (auto consumer_host : hostnames) {
     for (auto producer_host : hostnames) {
       consumerHelper.SetAttribute("StartSeq", ns3::StringValue(consumer_host.substr(1) + producer_host.substr(1) + "0000"));
+      consumerHelper.SetAttribute("MaxSeq", ns3::StringValue(consumer_host.substr(1) + producer_host.substr(1) + "0040"));
       consumerHelper.SetPrefix("/" + producer_host);
-      consumers.Add(consumerHelper.Install(ns3::Names::Find<ns3::Node>(consumer_host)));
+      //consumers.Add(consumerHelper.Install(ns3::Names::Find<ns3::Node>(consumer_host)));
+      ns3::ApplicationContainer consumer = consumerHelper.Install(ns3::Names::Find<ns3::Node>(consumer_host));
+      consumer.Start(ns3::Seconds(consumer_start_dist(consumer_start_rand))); consumer.Stop(ns3::Seconds(24.0));
     }
   }
-  consumers.Start(ns3::Seconds(0.0)); consumers.Stop(ns3::Seconds(20.0));
+  //consumers.Start(ns3::Seconds(0.0)); consumers.Stop(ns3::Seconds(24.0));
 
   ns3::ndn::AppHelper producerHelper("ns3::ndn::Producer");
   producerHelper.SetAttribute("PayloadSize", ns3::StringValue("1024"));
@@ -153,13 +159,13 @@ int main(int argc, char *argv[]) {
     producerHelper.SetPrefix("/" + producer_host);
     producers.Add(producerHelper.Install(ns3::Names::Find<ns3::Node>(producer_host)));
   }
-  producers.Start(ns3::Seconds(0.0)); producers.Stop(ns3::Seconds(20.0)); 
+  producers.Start(ns3::Seconds(0.0)); producers.Stop(ns3::Seconds(24.0));
   
   auto delay_tracers = ns3::ndn::AppDelayTracer::InstallAll("ndnfd-fattree_delay.tsv");
   ns3::Ptr<ndnfd::MessageCounter> message_counter = ns3::Create<ndnfd::MessageCounter>("ndnfd-fattree_msgcount.tsv");
   message_counter->ConnectAll();
 
-  ns3::Simulator::Stop(ns3::Seconds(22.0));
+  ns3::Simulator::Stop(ns3::Seconds(24.0));
   ns3::Simulator::Run();
   ns3::Simulator::Destroy();
 
