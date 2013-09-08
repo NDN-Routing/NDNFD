@@ -16,6 +16,7 @@ def options(opt):
 
 def configure(conf):
     gcclibpath = None
+    use_clang = False
     if waflib.Utils.unversioned_sys_platform() == 'freebsd':
         if not conf.env.CC:
             try:
@@ -33,6 +34,17 @@ def configure(conf):
                     conf.find_program('g++47', var='CXX')
                     gcclibpath = '/usr/local/lib/gcc47'
                 except: pass
+    if waflib.Utils.unversioned_sys_platform() == 'darwin':
+        if not conf.env.CC:
+            try:
+                conf.find_program('clang', var='CC')
+                use_clang = True
+            except: pass
+        if not conf.env.CXX:
+            try:
+                conf.find_program('clang++', var='CXX')
+                use_clang = True
+            except: pass
     
     conf.load('compiler_c compiler_cxx')
     conf.load('ccnx', tooldir='.')
@@ -53,9 +65,13 @@ def configure(conf):
         cxxflags_strict = []
     conf.env.append_unique('CFLAGS', flags + ['-Wstrict-prototypes', '-std=c99'])
     conf.env.append_unique('CXXFLAGS', flags + ['-fno-exceptions', '-std=c++0x'] + cxxflags_strict)
-    conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
-    if gcclibpath is not None:
-        conf.env.append_unique('LIBPATH', [gcclibpath])
+    if use_clang:
+        conf.env.append_unique('CXXFLAGS', ['-stdlib=libc++'])
+        conf.env.append_unique('LINKFLAGS', ['-stdlib=libc++'])
+    if not use_clang:
+        conf.env.append_unique('LIBPATH', ['/usr/lib/i386-linux-gnu', '/usr/lib/x86_64-linux-gnu'])
+        if gcclibpath is not None:
+            conf.env.append_unique('LIBPATH', [gcclibpath])
 
     if conf.options.optimize:
         conf.env.append_unique('CFLAGS', ['-O3', '-g1'])
@@ -68,6 +84,8 @@ def configure(conf):
         conf.env.GTEST = 1
         if waflib.Utils.unversioned_sys_platform() == 'linux' and not conf.env.LIB_PTHREAD:
             conf.check_cxx(lib='pthread')
+        if use_clang:
+            conf.env.append_unique('CXXFLAGS', ['-DGTEST_HAS_TR1_TUPLE=0','-DGTEST_HAS_RTTI=0'])
     
     if conf.options.markdown:
         conf.env.MARKDOWN = 1

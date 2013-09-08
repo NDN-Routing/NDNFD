@@ -427,7 +427,11 @@ void ConnMgr_cmpList(ConnMgr self, CMPConn request) {
 
 LMD ConnMgr_prepareLMD(ConnMgr self, CMPConn request) {
 	struct hashtb_enumerator htee; struct hashtb_enumerator* hte = &htee;
+#ifdef NDNFD_FIXNDNLDWARNINGS
+	int htres; LMD lmd = NULL;
+#else
 	int htres; LMD lmd;
+#endif
 	
 	char* htkey;
 	if (request->LowerProto == CMPConn_LowerProto_ether) {
@@ -435,6 +439,9 @@ LMD ConnMgr_prepareLMD(ConnMgr self, CMPConn request) {
 	} else if (request->LowerProto == CMPConn_LowerProto_udp) {
 		htkey = CMPConn_LowerProto_udp_str;
 	}
+#ifdef NDNFD_FIXNDNLDWARNINGS
+	else { return NULL; }
+#endif
 	hashtb_start(self->htLMD, hte);
 	htres = hashtb_seek(hte, htkey, strlen(htkey), 0);
 	if (htres == HT_OLD_ENTRY) {

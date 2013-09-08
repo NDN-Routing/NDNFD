@@ -79,7 +79,11 @@ void* CcnbMsg_getBody(CcnbMsg self) {
 }
 
 void* CcnbMsg_getBodyPart(CcnbMsg self, size_t start) {
+#ifdef NDNFD_FIXNDNLDWARNINGS
+	if (start >= CcnbMsg_getSize(self)) return NULL;
+#else
 	if (start < 0 || start >= CcnbMsg_getSize(self)) return NULL;
+#endif
 #ifdef NDNFD
 	return self->buf + start;
 #else
@@ -96,7 +100,11 @@ void* CcnbMsg_getEncap(CcnbMsg self) {
 }
 
 void CcnbMsg_setBodyPart(CcnbMsg self, void* buf, size_t start, size_t length) {
+#ifdef NDNFD_FIXNDNLDWARNINGS
+	if (start + length > CcnbMsg_getSize(self)) return;
+#else
 	if (start < 0 || start + length > CcnbMsg_getSize(self)) return;
+#endif
 	memcpy(CcnbMsg_getBodyPart(self, start), buf, length);
 }
 

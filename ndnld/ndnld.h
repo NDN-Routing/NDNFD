@@ -1,5 +1,6 @@
 #ifndef NDNFD
 #define NDNFD 1
+#define NDNFD_FIXNDNLDWARNINGS
 #endif
 #ifndef NDNLD_H
 #define NDNLD_H
@@ -371,7 +372,11 @@ SeqBlock SeqGen_nextBlock(SeqGen self, int size);
 #define CcnbH_maxBlockHdr 10//max length of block hdr with 64-bit number
 int CcnbH_sizeBlockHdr(uint64_t number);//calculate the length of block hdr
 char* CcnbH_getBlockHdr(uint64_t number, enum ccn_tt tt);//returns internal buffer, must strcpy immediately
+#ifdef NDNFD_FIXNDNLDWARNINGS
+int CcnbH_readBlockHdr(uint8_t* buf, ssize_t len, uint64_t* pnumber, enum ccn_tt* ptt);//returns consumed octets on success, 0 on failure; len==-1 means unlimited until \0; allow pnumber==NULL or ptt==NULL
+#else
 int CcnbH_readBlockHdr(uint8_t* buf, size_t len, uint64_t* pnumber, enum ccn_tt* ptt);//returns consumed octets on success, 0 on failure; len==-1 means unlimited until \0; allow pnumber==NULL or ptt==NULL
+#endif
 
 
 //class NdnlpPacket

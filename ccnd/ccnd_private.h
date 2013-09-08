@@ -1,5 +1,6 @@
 #ifndef NDNFD
 #define NDNFD 1
+#define NDNFD_FIXCCNDWARNINGS
 #endif
 /**
  * @file ccnd_private.h

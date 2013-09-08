@@ -365,7 +365,7 @@ void PitEntry::PitFaceItemIterator<TPfi>::Update(pit_face_item* p) {
     this->next_ = nullptr;
   }
   else {
-    this->p_ = this->ie_->New<TPfi>(this->ie_, p);
+    this->p_ = this->ie_->template New<TPfi>(this->ie_, p);
     this->next_ = p->next;
   }
 }

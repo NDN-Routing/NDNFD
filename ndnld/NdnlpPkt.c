@@ -33,7 +33,11 @@ char* CcnbH_getBlockHdr(uint64_t number, enum ccn_tt tt) {
 	return b + CcnbH_maxBlockHdr - len;
 }
 
+#ifdef NDNFD_FIXNDNLDWARNINGS
+int CcnbH_readBlockHdr(uint8_t* buf, ssize_t len, uint64_t* pnumber, enum ccn_tt* ptt) {
+#else
 int CcnbH_readBlockHdr(uint8_t* buf, size_t len, uint64_t* pnumber, enum ccn_tt* ptt) {
+#endif
 	uint64_t number = 0; enum ccn_tt tt = CCN_NO_TOKEN;
 	int i;
 	if (len < 0) len = 10;

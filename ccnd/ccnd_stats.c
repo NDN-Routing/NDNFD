@@ -650,7 +650,11 @@ ccnd_meter_init(struct ccnd_handle *h, struct ccnd_meter *m, const char *what)
 {
     if (m == NULL)
         return;
+#ifdef NDNFD_FIXCCNDWARNINGS
+    memset(m, 0, sizeof(*m));
+#else
     memset(m, 0, sizeof(m));
+#endif
     if (what != NULL)
         strncpy(m->what, what, sizeof(m->what)-1);
     ccnd_meter_bump(h, m, 0);

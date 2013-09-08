@@ -1,5 +1,6 @@
 #ifndef NDNFD_STRATEGY_ASL_H_
 #define NDNFD_STRATEGY_ASL_H_
+#include <random>
 #include "nacks.h"
 namespace ndnfd {
 

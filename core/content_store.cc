@@ -51,7 +51,7 @@ Ptr<ContentEntry> ContentStore::Lookup(Ptr<const InterestMessage> interest) {
     bool advance_to_sibling = false;
     if ((stale_ok || (content->flags & CCN_CONTENT_ENTRY_STALE) == 0)
         && ccn_content_matches_interest(content->key, content->size, 0, const_cast<ccn_parsed_ContentObject*>(ce->parsed()), interest->msg(), interest->length(), interest->parsed())) {
-      if ((interest->parsed()->orderpref && 1) == 0) {
+      if ((interest->parsed()->orderpref & 1) == 0) {
         // <ChildSelector> prefers leftmost
         break;
       }

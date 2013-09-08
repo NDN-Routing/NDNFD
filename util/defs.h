@@ -27,6 +27,13 @@ template <typename T> struct hash<ndnfd::Ptr<T>> {
 };
 };
 
+#ifdef __clang__
+// http://lists.cs.uiuc.edu/pipermail/cfe-dev/2012-December/026678.html
+namespace std {
+typedef atomic<bool> atomic_bool;
+};
+#endif
+
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&); \
   void operator=(const TypeName&)

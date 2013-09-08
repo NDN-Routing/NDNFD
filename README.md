@@ -16,12 +16,17 @@ Install prerequisites on FreeBSD 9.0-RELEASE
 	sudo pkg_add -r gcc47
 	sudo pkg_add -r hs-pandoc
 
+Install prerequisites on OS X Mountain Lion
+
+* [Xcode + command line tools](http://www.moncefbelyamani.com/how-to-install-xcode-homebrew-git-rvm-ruby-on-mac/#step-1)
+* [Pandoc](http://johnmacfarlane.net/pandoc/installing.html#mac-os-x)
+
 Configure and compile NDNFD
 
 	./waf configure --gtest --markdown
 	./waf
 	./waf check
 
-**--gtest** enables unit tests; `./waf check` executes unit tests.
+**--gtest** enables unit tests; `./waf check` executes unit tests.  
 **--markdown** builds Markdown documents to HTML format.
 

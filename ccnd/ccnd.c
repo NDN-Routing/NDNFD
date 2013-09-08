@@ -65,7 +65,6 @@
 #include "face/ccnd_interface.h"
 #include "strategy/ccnd_interface.h"
 #endif
-#define NDNFD_FIXCCNDWARNINGS
 
 #ifndef NDNFD
 /** Ops for strategy callout */
@@ -606,7 +605,11 @@ ccnd_generate_face_guid(struct ccnd_handle *h, struct face *face, int size,
             range = ~0;
         else {
             range = 0;
+#ifdef NDNFD_FIXCCNDWARNINGS
+            for (; i < size; i++)
+#else
             for (i = i; i < size; i++)
+#endif
                 range = (range << 8) + hi[i] - lo[i];
         }
         if (range < 2)

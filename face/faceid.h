@@ -20,9 +20,9 @@ struct NetworkAddress {
   sockaddr_storage who;
   socklen_t wholen;
 
-  NetworkAddress(void) { memset(this, 0, sizeof(this)); this->wholen = sizeof(this->who); }
+  NetworkAddress(void) { memset(this, 0, sizeof(*this)); this->wholen = sizeof(this->who); }
   sa_family_t family(void) const { return reinterpret_cast<const sockaddr*>(&this->who)->sa_family; }
-  bool operator==(const NetworkAddress& other) const { return 0 == memcmp(this, &other, sizeof(this)); }
+  bool operator==(const NetworkAddress& other) const { return 0 == memcmp(this, &other, sizeof(*this)); }
 };
 
 };//namespace ndnfd

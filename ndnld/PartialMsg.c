@@ -28,7 +28,11 @@ PartialMsgRes PartialMsgs_arrive(PartialMsgs self, DataPkt pkt) {
 	if (htres == HT_OLD_ENTRY) {
 		rec = *((PartialMsgRec*)hte->data);
 		res = PartialMsgRec_addPkt(rec, pkt);
+#ifdef NDNFD_FIXNDNLDWARNINGS
+	} else {
+#else
 	} else if (htres == HT_NEW_ENTRY) {
+#endif
 		res = PartialMsgRec_create(pkt, &rec);
 		if (PartialMsgRes_isSuccess(res)) {
 			*((PartialMsgRec*)hte->data) = rec;

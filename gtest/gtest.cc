@@ -1,3 +1,4 @@
+#define NDNFD_FIXGTESTWARNINGS
 // Copyright 2008, Google Inc.
 // All rights reserved.
 //
@@ -601,7 +602,9 @@ class GTestFlagSaver {
   bool list_tests_;
   String output_;
   bool print_time_;
+#ifndef NDNFD_FIXGTESTWARNINGS
   bool pretty_;
+#endif
   internal::Int32 random_seed_;
   internal::Int32 repeat_;
   bool shuffle_;
