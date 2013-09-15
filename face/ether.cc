@@ -9,7 +9,9 @@
 #include <ifaddrs.h>
 #include <net/if_dl.h>
 #endif
+#include <arpa/inet.h>
 #include "util/endian.h"
+#include "util/socket_helper.h"
 #include "face/ndnlp.h"
 
 namespace ndnfd {
@@ -28,6 +30,7 @@ void PcapChannel::Init(void) {
   int res;
   char filter_text[256];
   snprintf(filter_text, sizeof(filter_text), "ether proto 0x%" PRIx16 " && !(ether src %s)", this->ether_type_, this->av()->ToString(this->local_addr()).c_str());
+  //this->Log(kLLDebug, kLCFace, "PcapChannel(%s)::Init filter %s", this->ifname_.c_str(), filter_text);
   res = pcap_compile(this->p_, &this->filter_, filter_text, 1, 0);
   if (res == -1) {
     this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::Init pcap_compile %s", this->ifname_.c_str(), pcap_geterr(this->p_));
@@ -38,7 +41,7 @@ void PcapChannel::Init(void) {
     this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::Init pcap_setfilter %s", this->ifname_.c_str(), pcap_geterr(this->p_));
   }
   
-#ifdef __FreeBSD__
+#if __FreeBSD__ || __APPLE__
   // on FreeBSD, poll() does not return when multicast frame arrives
   this->face_thread()->scheduler()->Schedule(std::chrono::microseconds(1000), std::bind(&PcapChannel::ScheduledReceive, this), &this->recv_evt_);
 #endif
@@ -107,7 +110,11 @@ NetworkAddress PcapChannel::EtherPkt::local(void) const {
 }
 
 Ptr<DgramFace> PcapChannel::CreateMcastFace(const AddressHashKey& hashkey, const NetworkAddress& group) {
+#ifndef __APPLE__
   if (!this->JoinIpMcast(group)) return nullptr;
+#endif
+  // JoinIpMcast doesn't work on OS X "bind() Can't assign requested address"
+  // pcap has to use promisc mode on OS X
 
   Ptr<DgramFace> face = this->New<DgramFace>(this, group);
   face->set_kind(FaceKind::kMulticast);
@@ -124,13 +131,13 @@ bool PcapChannel::JoinIpMcast(const NetworkAddress& group) {
   }
 
   if (this->ip_mcast_fd_ == -1) {
-    this->ip_mcast_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+    this->ip_mcast_fd_ = Socket_CreateForListen(AF_INET, SOCK_DGRAM);
     sockaddr_in sa;
     sa.sin_family = AF_INET;
     sa.sin_port = htobe16(9697);
     sa.sin_addr.s_addr = this->local_ip_;
-    if (0 != bind(this->ip_mcast_fd_, reinterpret_cast<sockaddr*>(&sa), sizeof(sa))) {
-      this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::JoinIpMcast(%s) bind(%" PRIx32 ") %s", this->ifname_.c_str(), this->av()->ToString(group).c_str(), be32toh(sa.sin_addr.s_addr), Logging::ErrorString().c_str());
+    if (0 != bind(this->ip_mcast_fd_, reinterpret_cast<const sockaddr*>(&sa), sizeof(sa))) {
+      this->Log(kLLWarn, kLCFace, "PcapChannel(%s)::JoinIpMcast(%s) bind(%s) %s", this->ifname_.c_str(), this->av()->ToString(group).c_str(), inet_ntoa(sa.sin_addr), Logging::ErrorString().c_str());
       return false;
     }
   }
@@ -274,7 +281,11 @@ std::tuple<bool,NetworkAddress,uint32_t> EtherFaceFactory::GetIfAddr(const std::
 pcap_t* EtherFaceFactory::PcapOpen(const std::string& ifname) {
   char errbuf[PCAP_ERRBUF_SIZE];
   
+#ifdef __APPLE__
+  const int promisc = 1;
+#else
   const int promisc = 0;
+#endif
   errbuf[0] = '\0';
   pcap_t* p = pcap_open_live(ifname.c_str(), 65535, promisc, 0, errbuf);
   if (p == nullptr) {
