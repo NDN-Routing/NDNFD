@@ -4,6 +4,9 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 
 ## How to Install
 
+NDNFD module for ns-3 works on linux.  
+It compiles on OS X, but does not work.
+
 1. build NDNFD library for ns-3 simulation (`$NDNFD_ROOT` represents the location of NDNFD directory)
 
 		cd $NDNFD_ROOT
@@ -26,8 +29,15 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 
 4. build ns-3 with NDNFD  
 
+		# linux
 		cd $NS3_ROOT
 		./waf configure --disable-python --enable-examples --with-ndnfd=$NDNFD_ROOT
+		./waf
+		
+		# OS X
+		cd $NS3_ROOT
+		git apply src/NDNFD/clang_ns-3.17-ndnSIM-0.5.patch
+		CC=clang CXX=clang++ ./waf configure --disable-python --enable-examples --with-ndnfd=$NDNFD_ROOT
 		./waf
 
 5. run NDNFD simulation examples  
@@ -37,7 +47,7 @@ NDNFD module for ns-3 is a ns-3 module that incorperates NDNFD in simulation env
 
 ## Protocol Support
 
-Each node has an instance of NDNFD. NDNFD instances communicate with each other over Ethernet using NDNLP wire protocol. There is no support for UDP and TCP.
+Each node has an instance of NDNFD. NDNFD instances communicate with each other over Ethernet using CCNB wire protocol. There is no support for UDP and TCP.
 
 NDNFD instance communicates with local apps using ndnSIM packet formats. Prefix registration is processed by a subclass of ns3::ndn::Fib.
 
@@ -57,6 +67,6 @@ The steps to run a simulation is:
 3. install NDN stack with ndnfd::StackHelper
 4. install NDN apps with ndnSIM ns3::ndn::AppHelper
 5. set a simulation stop time with ns3::Simulator::Stop  
-   Simulation will run forever without setting a stop time.
+   Simulation will run forever if stop time is not set.
 6. ns3::Simulator::Run()
 

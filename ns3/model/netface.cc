@@ -79,8 +79,11 @@ void SimNetChannel::NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const n
   NetworkAddress receiver_addr = SimNetChannel::ConvertAddress(receiver);
   //this->Log(kLLDebug, kLCFace, "SimNetChannel::NicReceive src=%s dst=%s length=%" PRIuMAX "", this->av()->ToString(sender_addr).c_str(), this->av()->ToString(receiver_addr).c_str(), static_cast<uintmax_t>(pkt->length()));
   
-  typedef void (DgramChannel::*DeliverMcastPacket_type)(const NetworkAddress&, const NetworkAddress&, Ptr<BufferView>);
-  THIS_SIMGLOBAL->program()->ScheduleOnNextRun(std::bind((DeliverMcastPacket_type)&DgramChannel::DeliverMcastPacket, this, receiver_addr, sender_addr, pkt));
+  THIS_SIMGLOBAL->program()->ScheduleOnNextRun(std::bind(&SimNetChannel::ScheduledDeliver, this, receiver_addr, sender_addr, pkt));
+}
+
+void SimNetChannel::ScheduledDeliver(const NetworkAddress& receiver, const NetworkAddress& sender, Ptr<BufferView> pkt) {
+  this->DeliverMcastPacket(receiver, sender, pkt);
 }
 
 SimFaceFactory::SimFaceFactory(void) {

@@ -30,6 +30,7 @@ class SimNetChannel : public DgramChannel {
   
   // NicReceive is attached by ns3::Node::RegisterProtocolHandler
   void NicReceive(ns3::Ptr<ns3::NetDevice> device, ns3::Ptr<const ns3::Packet> packet, uint16_t protocol, const ns3::Address& sender, const ns3::Address& receiver, ns3::NetDevice::PacketType packetType);
+  void ScheduledDeliver(const NetworkAddress& receiver, const NetworkAddress& sender, Ptr<BufferView> pkt);
   
   DISALLOW_COPY_AND_ASSIGN(SimNetChannel);
 };
